@@ -438,7 +438,15 @@ export default function TeamPage() {
           console.error("Error loading team from Supabase:", err);
         }
       }
-      setMembers(teamList);
+      // Deduplicate teamList by name and role on the client side
+      const unique = new Map<string, TeamMember>();
+      teamList.forEach((member) => {
+        const key = `${member.name.toLowerCase()}-${member.role.toLowerCase()}`;
+        if (!unique.has(key)) {
+          unique.set(key, member);
+        }
+      });
+      setMembers(Array.from(unique.values()));
     }
 
     loadTeam();
