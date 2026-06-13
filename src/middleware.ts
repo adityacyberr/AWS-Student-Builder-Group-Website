@@ -23,10 +23,10 @@ export function middleware(request: NextRequest) {
   if (!isConsoleSubdomain) {
     if (pathname.startsWith("/admin") || pathname === "/login") {
       const protocol = hostname.includes("localhost") ? "http" : "https";
-      
+
       // If we are on localhost:3000, we redirect to console.localhost:3000
       const newHost = `console.${hostname}`;
-      
+
       // Map /admin/events to /events, and /admin or /login to / or /login
       let targetPath = "/";
       if (pathname === "/login") {
@@ -34,7 +34,7 @@ export function middleware(request: NextRequest) {
       } else if (pathname.startsWith("/admin/")) {
         targetPath = pathname.replace("/admin", "");
       }
-      
+
       return NextResponse.redirect(
         new URL(`${protocol}://${newHost}${targetPath}${request.nextUrl.search}`)
       );
