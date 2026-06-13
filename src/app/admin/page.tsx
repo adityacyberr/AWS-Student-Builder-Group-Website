@@ -20,13 +20,12 @@ import {
   Image as ImageIcon,
   Megaphone,
   BarChart3,
-  Lock,
   Upload,
-  ExternalLink,
-  X
+  ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { Session } from "@supabase/supabase-js";
 
 interface AnnouncementItem {
   id: string;
@@ -43,11 +42,68 @@ interface StatItem {
   display_order: number;
 }
 
+interface DBEventRow {
+  id: string;
+  title: string;
+  slug: string;
+  date: string;
+  time?: string;
+  type: 'Workshop' | 'Hackathon' | 'Meetup' | 'Webinar';
+  location: string;
+  description: string;
+  long_description?: string;
+  registration_link: string;
+  status: 'upcoming' | 'completed';
+  cover_placeholder_color: 'orange' | 'blue' | 'purple' | 'mint' | 'amber';
+}
+
+interface DBAchievementRow {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+  badge_type: "charter" | "team" | "milestone";
+}
+
+interface DBTeamMemberRow {
+  id: string;
+  name: string;
+  role: string;
+  branch: string;
+  specialization: string;
+  bio: string;
+  quote: string;
+  focus_areas: string[];
+  initials: string;
+  theme_color: string;
+  photo?: string;
+  linkedin: string;
+  github: string;
+  display_order: number;
+}
+
+interface DBGalleryRow {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+  category: "events" | "workshops" | "labs";
+  placeholder_color: 'orange' | 'blue' | 'purple' | 'mint';
+  image_url?: string;
+}
+
+interface DBSettingRow {
+  key: string;
+  value: string;
+}
+
+const getTempId = (prefix: string): string => {
+  return `${prefix}-${Date.now()}`;
+};
+
 export default function AdminPage() {
-  const [session, setSession] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(isSupabaseConfigured);
 
   const [activeTab, setActiveTab] = useState<"events" | "achievements" | "team" | "gallery" | "announcements" | "stats" | "settings">("events");
   const [notification, setNotification] = useState<string | null>(null);
@@ -134,7 +190,6 @@ export default function AdminPage() {
   // Auth Effect
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
-      setAuthLoading(false);
       return;
     }
 
@@ -151,13 +206,6 @@ export default function AdminPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Data Loading Effect
-  useEffect(() => {
-    if (!authLoading && (!isSupabaseConfigured || session)) {
-      loadAllData();
-    }
-  }, [session, authLoading]);
-
   const showToast = (message: string) => {
     setNotification(message);
     setTimeout(() => {
@@ -171,7 +219,7 @@ export default function AdminPage() {
       try {
         const { data, error } = await supabase.from("events").select("*").order("date", { ascending: false });
         if (!error && data) {
-          setEvents(data.map((d: any) => ({
+          setEvents((data as DBEventRow[]).map((d) => ({
             id: d.id,
             title: d.title,
             slug: d.slug,
@@ -196,7 +244,7 @@ export default function AdminPage() {
       try {
         const { data, error } = await supabase.from("achievements").select("*").order("date", { ascending: false });
         if (!error && data) {
-          setAchievements(data.map((d: any) => ({
+          setAchievements((data as DBAchievementRow[]).map((d) => ({
             id: d.id,
             title: d.title,
             date: d.date,
@@ -214,7 +262,7 @@ export default function AdminPage() {
       try {
         const { data, error } = await supabase.from("team_members").select("*").order("display_order", { ascending: true });
         if (!error && data) {
-          setTeamMembers(data.map((d: any) => ({
+          setTeamMembers((data as DBTeamMemberRow[]).map((d) => ({
             id: d.id,
             name: d.name,
             role: d.role,
@@ -247,7 +295,7 @@ export default function AdminPage() {
       try {
         const { data, error } = await supabase.from("gallery_images").select("*").order("created_at", { ascending: false });
         if (!error && data) {
-          setGalleryItems(data.map((d: any) => ({
+          setGalleryItems((data as DBGalleryRow[]).map((d) => ({
             id: d.id,
             title: d.title,
             date: d.date,
@@ -265,7 +313,7 @@ export default function AdminPage() {
           const parsed = JSON.parse(stored);
           const defaultIds = new Set(["inaugural-launch", "core-planning-session", "genai-labs-setup", "launch-agenda", "welcome-team"]);
           const customItems = parsed.filter(
-            (item: any) => !defaultIds.has(item.id)
+            (item: GalleryItem) => !defaultIds.has(item.id)
           );
           const merged = [...GALLERY_ITEMS, ...customItems];
           setGalleryItems(merged);
@@ -321,7 +369,7 @@ export default function AdminPage() {
       try {
         const { data, error } = await supabase.from("site_settings").select("*");
         if (!error && data) {
-          data.forEach((row: any) => {
+          (data as DBSettingRow[]).forEach((row) => {
             if (row.key === "meetup_url") setMeetupUrl(row.value);
             if (row.key === "whatsapp_url") setWhatsappUrl(row.value);
             if (row.key === "contact_email") setContactEmail(row.value);
@@ -334,6 +382,16 @@ export default function AdminPage() {
       setContactEmail(localStorage.getItem("aws_sbg_contact_email") || "sbg.rimt@gmail.com");
     }
   };
+
+  // Data Loading Effect
+  useEffect(() => {
+    if (!authLoading && (!isSupabaseConfigured || session)) {
+      const timer = setTimeout(() => {
+        loadAllData();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [session, authLoading]);
 
   // Image upload handler
   const handleImageUpload = async (file: File, folder: "team" | "gallery"): Promise<string | null> => {
@@ -367,6 +425,21 @@ export default function AdminPage() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "team" | "gallery") => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+
+      // File type validation (images only)
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+      if (!allowedTypes.includes(file.type)) {
+        alert("Invalid file type. Only JPG, PNG, and WEBP images are allowed.");
+        return;
+      }
+
+      // File size validation (5MB max)
+      const maxSizeBytes = 5 * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        alert("File size exceeds the 5MB limit. Please upload a smaller image.");
+        return;
+      }
+
       const url = await handleImageUpload(file, type);
       if (url) {
         if (type === "team") {
@@ -380,52 +453,74 @@ export default function AdminPage() {
     }
   };
 
-  // Auth Submit Handlers
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isSupabaseConfigured || !supabase) return;
-    try {
-      setAuthLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        alert(`Authentication failed: ${error.message}`);
-      } else {
-        showToast("Signed in successfully!");
-      }
-    } catch (err: any) {
-      alert(err.message || "An authentication error occurred.");
-    } finally {
-      setAuthLoading(false);
+  // Database Error Sanitizer (Prevents information leakage)
+  const sanitizeDatabaseError = (err: unknown, fallbackMessage: string): string => {
+    console.error("Supabase Database Error Details:", err);
+    const error = err as { code?: string; message?: string } | null;
+    if (error && error.code === "23505") {
+      return "A record with this name or title already exists in the system.";
     }
+    if (error && error.message && error.message.toLowerCase().includes("permission denied")) {
+      return "Permission denied. You do not have authorization to edit this data.";
+    }
+    return fallbackMessage;
   };
 
   const handleSignOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
       showToast("Logged out successfully.");
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 500);
     }
   };
 
   // 1. CREATE/UPDATE EVENT
   const handleCreateOrUpdateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!eventTitle || !eventDate || !eventLocation || !eventDescription) {
+    
+    const title = eventTitle.trim();
+    const location = eventLocation.trim();
+    const description = eventDescription.trim();
+    const longDescription = eventLongDescription.trim();
+    const regLink = eventRegLink.trim();
+
+    if (!title || !eventDate || !location || !description) {
       alert("Please complete all required fields.");
       return;
     }
 
-    const calculatedSlug = eventSlug || eventTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    // Input Validation
+    if (title.length > 100) {
+      alert("Event Title cannot exceed 100 characters.");
+      return;
+    }
+    if (location.length > 200) {
+      alert("Event Location cannot exceed 200 characters.");
+      return;
+    }
+    if (description.length > 500) {
+      alert("Event Short Description cannot exceed 500 characters.");
+      return;
+    }
+    if (regLink && regLink !== "#" && !/^(https?:\/\/)/.test(regLink)) {
+      alert("Registration Link must start with http:// or https://");
+      return;
+    }
+
+    const calculatedSlug = eventSlug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
     const eventData: Partial<EventItem> = {
-      title: eventTitle,
+      title,
       slug: calculatedSlug,
       date: eventDate,
       time: eventTime,
       type: eventType,
-      location: eventLocation,
-      description: eventDescription,
-      longDescription: eventLongDescription,
-      registrationLink: eventRegLink,
+      location,
+      description,
+      longDescription,
+      registrationLink: regLink,
       status: eventStatus,
       coverPlaceholderColor: eventCoverColor
     };
@@ -466,8 +561,7 @@ export default function AdminPage() {
           showToast("Event created successfully!");
         }
       } catch (err) {
-        console.error(err);
-        alert("Database transaction failed");
+        alert(sanitizeDatabaseError(err, "Unable to save event details. Please try again."));
       }
     } else {
       // Local fallback
@@ -552,8 +646,20 @@ export default function AdminPage() {
   // 2. CREATE/UPDATE ACHIEVEMENT
   const handleCreateOrUpdateAchievement = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!achTitle || !achDate || !achDesc) {
+    const title = achTitle.trim();
+    const description = achDesc.trim();
+
+    if (!title || !achDate || !description) {
       alert("Please complete all required fields.");
+      return;
+    }
+
+    if (title.length > 100) {
+      alert("Milestone Title cannot exceed 100 characters.");
+      return;
+    }
+    if (description.length > 300) {
+      alert("Milestone Description cannot exceed 300 characters.");
       return;
     }
 
@@ -561,30 +667,29 @@ export default function AdminPage() {
       try {
         if (editAchievementId) {
           const { error } = await supabase.from("achievements").update({
-            title: achTitle,
+            title,
             date: achDate,
-            description: achDesc,
+            description,
             badge_type: achBadge
           }).eq("id", editAchievementId);
           if (error) throw error;
           showToast("Milestone updated.");
         } else {
           const { error } = await supabase.from("achievements").insert({
-            title: achTitle,
+            title,
             date: achDate,
-            description: achDesc,
+            description,
             badge_type: achBadge
           });
           if (error) throw error;
           showToast("Milestone created.");
         }
       } catch (err) {
-        console.error(err);
-        alert("Operation failed");
+        alert(sanitizeDatabaseError(err, "Unable to save milestone details. Please try again."));
       }
     } else {
       const finalAch: AchievementItem = {
-        id: editAchievementId || `achievement-${Date.now()}`,
+        id: editAchievementId || getTempId("achievement"),
         title: achTitle,
         date: achDate,
         description: achDesc,
@@ -641,26 +746,55 @@ export default function AdminPage() {
   // 3. CREATE/UPDATE TEAM MEMBER
   const handleCreateOrUpdateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!memberName || !memberRole || !memberBranch || !memberSpecialization || !memberInitials || !memberQuote || !memberBio) {
+    const name = memberName.trim();
+    const role = memberRole.trim();
+    const branch = memberBranch.trim();
+    const specialization = memberSpecialization.trim();
+    const initials = memberInitials.trim();
+    const quote = memberQuote.trim();
+    const bio = memberBio.trim();
+    const linkedin = memberLinkedin.trim();
+    const github = memberGithub.trim();
+
+    if (!name || !role || !branch || !specialization || !initials || !quote || !bio) {
       alert("Please fill all required team details.");
+      return;
+    }
+
+    // Input constraints
+    if (name.length > 100) { alert("Name cannot exceed 100 characters."); return; }
+    if (role.length > 50) { alert("Role cannot exceed 50 characters."); return; }
+    if (branch.length > 50) { alert("Branch cannot exceed 50 characters."); return; }
+    if (specialization.length > 50) { alert("Specialization cannot exceed 50 characters."); return; }
+    if (initials.length > 5) { alert("Initials cannot exceed 5 characters."); return; }
+    if (quote.length > 200) { alert("Quote cannot exceed 200 characters."); return; }
+    if (bio.length > 500) { alert("Bio cannot exceed 500 characters."); return; }
+
+    // External link formats
+    if (linkedin && linkedin !== "javascript:void(0)" && !/^(https?:\/\/)/.test(linkedin)) {
+      alert("LinkedIn URL must start with http:// or https://");
+      return;
+    }
+    if (github && github !== "javascript:void(0)" && !/^(https?:\/\/)/.test(github)) {
+      alert("GitHub URL must start with http:// or https://");
       return;
     }
 
     const areas = memberFocusAreas.split(",").map(t => t.trim()).filter(Boolean);
 
     const teamData = {
-      name: memberName,
-      role: memberRole,
-      branch: memberBranch,
-      specialization: memberSpecialization,
-      bio: memberBio,
-      quote: memberQuote,
+      name,
+      role,
+      branch,
+      specialization,
+      bio,
+      quote,
       focus_areas: areas,
-      initials: memberInitials,
+      initials,
       theme_color: memberThemeColor,
       photo: memberPhoto || null,
-      linkedin: memberLinkedin,
-      github: memberGithub,
+      linkedin,
+      github,
       display_order: Number(memberDisplayOrder),
     };
 
@@ -676,12 +810,11 @@ export default function AdminPage() {
           showToast("Member created successfully!");
         }
       } catch (err) {
-        console.error(err);
-        alert("Failed to save member details.");
+        alert(sanitizeDatabaseError(err, "Failed to save member details."));
       }
     } else {
       const finalMember: TeamMember = {
-        id: editTeamId || `team-${Date.now()}`,
+        id: editTeamId || getTempId("team"),
         name: teamData.name,
         role: teamData.role,
         branch: teamData.branch,
@@ -698,7 +831,7 @@ export default function AdminPage() {
       };
       let list = JSON.parse(localStorage.getItem("aws_sbg_team") || "[]");
       if (editTeamId) {
-        list = list.map((m: any) => m.id === editTeamId ? finalMember : m);
+        list = (list as TeamMember[]).map((m) => m.id === editTeamId ? finalMember : m);
       } else {
         list = [...list, finalMember];
       }
@@ -719,7 +852,7 @@ export default function AdminPage() {
       } catch (err) { console.error(err); }
     } else {
       let list = JSON.parse(localStorage.getItem("aws_sbg_team") || "[]");
-      list = list.filter((m: any) => m.id !== id);
+      list = (list as TeamMember[]).filter((m) => m.id !== id);
       localStorage.setItem("aws_sbg_team", JSON.stringify(list));
     }
     loadAllData();
@@ -764,15 +897,23 @@ export default function AdminPage() {
   // 4. CREATE/UPDATE GALLERY
   const handleCreateOrUpdateGallery = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!galTitle || !galDate || !galDesc) {
+    const title = galTitle.trim();
+    const date = galDate.trim();
+    const description = galDesc.trim();
+
+    if (!title || !date || !description) {
       alert("Please fill in all details.");
       return;
     }
 
+    if (title.length > 100) { alert("Gallery title cannot exceed 100 characters."); return; }
+    if (date.length > 50) { alert("Date label cannot exceed 50 characters."); return; }
+    if (description.length > 300) { alert("Description cannot exceed 300 characters."); return; }
+
     const galleryData = {
-      title: galTitle,
-      date: galDate,
-      description: galDesc,
+      title,
+      date,
+      description,
       category: galCategory,
       placeholder_color: galColor,
       image_url: galImageUrl || null
@@ -789,10 +930,12 @@ export default function AdminPage() {
           if (error) throw error;
           showToast("Gallery image published.");
         }
-      } catch (err) { console.error(err); }
+      } catch (err) {
+        alert(sanitizeDatabaseError(err, "Failed to publish gallery image."));
+      }
     } else {
       const finalItem: GalleryItem = {
-        id: editGalleryId || `gal-${Date.now()}`,
+        id: editGalleryId || getTempId("gal"),
         title: galleryData.title,
         date: galleryData.date,
         description: galleryData.description,
@@ -802,7 +945,7 @@ export default function AdminPage() {
       };
       let list = JSON.parse(localStorage.getItem("aws_sbg_gallery") || "[]");
       if (editGalleryId) {
-        list = list.map((g: any) => g.id === editGalleryId ? finalItem : g);
+        list = (list as GalleryItem[]).map((g) => g.id === editGalleryId ? finalItem : g);
       } else {
         list = [finalItem, ...list];
       }
@@ -821,7 +964,7 @@ export default function AdminPage() {
       } catch (err) { console.error(err); }
     } else {
       let list = JSON.parse(localStorage.getItem("aws_sbg_gallery") || "[]");
-      list = list.filter((g: any) => g.id !== id);
+      list = (list as GalleryItem[]).filter((g) => g.id !== id);
       localStorage.setItem("aws_sbg_gallery", JSON.stringify(list));
     }
     loadAllData();
@@ -852,31 +995,46 @@ export default function AdminPage() {
   // 5. CREATE/UPDATE ANNOUNCEMENT
   const handleCreateOrUpdateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!annTitle || !annContent || !annDate) return;
+    const title = annTitle.trim();
+    const content = annContent.trim();
+    const date = annDate.trim();
+
+    if (!title || !content || !date) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    if (title.length > 100) { alert("Announcement Title cannot exceed 100 characters."); return; }
+    if (content.length > 500) { alert("Announcement Content cannot exceed 500 characters."); return; }
+    if (date.length > 50) { alert("Announcement Date cannot exceed 50 characters."); return; }
 
     const announceData = {
-      title: annTitle,
-      content: annContent,
-      date: annDate,
+      title,
+      content,
+      date,
       active: annActive
     };
 
     if (isSupabaseConfigured && supabase) {
       try {
         if (editAnnounceId) {
-          await supabase.from("announcements").update(announceData).eq("id", editAnnounceId);
+          const { error } = await supabase.from("announcements").update(announceData).eq("id", editAnnounceId);
+          if (error) throw error;
         } else {
-          await supabase.from("announcements").insert(announceData);
+          const { error } = await supabase.from("announcements").insert(announceData);
+          if (error) throw error;
         }
-      } catch (err) { console.error(err); }
+      } catch (err) {
+        alert(sanitizeDatabaseError(err, "Failed to save announcement."));
+      }
     } else {
       const finalAnn = {
-        id: editAnnounceId || `ann-${Date.now()}`,
+        id: editAnnounceId || getTempId("ann"),
         ...announceData
       };
       let list = JSON.parse(localStorage.getItem("aws_sbg_announcements") || "[]");
       if (editAnnounceId) {
-        list = list.map((a: any) => a.id === editAnnounceId ? finalAnn : a);
+        list = (list as AnnouncementItem[]).map((a) => a.id === editAnnounceId ? finalAnn : a);
       } else {
         list = [finalAnn, ...list];
       }
@@ -892,7 +1050,7 @@ export default function AdminPage() {
       await supabase.from("announcements").delete().eq("id", id);
     } else {
       let list = JSON.parse(localStorage.getItem("aws_sbg_announcements") || "[]");
-      list = list.filter((a: any) => a.id !== id);
+      list = (list as AnnouncementItem[]).filter((a) => a.id !== id);
       localStorage.setItem("aws_sbg_announcements", JSON.stringify(list));
     }
     loadAllData();
@@ -919,30 +1077,43 @@ export default function AdminPage() {
   // 6. CREATE/UPDATE STAT
   const handleCreateOrUpdateStat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!statLabel || !statValue) return;
+    const label = statLabel.trim();
+    const value = statValue.trim();
+
+    if (!label || !value) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    if (label.length > 50) { alert("Stat Label cannot exceed 50 characters."); return; }
+    if (value.length > 10) { alert("Stat Value cannot exceed 10 characters."); return; }
 
     const statData = {
-      label: statLabel,
-      value: statValue,
+      label,
+      value,
       display_order: Number(statOrder)
     };
 
     if (isSupabaseConfigured && supabase) {
       try {
         if (editStatId) {
-          await supabase.from("homepage_stats").update(statData).eq("id", editStatId);
+          const { error } = await supabase.from("homepage_stats").update(statData).eq("id", editStatId);
+          if (error) throw error;
         } else {
-          await supabase.from("homepage_stats").insert(statData);
+          const { error } = await supabase.from("homepage_stats").insert(statData);
+          if (error) throw error;
         }
-      } catch (err) { console.error(err); }
+      } catch (err) {
+        alert(sanitizeDatabaseError(err, "Failed to save stat."));
+      }
     } else {
       const finalStat = {
-        id: editStatId || `stat-${Date.now()}`,
+        id: editStatId || getTempId("stat"),
         ...statData
       };
       let list = JSON.parse(localStorage.getItem("aws_sbg_stats") || "[]");
       if (editStatId) {
-        list = list.map((s: any) => s.id === editStatId ? finalStat : s);
+        list = (list as StatItem[]).map((s) => s.id === editStatId ? finalStat : s);
       } else {
         list = [...list, finalStat];
       }
@@ -958,7 +1129,7 @@ export default function AdminPage() {
       await supabase.from("homepage_stats").delete().eq("id", id);
     } else {
       let list = JSON.parse(localStorage.getItem("aws_sbg_stats") || "[]");
-      list = list.filter((s: any) => s.id !== id);
+      list = (list as StatItem[]).filter((s) => s.id !== id);
       localStorage.setItem("aws_sbg_stats", JSON.stringify(list));
     }
     loadAllData();
@@ -983,84 +1154,45 @@ export default function AdminPage() {
   // 7. SITE SETTINGS SAVE
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    const mUrl = meetupUrl.trim();
+    const wUrl = whatsappUrl.trim();
+    const cEmail = contactEmail.trim();
+
+    if (mUrl && !/^(https?:\/\/)/.test(mUrl)) {
+      alert("Meetup URL must be a valid URL starting with http:// or https://");
+      return;
+    }
+    if (wUrl && !/^(https?:\/\/)/.test(wUrl)) {
+      alert("WhatsApp URL must be a valid URL starting with http:// or https://");
+      return;
+    }
+    if (cEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cEmail)) {
+      alert("Contact Email must be a valid email address.");
+      return;
+    }
+
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from("site_settings").upsert([
-          { key: "meetup_url", value: meetupUrl },
-          { key: "whatsapp_url", value: whatsappUrl },
-          { key: "contact_email", value: contactEmail },
+        const { error } = await supabase.from("site_settings").upsert([
+          { key: "meetup_url", value: mUrl },
+          { key: "whatsapp_url", value: wUrl },
+          { key: "contact_email", value: cEmail },
         ]);
+        if (error) throw error;
         showToast("Settings saved in Supabase!");
       } catch (err) {
-        console.error(err);
-        alert("Failed to save settings.");
+        alert(sanitizeDatabaseError(err, "Failed to save settings."));
       }
     } else {
-      localStorage.setItem("aws_sbg_meetup_url", meetupUrl);
-      localStorage.setItem("aws_sbg_whatsapp_url", whatsappUrl);
-      localStorage.setItem("aws_sbg_contact_email", contactEmail);
+      localStorage.setItem("aws_sbg_meetup_url", mUrl);
+      localStorage.setItem("aws_sbg_whatsapp_url", wUrl);
+      localStorage.setItem("aws_sbg_contact_email", cEmail);
       showToast("Settings saved to Sandbox.");
     }
   };
 
-  // Login view if needed
-  if (isSupabaseConfigured && !session && !authLoading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 text-slate-100">
-        <div className="relative w-full max-w-md p-8 rounded-2xl border border-slate-900 bg-slate-950/80 shadow-2xl">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="flex flex-col items-center text-center space-y-6">
-            <div className="h-12 w-12 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
-              <Lock className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold tracking-tight text-white">Admin Authentication</h2>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Unlock chapter configuration by signing in with your administrator credentials.
-              </p>
-            </div>
-
-            <form onSubmit={handleLogin} className="w-full space-y-4">
-              <div className="space-y-1.5 text-left">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@sbg-rimt.com"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-slate-900/50 border border-slate-800 text-white placeholder-slate-700 focus:outline-none focus:border-orange-500/50"
-                />
-              </div>
-              <div className="space-y-1.5 text-left">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-slate-900/50 border border-slate-800 text-white placeholder-slate-700 focus:outline-none focus:border-orange-500/50"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-md shadow-orange-500/10 active:scale-98"
-              >
-                Log In
-              </button>
-            </form>
-            <Link href="/" className="text-xs text-slate-500 hover:text-slate-300">
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Loading state
-  if (authLoading) {
+  // Loading or redirecting state (prevents dashboard flash)
+  if (authLoading || (isSupabaseConfigured && !session)) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
         <span>Checking credentials...</span>
@@ -1080,96 +1212,96 @@ export default function AdminPage() {
       )}
 
       {/* Admin Sidebar */}
-      <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-slate-900 bg-slate-980 p-6 flex flex-col justify-between">
-        <div className="space-y-8">
+      <div className="w-full md:w-64 border-b md:border-b-0 md:border-r border-slate-900 bg-slate-980 p-4 md:p-6 flex flex-col md:justify-between gap-4 md:gap-0">
+        <div className="space-y-4 md:space-y-8">
           <div>
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">AWS SBG Portal</h2>
-            <p className="text-lg font-black text-white mt-1">Admin Dashboard</p>
+            <h2 className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">AWS SBG Portal</h2>
+            <p className="text-base md:text-lg font-black text-white mt-1">Admin Dashboard</p>
           </div>
 
-          <nav className="space-y-1">
+          <nav className="flex flex-row md:flex-col gap-1.5 md:gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 scrollbar-none select-none">
             <button
               onClick={() => setActiveTab("events")}
-              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              className={`w-fit md:w-full flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === "events" 
                   ? "bg-orange-500 text-white shadow-md shadow-orange-500/15" 
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <Calendar className="h-4.5 w-4.5" />
+              <Calendar className="h-4 w-4 md:h-4.5 md:w-4.5" />
               Manage Events
             </button>
             <button
               onClick={() => setActiveTab("achievements")}
-              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              className={`w-fit md:w-full flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === "achievements" 
                   ? "bg-orange-500 text-white shadow-md shadow-orange-500/15" 
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <Trophy className="h-4.5 w-4.5" />
+              <Trophy className="h-4 w-4 md:h-4.5 md:w-4.5" />
               Manage Milestones
             </button>
             <button
               onClick={() => setActiveTab("team")}
-              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              className={`w-fit md:w-full flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === "team" 
                   ? "bg-orange-500 text-white shadow-md shadow-orange-500/15" 
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <Users className="h-4.5 w-4.5" />
+              <Users className="h-4 w-4 md:h-4.5 md:w-4.5" />
               Manage Team
             </button>
             <button
               onClick={() => setActiveTab("gallery")}
-              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              className={`w-fit md:w-full flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === "gallery" 
                   ? "bg-orange-500 text-white shadow-md shadow-orange-500/15" 
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <ImageIcon className="h-4.5 w-4.5" />
+              <ImageIcon className="h-4 w-4 md:h-4.5 md:w-4.5" />
               Manage Gallery
             </button>
             <button
               onClick={() => setActiveTab("announcements")}
-              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              className={`w-fit md:w-full flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === "announcements" 
                   ? "bg-orange-500 text-white shadow-md shadow-orange-500/15" 
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <Megaphone className="h-4.5 w-4.5" />
+              <Megaphone className="h-4 w-4 md:h-4.5 md:w-4.5" />
               Announcements
             </button>
             <button
               onClick={() => setActiveTab("stats")}
-              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              className={`w-fit md:w-full flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === "stats" 
                   ? "bg-orange-500 text-white shadow-md shadow-orange-500/15" 
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <BarChart3 className="h-4.5 w-4.5" />
+              <BarChart3 className="h-4 w-4 md:h-4.5 md:w-4.5" />
               Homepage Stats
             </button>
             <button
               onClick={() => setActiveTab("settings")}
-              className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+              className={`w-fit md:w-full flex-shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 md:px-4 md:py-3 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === "settings" 
                   ? "bg-orange-500 text-white shadow-md shadow-orange-500/15" 
                   : "text-slate-400 hover:text-white hover:bg-slate-900"
               }`}
             >
-              <Settings className="h-4.5 w-4.5" />
+              <Settings className="h-4 w-4 md:h-4.5 md:w-4.5" />
               Site Settings
             </button>
           </nav>
         </div>
 
-        <div className="pt-6 border-t border-slate-900 mt-8 md:mt-0 flex flex-col gap-3">
-          <div className="p-3 bg-slate-950 rounded-lg border border-slate-900 flex items-start gap-2">
+        <div className="pt-4 border-t border-slate-900 mt-4 md:mt-0 flex flex-col gap-3">
+          <div className="hidden md:flex p-3 bg-slate-950 rounded-lg border border-slate-900 items-start gap-2">
             {isSupabaseConfigured ? (
               <>
                 <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
@@ -1186,21 +1318,24 @@ export default function AdminPage() {
               </>
             )}
           </div>
-          {isSupabaseConfigured && session && (
-            <button
-              onClick={handleSignOut}
-              className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border border-red-900/40 text-xs text-red-400 hover:bg-red-500/10 transition-all text-center"
+          <div className="flex flex-row md:flex-col gap-2 w-full">
+            {isSupabaseConfigured && session && (
+              <button
+                onClick={handleSignOut}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-red-900/40 text-xs text-red-400 hover:bg-red-500/10 transition-all text-center whitespace-nowrap"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            )}
+            <Link
+              href="/"
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-slate-800 text-xs text-slate-400 hover:text-white hover:bg-slate-900 transition-all text-center whitespace-nowrap"
             >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </button>
-          )}
-          <Link
-            href="/"
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border border-slate-800 text-xs text-slate-400 hover:text-white hover:bg-slate-900 transition-all text-center"
-          >
-            Exit Dashboard
-          </Link>
+              <ArrowLeft className="h-4 w-4" />
+              Exit Dashboard
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -1269,7 +1404,7 @@ export default function AdminPage() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Event Type</label>
                     <select
-                      value={eventType} onChange={(e) => setEventType(e.target.value as any)}
+                      value={eventType} onChange={(e) => setEventType(e.target.value as 'Workshop' | 'Hackathon' | 'Meetup' | 'Webinar')}
                       className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-900 text-sm text-white focus:outline-none focus:border-orange-500/50"
                     >
                       <option value="Workshop">Workshop</option>
@@ -1291,7 +1426,7 @@ export default function AdminPage() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</label>
                     <select
-                      value={eventStatus} onChange={(e) => setEventStatus(e.target.value as any)}
+                      value={eventStatus} onChange={(e) => setEventStatus(e.target.value as 'upcoming' | 'completed')}
                       className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-900 text-sm text-white focus:outline-none focus:border-orange-500/50"
                     >
                       <option value="upcoming">Upcoming</option>
@@ -1303,7 +1438,7 @@ export default function AdminPage() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Theme Color</label>
                     <select
-                      value={eventCoverColor} onChange={(e) => setEventCoverColor(e.target.value as any)}
+                      value={eventCoverColor} onChange={(e) => setEventCoverColor(e.target.value as 'orange' | 'blue' | 'purple' | 'mint' | 'amber')}
                       className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-900 text-sm text-white focus:outline-none focus:border-orange-500/50"
                     >
                       <option value="orange">Orange</option>
@@ -1440,7 +1575,7 @@ export default function AdminPage() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Badge Icon Type</label>
                     <select
-                      value={achBadge} onChange={(e) => setAchBadge(e.target.value as any)}
+                      value={achBadge} onChange={(e) => setAchBadge(e.target.value as 'charter' | 'team' | 'milestone')}
                       className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-900 text-sm text-white focus:outline-none"
                     >
                       <option value="milestone">Trophy (Milestone)</option>
@@ -1744,7 +1879,7 @@ export default function AdminPage() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Category</label>
                     <select
-                      value={galCategory} onChange={(e) => setGalCategory(e.target.value as any)}
+                      value={galCategory} onChange={(e) => setGalCategory(e.target.value as 'events' | 'workshops' | 'labs')}
                       className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-900 text-sm text-white focus:outline-none"
                     >
                       <option value="events">Events</option>
@@ -1755,7 +1890,7 @@ export default function AdminPage() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Placeholder Color</label>
                     <select
-                      value={galColor} onChange={(e) => setGalColor(e.target.value as any)}
+                      value={galColor} onChange={(e) => setGalColor(e.target.value as 'orange' | 'blue' | 'purple' | 'mint')}
                       className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-900 text-sm text-white focus:outline-none"
                     >
                       <option value="orange">Orange</option>

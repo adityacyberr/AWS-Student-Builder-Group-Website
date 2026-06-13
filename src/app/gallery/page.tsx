@@ -2,9 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { GALLERY_ITEMS, GalleryItem } from "@/data/achievements";
-import { Image as ImageIcon, PlusCircle } from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+
+interface DBGalleryRow {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+  category: "events" | "workshops" | "labs";
+  placeholder_color: 'orange' | 'blue' | 'purple' | 'mint';
+  image_url?: string;
+}
 
 export default function GalleryPage() {
   const [filter, setFilter] = useState<"all" | "events" | "workshops" | "labs">("all");
@@ -19,7 +29,7 @@ export default function GalleryPage() {
             .select("*")
             .order("created_at", { ascending: false });
           if (!error && data && data.length > 0) {
-            setItems(data.map((d: any) => ({
+            setItems((data as DBGalleryRow[]).map((d) => ({
               id: d.id,
               title: d.title,
               date: d.date,
@@ -101,7 +111,7 @@ export default function GalleryPage() {
             <ImageIcon className="h-10 w-10 text-slate-650 mx-auto mb-4 animate-pulse-slow" />
             <h3 className="text-lg font-bold text-white mb-2">No Gallery Uploads Yet</h3>
             <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
-              We haven't uploaded any event snapshots yet. Check back soon or upload them via the admin dashboard!
+              We haven&apos;t uploaded any event snapshots yet. Check back soon or upload them via the admin dashboard!
             </p>
           </div>
         ) : (

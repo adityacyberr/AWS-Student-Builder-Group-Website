@@ -43,7 +43,8 @@ create table if not exists public.team_members (
   linkedin text not null default 'javascript:void(0)',
   github text not null default 'javascript:void(0)',
   display_order integer not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  constraint unique_name_role unique (name, role)
 );
 
 -- Gallery Images Table
@@ -55,7 +56,8 @@ create table if not exists public.gallery_images (
   category text not null check (category in ('events', 'workshops', 'labs')),
   placeholder_color text not null default 'orange',
   image_url text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  constraint unique_gallery_title unique (title)
 );
 
 -- Achievements Table
@@ -65,7 +67,8 @@ create table if not exists public.achievements (
   date text not null,
   description text not null,
   badge_type text not null check (badge_type in ('charter', 'team', 'milestone')),
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  constraint unique_achievement_title unique (title)
 );
 
 -- Announcements Table
@@ -84,7 +87,8 @@ create table if not exists public.homepage_stats (
   label text not null,
   value text not null,
   display_order integer not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  constraint unique_stat_label unique (label)
 );
 
 -- Site Settings Table
@@ -156,7 +160,17 @@ on conflict (id) do nothing;
 drop policy if exists "Allow public read storage" on storage.objects;
 create policy "Allow public read storage" on storage.objects for select using (bucket_id = 'builder-assets');
 drop policy if exists "Allow admin write storage" on storage.objects;
-create policy "Allow admin write storage" on storage.objects for all to authenticated using (bucket_id = 'builder-assets') with check (bucket_id = 'builder-assets');
+create policy "Allow admin write storage" on storage.objects for all to authenticated using (
+  bucket_id = 'builder-assets'
+) with check (
+  bucket_id = 'builder-assets'
+  and (
+    lower(storage.extension(name)) = 'jpg' or 
+    lower(storage.extension(name)) = 'jpeg' or 
+    lower(storage.extension(name)) = 'png' or 
+    lower(storage.extension(name)) = 'webp'
+  )
+);
 
 -- ============================================================
 -- 7. INITIAL SEED DATA
@@ -187,7 +201,7 @@ values
 ('Amber Prashar', 'Treasurer', 'B.Tech CSE', 'AI & ML', 'Manages budgets, sponsorships, and resource planning so events run smoothly and sustainably. Keeps the club''s operations financially healthy as it scales.', 'Making sure every resource builds something.', array['Budgeting', 'Sponsorships', 'Operations', 'Resource Planning'], 'AP', 'orange', '/team/amber.jpg', 'https://www.linkedin.com/in/amber-prashar-a57b65395/', 'javascript:void(0)', 4),
 ('Rohan Verma', 'Director of Photography', 'B.Tech CE', 'AI & ML', 'Documents every workshop and hackathon through photography, video, and visual storytelling — building the credibility archive that shows the world what the community does.', 'Capturing the moments that become our legacy.', array['Photography', 'Videography', 'Visual Storytelling', 'Media'], 'RV', 'orange', '/team/rohan.jpg', 'https://www.linkedin.com/in/rohan-verma-5a768b3b3/', 'javascript:void(0)', 5),
 ('Rinku Bhalotiya', 'Event Head', 'B.Tech CSE', 'Software Engineering', 'Plans and runs workshops, bootcamps, and hackathons end-to-end, bridging industry mentors and student builders. Turns ideas into well-run events that people remember.', 'From idea to packed room.', array['Event Operations', 'Hackathons', 'Logistics', 'Partnerships'], 'RB', 'orange', '/team/rinku.jpg', 'https://www.linkedin.com/in/rinku-bhalotiya-7507003b3/', 'javascript:void(0)', 6)
-on conflict (id) do nothing;
+on conflict (name, role) do nothing;
 
 -- Seed gallery
 insert into public.gallery_images (title, date, description, category, placeholder_color)
@@ -195,14 +209,14 @@ values
 ('Inaugural Meetup Kickoff', 'June 2026', 'Snapshot of the launching session inside the School of Computing Seminar Hall, introducing AWS SBG.', 'events', 'blue'),
 ('Core Team Planning Session', 'June 2026', 'Brainstorming and roadmap planning session for upcoming AWS practitioner workshops.', 'labs', 'orange'),
 ('GenAI Hands-on Setup', 'July 2026 (Planned)', 'Configuring environment endpoints and Bedrock access keys for student sandbox labs.', 'workshops', 'purple')
-on conflict (id) do nothing;
+on conflict (title) do nothing;
 
 -- Seed achievements
 insert into public.achievements (title, date, description, badge_type)
 values
 ('Official Chapter Founded', 'June 2026', 'AWS Student Builder Group officially established at RIMT University under the DRI banner, founding the first student-led cloud engineering community on campus.', 'charter'),
 ('Core Team Assembled', 'June 2026', 'Six founding members onboarded across Technical, Marketing, Events, Photography, and Finance verticals to build the operational backbone of the chapter.', 'team')
-on conflict (id) do nothing;
+on conflict (title) do nothing;
 
 -- Seed stats
 insert into public.homepage_stats (label, value, display_order)
@@ -210,7 +224,7 @@ values
 ('Members', '150+', 1),
 ('Bootcamps', '3+', 2),
 ('Hands-On', '100%', 3)
-on conflict (id) do nothing;
+on conflict (label) do nothing;
 
 -- Seed settings
 insert into public.site_settings (key, value)

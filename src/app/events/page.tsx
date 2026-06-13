@@ -6,6 +6,21 @@ import Link from "next/link";
 import { Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
+interface DBEventRow {
+  id: string;
+  title: string;
+  slug: string;
+  date: string;
+  time?: string;
+  type: 'Workshop' | 'Hackathon' | 'Meetup' | 'Webinar';
+  location: string;
+  description: string;
+  long_description?: string;
+  registration_link: string;
+  status: 'upcoming' | 'completed';
+  cover_placeholder_color: 'orange' | 'blue' | 'purple' | 'mint' | 'amber';
+}
+
 export default function EventsPage() {
   const [filter, setFilter] = useState<"all" | "upcoming" | "completed">("all");
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -20,16 +35,16 @@ export default function EventsPage() {
             .select("*")
             .order("date", { ascending: false });
           if (!error && data) {
-            eventsList = data.map((d: any) => ({
+            eventsList = (data as DBEventRow[]).map((d) => ({
               id: d.id,
               title: d.title,
               slug: d.slug,
               date: d.date,
-              time: d.time,
+              time: d.time || "",
               type: d.type,
               location: d.location,
               description: d.description,
-              longDescription: d.long_description,
+              longDescription: d.long_description || "",
               registrationLink: d.registration_link,
               status: d.status,
               coverPlaceholderColor: d.cover_placeholder_color,

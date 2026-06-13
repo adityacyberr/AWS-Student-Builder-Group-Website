@@ -3,10 +3,33 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Cloud, Cpu, Shield, Award, Users, Calendar, Trophy, ChevronRight } from "lucide-react";
+import { ArrowRight, Cloud, Cpu, Shield, Award, Calendar, Trophy, ChevronRight } from "lucide-react";
 import { getLocalEvents, EventItem } from "@/data/events";
 import { getLocalAchievements, AchievementItem } from "@/data/achievements";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+
+interface DBEventRow {
+  id: string;
+  title: string;
+  slug: string;
+  date: string;
+  time?: string;
+  type: 'Workshop' | 'Hackathon' | 'Meetup' | 'Webinar';
+  location: string;
+  description: string;
+  long_description?: string;
+  registration_link: string;
+  status: 'upcoming' | 'completed';
+  cover_placeholder_color: 'orange' | 'blue' | 'purple' | 'mint' | 'amber';
+}
+
+interface DBAchievementRow {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+  badge_type: "charter" | "team" | "milestone";
+}
 
 interface AnnouncementItem {
   id: string;
@@ -37,16 +60,16 @@ export default function HomePage() {
             .select("*")
             .order("date", { ascending: false });
           if (!error && data) {
-            eventsList = data.map((d: any) => ({
+            eventsList = (data as DBEventRow[]).map((d) => ({
               id: d.id,
               title: d.title,
               slug: d.slug,
               date: d.date,
-              time: d.time,
+              time: d.time || "",
               type: d.type,
               location: d.location,
               description: d.description,
-              longDescription: d.long_description,
+              longDescription: d.long_description || "",
               registrationLink: d.registration_link,
               status: d.status,
               coverPlaceholderColor: d.cover_placeholder_color,
@@ -67,7 +90,7 @@ export default function HomePage() {
             .select("*")
             .order("date", { ascending: false });
           if (!error && data) {
-            achievementsList = data.map((d: any) => ({
+            achievementsList = (data as DBAchievementRow[]).map((d) => ({
               id: d.id,
               title: d.title,
               date: d.date,

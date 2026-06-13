@@ -15,7 +15,6 @@ import {
   Network,
   X,
   Quote,
-  ExternalLink,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -344,8 +343,8 @@ function OrgHierarchy({
             </p>
           </button>
 
-          {/* Connector tree */}
-          <div className="w-full flex flex-col items-center mt-0">
+          {/* Connector tree - Desktop Only */}
+          <div className="hidden lg:flex w-full flex-col items-center mt-0">
             <div className="h-10 w-0.5 bg-slate-700" />
             <div className="h-0.5 w-[82%] bg-slate-700" />
             <div className="w-[82%] flex justify-between">
@@ -354,6 +353,9 @@ function OrgHierarchy({
               ))}
             </div>
           </div>
+          {/* Mobile Connector - Simple Line */}
+          <div className="flex lg:hidden h-8 w-0.5 bg-slate-700" />
+
         </div>
 
         {/* Core Team Nodes */}
@@ -382,6 +384,23 @@ function OrgHierarchy({
 /* ------------------------------------------------------------------ */
 /* Main Team Page                                                      */
 /* ------------------------------------------------------------------ */
+interface DBTeamMemberRow {
+  id: string;
+  name: string;
+  role: string;
+  branch: string;
+  specialization: string;
+  bio: string;
+  quote: string;
+  focus_areas: string[];
+  initials: string;
+  theme_color: string;
+  photo?: string;
+  linkedin: string;
+  github: string;
+  display_order: number;
+}
+
 export default function TeamPage() {
   const [viewMode, setViewMode] = useState<"cards" | "hierarchy">("cards");
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
@@ -398,7 +417,7 @@ export default function TeamPage() {
             .select("*")
             .order("display_order", { ascending: true });
           if (!error && data && data.length > 0) {
-            teamList = data.map((d: any) => ({
+            teamList = (data as DBTeamMemberRow[]).map((d) => ({
               id: d.id,
               name: d.name,
               role: d.role,
@@ -409,7 +428,7 @@ export default function TeamPage() {
               focusAreas: d.focus_areas,
               initials: d.initials,
               themeColor: d.theme_color,
-              photo: d.photo,
+              photo: d.photo || "",
               linkedin: d.linkedin,
               github: d.github,
               displayOrder: d.display_order,

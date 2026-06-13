@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Target, Compass, ShieldCheck } from "lucide-react";
+import { ArrowRight, Target, Compass, ShieldCheck } from "lucide-react";
 
 export default function AboutPage() {
   return (

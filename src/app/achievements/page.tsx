@@ -5,6 +5,14 @@ import { getLocalAchievements, AchievementItem } from "@/data/achievements";
 import { Trophy, Award, CheckCircle, ArrowRight } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
+interface DBAchievementRow {
+  id: string;
+  title: string;
+  date: string;
+  description: string;
+  badge_type: "charter" | "team" | "milestone";
+}
+
 export default function AchievementsPage() {
   const [achievements, setAchievements] = useState<AchievementItem[]>([]);
 
@@ -18,7 +26,7 @@ export default function AchievementsPage() {
             .select("*")
             .order("date", { ascending: false });
           if (!error && data) {
-            achievementsList = data.map((d: any) => ({
+            achievementsList = (data as DBAchievementRow[]).map((d) => ({
               id: d.id,
               title: d.title,
               date: d.date,
@@ -74,12 +82,12 @@ export default function AchievementsPage() {
         </div>
 
         {/* Timeline List */}
-        <div className="space-y-8 relative before:absolute before:inset-0 before:left-8 before:w-0.5 before:bg-slate-900 before:pointer-events-none">
+        <div className="space-y-8 relative before:absolute before:inset-0 before:left-[23px] before:w-0.5 before:bg-slate-900 before:pointer-events-none">
           {achievements.length === 0 ? (
             <div className="relative flex gap-6 md:gap-8 items-start group">
               
               {/* Timeline Icon node */}
-              <div className="flex-shrink-0 z-10 p-3 rounded-xl border flex items-center justify-center text-amber-400 bg-amber-500/10 border-amber-500/20 animate-pulse">
+              <div className="w-12 h-12 flex-shrink-0 z-10 rounded-xl border flex items-center justify-center text-amber-400 bg-amber-500/10 border-amber-500/20 animate-pulse">
                 <Trophy className="h-6 w-6" />
               </div>
 
@@ -111,7 +119,7 @@ export default function AchievementsPage() {
               <div key={item.id} className="relative flex gap-6 md:gap-8 items-start group">
                 
                 {/* Timeline Icon node */}
-                <div className={`flex-shrink-0 z-10 p-3 rounded-xl border flex items-center justify-center transition-all ${getBadgeColor(item.badgeType)} group-hover:scale-105`}>
+                <div className={`w-12 h-12 flex-shrink-0 z-10 rounded-xl border flex items-center justify-center transition-all ${getBadgeColor(item.badgeType)} group-hover:scale-105`}>
                   {getBadgeIcon(item.badgeType)}
                 </div>
 

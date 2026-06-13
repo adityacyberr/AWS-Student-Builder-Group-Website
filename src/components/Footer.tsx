@@ -5,6 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
+interface DBSettingRow {
+  key: string;
+  value: string;
+}
+
 export default function Footer() {
   const [meetupUrl, setMeetupUrl] = useState("https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups");
   const [whatsappUrl, setWhatsappUrl] = useState("https://chat.whatsapp.com/aws-sbg-rimt");
@@ -24,7 +29,7 @@ export default function Footer() {
             .from("site_settings")
             .select("*");
           if (!error && data) {
-            data.forEach((row: any) => {
+            (data as DBSettingRow[]).forEach((row) => {
               if (row.key === "meetup_url" && row.value) setMeetupUrl(row.value);
               if (row.key === "whatsapp_url" && row.value) setWhatsappUrl(row.value);
               if (row.key === "contact_email" && row.value) setContactEmail(row.value);
@@ -49,6 +54,7 @@ export default function Footer() {
                 src="/brand/brandmark-white.png"
                 alt="AWS Student Builder Group"
                 fill
+                sizes="192px"
                 style={{ objectFit: "contain" }}
               />
             </div>
