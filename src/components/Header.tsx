@@ -18,6 +18,7 @@ export default function Header() {
     { name: "Gallery", href: "/gallery" },
     { name: "Achievements", href: "/achievements" },
     { name: "Contact", href: "/contact" },
+    { name: "Admin", href: "/admin" },
   ];
 
   return (
