@@ -213,32 +213,39 @@ function PlanetMember({
         )}
 
         {/* Name + Role label */}
-        <div
-          className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none transition-all duration-300 whitespace-nowrap"
-          style={{
-            top: "100%",
-            marginTop: 8,
-            opacity: hovered ? 1 : 0.65,
-            transform: `translateX(-50%) translateY(${hovered ? 0 : 2}px)`,
-          }}
-        >
-          <p
-            className="text-[11px] font-bold text-white leading-tight"
-            style={{
-              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
-            }}
-          >
-            {member.name.split(" ")[0]}
-          </p>
-          <p
-            className="text-[9px] text-orange-400/80 font-medium mt-0.5"
-            style={{
-              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
-            }}
-          >
-            {member.role}
-          </p>
-        </div>
+        {(() => {
+          const isLabelAbove = pos.y < 0;
+          return (
+            <div
+              className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none transition-all duration-300 whitespace-nowrap"
+              style={{
+                top: isLabelAbove ? "auto" : "100%",
+                bottom: isLabelAbove ? "100%" : "auto",
+                marginTop: isLabelAbove ? 0 : 8,
+                marginBottom: isLabelAbove ? 8 : 0,
+                opacity: hovered ? 1 : 0.65,
+                transform: `translateX(-50%) translateY(${hovered ? 0 : isLabelAbove ? -2 : 2}px)`,
+              }}
+            >
+              <p
+                className="text-[11px] font-bold text-white leading-tight"
+                style={{
+                  textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+                }}
+              >
+                {member.name.split(" ")[0]}
+              </p>
+              <p
+                className="text-[9px] text-orange-400/80 font-medium mt-0.5"
+                style={{
+                  textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+                }}
+              >
+                {member.role}
+              </p>
+            </div>
+          );
+        })()}
       </div>
 
       <style jsx>{`
