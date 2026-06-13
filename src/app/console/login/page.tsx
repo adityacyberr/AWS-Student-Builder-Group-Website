@@ -17,6 +17,13 @@ export default function ConsoleLoginPage() {
   // Rate limiting lockout state
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutTimeLeft, setLockoutTimeLeft] = useState(0);
+  const [backUrl, setBackUrl] = useState("/");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setBackUrl(`${window.location.protocol}//${window.location.host.replace("console.", "")}`);
+    }
+  }, []);
 
   useEffect(() => {
     if (lockoutTimeLeft <= 0) return;
@@ -152,12 +159,12 @@ export default function ConsoleLoginPage() {
           {/* Fallback back link */}
           <div className="pt-2">
             {/* Direct to localhost:3000 or production site based on host */}
-            <Link
-              href={typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host.replace("console.", "")}` : "/"}
+            <a
+              href={backUrl}
               className="text-xs text-zinc-650 hover:text-zinc-450 transition-colors"
             >
               Back to Public Site
-            </Link>
+            </a>
           </div>
         </div>
       </div>
