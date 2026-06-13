@@ -23,6 +23,7 @@ interface OrbitPlanetProps {
   isSelected: boolean;
   sunHovered: boolean;
   onSelect: (planet: PlanetDef) => void;
+  scaleFactor?: number;
 }
 
 export function OrbitPlanet({
@@ -32,11 +33,13 @@ export function OrbitPlanet({
   isSelected,
   sunHovered,
   onSelect,
+  scaleFactor = 1,
 }: OrbitPlanetProps) {
   const [hovered, setHovered] = useState(false);
   const Icon = planet.icon;
 
-  const planetSize = 48;
+  const planetSize = scaleFactor < 0.7 ? 34 : 48;
+  const iconSize = scaleFactor < 0.7 ? 15 : 20;
 
   return (
     <>
@@ -117,8 +120,8 @@ export function OrbitPlanet({
               <Icon
                 className="transition-all duration-300"
                 style={{
-                  width: 20,
-                  height: 20,
+                  width: iconSize,
+                  height: iconSize,
                   color: hovered || isSelected
                     ? "rgba(255,180,60,1)"
                     : "rgba(255,140,0,0.6)",

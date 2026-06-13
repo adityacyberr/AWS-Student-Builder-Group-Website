@@ -8,6 +8,7 @@ interface SolarCoreSunProps {
   mouseY: number;
   isHovered: boolean;
   onHover: (hovered: boolean) => void;
+  scaleFactor?: number;
 }
 
 export function SolarCoreSun({
@@ -16,10 +17,17 @@ export function SolarCoreSun({
   mouseY,
   isHovered,
   onHover,
+  scaleFactor = 1,
 }: SolarCoreSunProps) {
   // Subtle parallax based on mouse
   const parallaxX = reducedMotion ? 0 : mouseX * 8;
   const parallaxY = reducedMotion ? 0 : mouseY * 8;
+
+  const sunSize = 160 * scaleFactor;
+  const flare1Size = 210 * scaleFactor;
+  const flare2Size = 240 * scaleFactor;
+  const glow1Size = 380 * scaleFactor;
+  const glow2Size = 260 * scaleFactor;
 
   return (
     <div
@@ -35,8 +43,8 @@ export function SolarCoreSun({
       <div
         className="absolute rounded-full"
         style={{
-          width: 380,
-          height: 380,
+          width: glow1Size,
+          height: glow1Size,
           background:
             "radial-gradient(circle, rgba(255,140,0,0.06) 0%, rgba(255,140,0,0.02) 40%, transparent 70%)",
           filter: "blur(30px)",
@@ -50,8 +58,8 @@ export function SolarCoreSun({
       <div
         className="absolute rounded-full"
         style={{
-          width: 260,
-          height: 260,
+          width: glow2Size,
+          height: glow2Size,
           background:
             "radial-gradient(circle, rgba(255,160,0,0.12) 0%, rgba(255,140,0,0.04) 50%, transparent 70%)",
           filter: "blur(20px)",
@@ -68,8 +76,8 @@ export function SolarCoreSun({
         <div
           className="absolute rounded-full"
           style={{
-            width: 210,
-            height: 210,
+            width: flare1Size,
+            height: flare1Size,
             border: "1px solid rgba(255,140,0,0.08)",
             background: `conic-gradient(from 0deg, transparent 0%, rgba(255,140,0,0.08) 10%, transparent 20%, transparent 50%, rgba(255,140,0,0.06) 60%, transparent 70%)`,
             animation: "sun-flare-rotate 20s linear infinite",
@@ -84,8 +92,8 @@ export function SolarCoreSun({
         <div
           className="absolute rounded-full"
           style={{
-            width: 240,
-            height: 240,
+            width: flare2Size,
+            height: flare2Size,
             background: `conic-gradient(from 180deg, transparent 0%, rgba(255,180,0,0.05) 15%, transparent 30%, transparent 60%, rgba(255,140,0,0.04) 75%, transparent 90%)`,
             animation: "sun-flare-counter 28s linear infinite",
             opacity: isHovered ? 0.7 : 0.3,
@@ -96,10 +104,10 @@ export function SolarCoreSun({
 
       {/* Core sun body */}
       <div
-        className="relative z-10 rounded-full flex flex-col items-center justify-center cursor-pointer"
+        className="relative z-10 rounded-full flex flex-col items-center justify-center cursor-pointer text-center"
         style={{
-          width: 160,
-          height: 160,
+          width: sunSize,
+          height: sunSize,
           background:
             "radial-gradient(circle at 40% 35%, rgba(255,200,80,0.95) 0%, rgba(255,140,0,0.9) 40%, rgba(200,100,0,0.85) 80%)",
           boxShadow: isHovered
@@ -111,21 +119,30 @@ export function SolarCoreSun({
       >
         {/* Inner shine */}
         <div
-          className="absolute top-3 left-6 w-16 h-8 rounded-full opacity-20"
+          className="absolute top-2 left-4 w-12 h-6 rounded-full opacity-20"
           style={{
             background:
               "radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 70%)",
           }}
         />
 
-        {/* Text */}
-        <span className="text-[11px] font-black tracking-[0.2em] text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] uppercase">
+        {/* Text scaled down on mobile */}
+        <span 
+          className="font-black tracking-[0.2em] text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] uppercase leading-none"
+          style={{ fontSize: `${Math.max(7, 11 * scaleFactor)}px` }}
+        >
           AWS
         </span>
-        <span className="text-[7px] font-bold tracking-[0.15em] text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase mt-0.5">
+        <span 
+          className="font-bold tracking-[0.15em] text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase mt-0.5 leading-none"
+          style={{ fontSize: `${Math.max(5, 7 * scaleFactor)}px` }}
+        >
           Student Builder
         </span>
-        <span className="text-[7px] font-bold tracking-[0.15em] text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase">
+        <span 
+          className="font-bold tracking-[0.15em] text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase leading-none mt-0.5"
+          style={{ fontSize: `${Math.max(5, 7 * scaleFactor)}px` }}
+        >
           Group
         </span>
       </div>
@@ -136,8 +153,8 @@ export function SolarCoreSun({
           key={i}
           className="absolute rounded-full pointer-events-none"
           style={{
-            width: size,
-            height: size,
+            width: size * scaleFactor,
+            height: size * scaleFactor,
             border: `1px ${i % 2 === 0 ? "solid" : "dashed"} rgba(255,140,0,${isHovered ? 0.12 + i * 0.02 : 0.05 + i * 0.01})`,
             transition: "border-color 0.5s ease",
           }}

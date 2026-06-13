@@ -100,7 +100,6 @@ const PLANETS: PlanetDef[] = [
     orbitDelay: -70,
   },
 ];
-
 export function SolarSystemHero() {
   const reducedMotion = useReducedMotion();
   const [mouseX, setMouseX] = useState(0);
@@ -108,12 +107,32 @@ export function SolarSystemHero() {
   const [sunHovered, setSunHovered] = useState(false);
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetDef | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [scaleFactor, setScaleFactor] = useState(1);
 
   useEffect(() => {
-    setIsMobile(
-      window.matchMedia("(pointer: coarse)").matches ||
-        window.innerWidth < 768
-    );
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 400) {
+        setScaleFactor(0.35);
+      } else if (width < 500) {
+        setScaleFactor(0.45);
+      } else if (width < 768) {
+        setScaleFactor(0.55);
+      } else if (width < 1024) {
+        setScaleFactor(0.7);
+      } else if (width < 1280) {
+        setScaleFactor(0.85);
+      } else {
+        setScaleFactor(1);
+      }
+      setIsMobile(
+        window.matchMedia("(pointer: coarse)").matches || width < 768
+      );
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const handleMouseMove = useCallback(
@@ -253,9 +272,8 @@ export function SolarSystemHero() {
                 </Link>
               </motion.div>
             </motion.div>
-
             {/* CENTER-RIGHT — Solar System */}
-            <div className="lg:col-span-8 xl:col-span-8 relative h-[500px] sm:h-[600px] lg:h-full flex items-center justify-center">
+            <div className="lg:col-span-8 xl:col-span-8 relative h-[280px] sm:h-[400px] md:h-[500px] lg:h-full flex items-center justify-center">
               {/* Solar system container with parallax */}
               <div
                 className="relative w-full h-full flex items-center justify-center"
@@ -271,13 +289,17 @@ export function SolarSystemHero() {
                   mouseY={mouseY}
                   isHovered={sunHovered}
                   onHover={setSunHovered}
+                  scaleFactor={scaleFactor}
                 />
 
                 {/* Orbiting Planets */}
                 {PLANETS.map((planet) => (
                   <OrbitPlanet
                     key={planet.id}
-                    planet={planet}
+                    planet={{
+                      ...planet,
+                      orbitRadius: planet.orbitRadius * scaleFactor,
+                    }}
                     reducedMotion={reducedMotion}
                     isDimmed={
                       selectedPlanet !== null &&
@@ -286,10 +308,10 @@ export function SolarSystemHero() {
                     isSelected={selectedPlanet?.id === planet.id}
                     sunHovered={sunHovered}
                     onSelect={handlePlanetSelect}
+                    scaleFactor={scaleFactor}
                   />
                 ))}
               </div>
-
               {/* Planet Info Panel */}
               <PlanetInfoPanel
                 planet={selectedPlanet}
