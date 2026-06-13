@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-ember), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-ember-mono), monospace;
+  
+  --color-aws-orange: #ff9900;
+  --color-aws-squidink: #232f3e;
+  --color-aws-smile: #ff9900;
+  
+  --color-slate-850: #182235;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #070a13;
+  --color-slate-980: #04050a;
+}
+
+:root {
+  color-scheme: dark;
+  --background: #070a13;
+  --foreground: #f8fafc;
+}
+
+html, body {
+  background-color: #070a13;
+  color: #f8fafc;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* Custom glowing effects */
+.glow-orange {
+  box-shadow: 0 0 50px -12px rgba(255, 153, 0, 0.15);
+}
+
+.glow-blue {
+  box-shadow: 0 0 50px -12px rgba(59, 130, 246, 0.15);
+}
+
+.glow-purple {
+  box-shadow: 0 0 50px -12px rgba(168, 85, 247, 0.15);
+}
+
+.glow-mint {
+  box-shadow: 0 0 50px -12px rgba(52, 211, 153, 0.15);
+}
+
+.glow-amber {
+  box-shadow: 0 0 50px -12px rgba(245, 158, 11, 0.15);
+}
+
+/* Animated Grid Background */
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+}
+
+.bg-radial-gradient {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 153, 0, 0.08) 0%, transparent 70%);
+}
+
+.bg-network-gradient {
+  background: radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 60%);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s ease-in-out infinite;
+}
