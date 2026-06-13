@@ -17,6 +17,14 @@ import {
   Quote,
 } from "lucide-react";
 import Image from "next/image";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useSpring,
+  useTransform,
+  useMotionTemplate,
+} from "framer-motion";
 
 /* ------------------------------------------------------------------ */
 /* Role icon helper                                                    */
@@ -41,18 +49,113 @@ const getRoleIcon = (role: string, className = "h-4 w-4") => {
 };
 
 /* ------------------------------------------------------------------ */
+/* Floating Particles Component                                        */
+/* ------------------------------------------------------------------ */
+function FloatingParticles({ count = 15, active = true }: { count?: number; active?: boolean }) {
+  const [particles] = useState<{ id: number; x: number; y: number; size: number; duration: number; delay: number }[]>(() => {
+    if (!active) return [];
+    return Array.from({ length: count }).map((_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 2.5 + 1, // 1px to 3.5px
+      duration: Math.random() * 12 + 10, // 10s to 22s
+      delay: Math.random() * -20, // Pre-animated
+    }));
+  });
+
+  if (!active || particles.length === 0) return null;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute rounded-full bg-orange-500/10 blur-[0.5px]"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            animation: `float-particle ${p.duration}s linear infinite`,
+            animationDelay: `${p.delay}s`,
+          }}
+        />
+      ))}
+      <style jsx>{`
+        @keyframes float-particle {
+          0% {
+            transform: translateY(0) translateX(0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.6;
+          }
+          90% {
+            opacity: 0.6;
+          }
+          100% {
+            transform: translateY(-80px) translateX(15px);
+            opacity: 0;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Border Tracer Animation Component                                   */
+/* ------------------------------------------------------------------ */
+const BorderTracer = () => {
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none z-30" fill="none">
+      <motion.rect
+        x="0.5"
+        y="0.5"
+        width="99.7%"
+        height="99.7%"
+        rx="24"
+        stroke="rgba(249,115,22,0.4)"
+        strokeWidth="1.5"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 1.2, ease: "easeInOut", delay: 0.2 }}
+      />
+    </svg>
+  );
+};
+
+/* ------------------------------------------------------------------ */
 /* Member Card Component                                               */
 /* ------------------------------------------------------------------ */
 function MemberCard({
   member,
   onOpen,
+  isDimmed,
 }: {
   member: TeamMember;
   onOpen: () => void;
+  isDimmed: boolean;
 }) {
+  const cardRef = useRef<HTMLButtonElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    card.style.setProperty("--x", `${x}px`);
+    card.style.setProperty("--y", `${y}px`);
+  };
+
   return (
-    <button
+    <motion.button
+      ref={cardRef}
       onClick={onOpen}
+      onMouseMove={handleMouseMove}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -60,31 +163,54 @@ function MemberCard({
         }
       }}
       aria-label={`View details for ${member.name}`}
-      className="group relative w-full text-left rounded-2xl border border-slate-800/80 bg-slate-950/60 backdrop-blur-sm overflow-hidden transition-all duration-300 ease-out hover:border-orange-500/50 hover:-translate-y-1.5 hover:shadow-[0_8px_40px_-12px_rgba(249,115,22,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      className={`group relative w-full text-left rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 ${
+        isDimmed 
+          ? "border-slate-900 bg-slate-950/20 opacity-30 blur-[2px] pointer-events-none scale-[0.98]" 
+          : "border-slate-800/80 bg-slate-950/60 backdrop-blur-sm hover:border-orange-500/40 hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_12px_40px_-12px_rgba(255,140,0,0.25),inset_0_0_12px_rgba(255,140,0,0.05)]"
+      }`}
     >
+      {/* Cursor Follow Light Overlay */}
+      <div 
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none md:block hidden z-0"
+        style={{
+          background: "radial-gradient(600px circle at var(--x, 0px) var(--y, 0px), rgba(255,140,0,0.08), transparent 40%)"
+        }}
+      />
+
       {/* Hover glow overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-orange-500/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none motion-reduce:transition-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-orange-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none motion-reduce:transition-none z-0" />
 
       {/* Card Content */}
-      <div className="relative p-6 flex flex-col items-center gap-4">
+      <div className="relative p-6 flex flex-col items-center gap-4 z-10">
         {/* Avatar */}
-        <div className="relative h-28 w-28 rounded-2xl ring-2 ring-slate-800 group-hover:ring-orange-500/40 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden transition-all duration-300 shadow-lg motion-reduce:transition-none">
+        <motion.div 
+          layoutId={`avatar-container-${member.id}`}
+          className="relative h-28 w-28 rounded-2xl ring-2 ring-slate-800 group-hover:ring-orange-500/50 group-hover:shadow-[0_0_20px_rgba(255,140,0,0.15)] bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden transition-all duration-300 shadow-lg motion-reduce:transition-none"
+        >
           {member.photo ? (
-            <Image
-              src={member.photo}
-              alt={member.name}
-              fill
-              sizes="112px"
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-            />
+            <motion.div 
+              layoutId={`avatar-img-${member.id}`}
+              className="absolute inset-0"
+            >
+              <Image
+                src={member.photo}
+                alt={member.name}
+                fill
+                sizes="112px"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.06] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+              />
+            </motion.div>
           ) : (
-            <span className="text-2xl font-black text-orange-400/80 tracking-wider">
+            <motion.span 
+              layoutId={`avatar-initials-${member.id}`}
+              className="text-2xl font-black text-orange-400/80 tracking-wider"
+            >
               {member.initials}
-            </span>
+            </motion.span>
           )}
           {/* Photo overlay on hover */}
           <div className="absolute inset-0 bg-slate-950/10 group-hover:bg-transparent transition-colors duration-300 motion-reduce:transition-none" />
-        </div>
+        </motion.div>
 
         {/* Role badge */}
         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20">
@@ -102,25 +228,15 @@ function MemberCard({
           {member.branch} ({member.specialization})
         </p>
 
-        {/* Tap hint */}
-        <div className="flex items-center gap-1.5 text-[10px] text-slate-600 group-hover:text-orange-400/60 transition-colors duration-300 mt-auto pt-2 motion-reduce:transition-none">
-          <svg
-            className="h-3 w-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
-            />
-          </svg>
-          Tap to learn more
+        {/* Bottom CTA */}
+        <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-500 uppercase group-hover:text-orange-400 transition-colors duration-300 mt-auto pt-4 motion-reduce:transition-none">
+          <span>Explore Profile</span>
+          <span className="transform translate-x-0 group-hover:translate-x-1 transition-transform duration-200 ease-out font-sans text-xs">
+            →
+          </span>
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -129,143 +245,362 @@ function MemberCard({
 /* ------------------------------------------------------------------ */
 function MemberModal({
   member,
-  isOpen,
   onClose,
 }: {
-  member: TeamMember | null;
-  isOpen: boolean;
+  member: TeamMember;
   onClose: () => void;
 }) {
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus trap and escape handler
-  useEffect(() => {
-    if (!isOpen) return;
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-    // Focus the close button when modal opens
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    
+    const timeoutId = setTimeout(() => {
+      setReducedMotion(mediaQuery.matches);
+      setIsMobile(
+        window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768
+      );
+    }, 0);
+
+    const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mediaQuery.addEventListener("change", listener);
+
+    return () => {
+      clearTimeout(timeoutId);
+      mediaQuery.removeEventListener("change", listener);
+    };
+  }, []);
+
+  // Parallax hooks (Framer Motion)
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const springConfig = { damping: 28, stiffness: 120 };
+  const rotateX = useSpring(useTransform(y, [-300, 300], [2.2, -2.2]), springConfig);
+  const rotateY = useSpring(useTransform(x, [-300, 300], [-2.2, 2.2]), springConfig);
+
+  const avatarX = useSpring(useTransform(x, [-300, 300], [-3.5, 3.5]), springConfig);
+  const avatarY = useSpring(useTransform(y, [-300, 300], [-3.5, 3.5]), springConfig);
+
+  const shadowX = useSpring(useTransform(x, [-300, 300], [-6, 6]), springConfig);
+  const shadowY = useSpring(useTransform(y, [-300, 300], [14, 26]), springConfig);
+
+  const boxShadow = useMotionTemplate`0 0 0 1px rgba(255,140,0,0.15), ${shadowX}px ${shadowY}px 80px rgba(0,0,0,0.6), 0 0 80px rgba(255,140,0,0.08)`;
+
+  useEffect(() => {
+    if (isMobile || reducedMotion) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      x.set(e.clientX - centerX);
+      y.set(e.clientY - centerY);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [isMobile, reducedMotion, x, y]);
+
+  // Prevent background scrolling and trap focus
+  useEffect(() => {
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+
+    document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
     const timer = setTimeout(() => {
       closeButtonRef.current?.focus();
-    }, 100);
+    }, 80);
 
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        if (!modalRef.current) return;
+        const focusable = modalRef.current.querySelectorAll(
+          'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0] as HTMLElement;
+        const last = focusable[focusable.length - 1] as HTMLElement;
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            last.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+          }
+        }
+      }
     };
-    document.addEventListener("keydown", handleEscape);
 
-    // Prevent background scrolling
-    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       clearTimeout(timer);
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
     };
-  }, [isOpen, onClose]);
-
-  if (!isOpen || !member) return null;
+  }, [onClose]);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden"
       role="dialog"
       aria-modal="true"
       aria-label={`${member.name} — ${member.role}`}
     >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-slate-950/85 backdrop-blur-md animate-fade-in motion-reduce:animate-none"
+      {/* Backdrop with vignette overlay */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+        className="absolute inset-0 bg-slate-950/70 backdrop-blur-[14px] [background:radial-gradient(circle,rgba(7,10,19,0.5)_40%,rgba(4,5,10,0.95)_100%)] z-0"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Modal Content */}
-      <div
-        ref={modalRef}
-        className="relative w-full max-w-lg rounded-3xl border border-slate-800/80 bg-slate-950 shadow-2xl shadow-orange-500/5 animate-modal-in overflow-hidden motion-reduce:animate-none"
-      >
-        {/* Decorative top bar */}
-        <div className="h-1 w-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" />
+      {/* Centered soft radial glow pulse behind modal */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.7 }}
+        animate={{ 
+          opacity: [0, 1, 0.85], 
+          scale: [0.7, 1.12, 1] 
+        }}
+        exit={{ opacity: 0, scale: 0.7 }}
+        transition={{ 
+          duration: 1.3, 
+          ease: "easeOut",
+          times: [0, 0.55, 1] 
+        }}
+        className="absolute w-[600px] h-[600px] pointer-events-none mix-blend-screen select-none z-0"
+        style={{
+          background: "radial-gradient(circle, rgba(255,140,0,0.12) 0%, transparent 65%)"
+        }}
+      />
 
-        {/* Close button */}
-        <button
+      {/* Modal Content */}
+      <motion.div
+        ref={modalRef}
+        initial={{ opacity: 0, scale: 0.92, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 15 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          rotateX: reducedMotion || isMobile ? 0 : rotateX,
+          rotateY: reducedMotion || isMobile ? 0 : rotateY,
+          transformStyle: "preserve-3d",
+          boxShadow: reducedMotion ? "0 20px 80px rgba(0,0,0,0.6)" : boxShadow,
+        }}
+        className="relative w-full max-w-lg rounded-3xl border border-slate-800/80 bg-slate-950/75 backdrop-blur-2xl overflow-hidden z-10 border-t-white/10 border-x-white/5 border-b-white/0 shadow-[inset_0_0_12px_rgba(255,140,0,0.05)]"
+      >
+        {/* Border path tracer animation */}
+        {!reducedMotion && <BorderTracer />}
+
+        {/* Scan effect sweeps top to bottom */}
+        {!reducedMotion && (
+          <motion.div
+            initial={{ top: "0%", opacity: 0 }}
+            animate={{ 
+              top: ["0%", "100%"],
+              opacity: [0, 0.35, 0.35, 0]
+            }}
+            transition={{ 
+              delay: 0.5, 
+              duration: 0.9, 
+              ease: "easeInOut",
+              times: [0, 0.15, 0.85, 1]
+            }}
+            className="absolute left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-orange-500 to-transparent pointer-events-none z-20"
+          />
+        )}
+
+        {/* Drifting particles */}
+        {!reducedMotion && !isMobile && <FloatingParticles count={15} active={true} />}
+
+        {/* Top reflection light highlight line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none z-20" />
+
+        {/* Redesigned close button */}
+        <motion.button
           ref={closeButtonRef}
           onClick={onClose}
+          whileHover={{ 
+            scale: 1.08, 
+            rotate: 90, 
+            borderColor: "rgba(249,115,22,0.6)", 
+            boxShadow: "0 0 15px rgba(249,115,22,0.25)",
+            backgroundColor: "rgba(15,23,42,0.8)"
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
           aria-label="Close modal"
-          className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-500 hover:text-white hover:border-slate-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+          className="absolute top-4 right-4 z-40 p-2.5 rounded-full bg-slate-900/60 border border-slate-800/80 text-slate-400 hover:text-white backdrop-blur-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
         >
           <X className="h-4 w-4" />
-        </button>
+        </motion.button>
 
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-6 sm:p-8 space-y-6 relative z-10">
           {/* Header: Avatar + Name + Role */}
           <div className="flex items-center gap-5">
-            {/* Avatar */}
-            <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 rounded-2xl ring-2 ring-orange-500/30 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 overflow-hidden">
-              {member.photo ? (
-                <Image
-                  src={member.photo}
-                  alt={member.name}
-                  fill
-                  sizes="96px"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center">
-                  <span className="text-2xl font-black text-orange-400/80 tracking-wider">
-                    {member.initials}
-                  </span>
-                </div>
+            {/* Avatar container */}
+            <motion.div 
+              layoutId={`avatar-container-${member.id}`}
+              className="relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 rounded-2xl ring-2 ring-orange-500/30 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 overflow-hidden"
+              style={{
+                x: reducedMotion || isMobile ? 0 : avatarX,
+                y: reducedMotion || isMobile ? 0 : avatarY,
+              }}
+            >
+              {/* Rotating Gradient Ring */}
+              {!reducedMotion && (
+                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-orange-500/0 via-orange-500/40 to-orange-500/0 animate-[spin_18s_linear_infinite] blur-[1px] z-0" />
               )}
-            </div>
+              
+              <div className="relative w-full h-full rounded-2xl overflow-hidden z-10 bg-slate-950">
+                {member.photo ? (
+                  <motion.div 
+                    layoutId={`avatar-img-${member.id}`}
+                    className="absolute inset-0"
+                  >
+                    <Image
+                      src={member.photo}
+                      alt={member.name}
+                      fill
+                      sizes="96px"
+                      className="object-cover animate-avatar-pulse"
+                    />
+                  </motion.div>
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-slate-950">
+                    <motion.span 
+                      layoutId={`avatar-initials-${member.id}`}
+                      className="text-2xl font-black text-orange-400/80 tracking-wider"
+                    >
+                      {member.initials}
+                    </motion.span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
 
             {/* Name & role */}
             <div className="min-w-0 space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20">
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-orange-500/10 text-orange-400 border border-orange-500/20"
+              >
                 {getRoleIcon(member.role, "h-3 w-3")}
                 {member.role}
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+              </motion.div>
+              
+              <motion.h2 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight"
+              >
                 {member.name}
-              </h2>
-              <p className="text-sm text-slate-400 font-medium">
+              </motion.h2>
+              
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                className="text-xs sm:text-sm text-slate-400 font-medium"
+              >
                 {member.branch} ({member.specialization})
-              </p>
+              </motion.p>
             </div>
           </div>
 
           {/* Quote */}
-          <div className="relative bg-orange-500/[0.04] border border-orange-500/10 rounded-xl p-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="relative bg-orange-500/[0.04] border border-orange-500/10 rounded-xl p-4 shadow-[inset_0_0_12px_rgba(255,140,0,0.02)]"
+          >
             <Quote className="absolute top-3 left-3 h-4 w-4 text-orange-500/30" />
             <p className="text-sm sm:text-base text-slate-200 italic leading-relaxed pl-6">
               &ldquo;{member.quote}&rdquo;
             </p>
-          </div>
+          </motion.div>
 
           {/* Bio */}
-          <p className="text-sm text-slate-300 leading-relaxed">
+          <motion.p 
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="text-sm text-slate-300 leading-relaxed"
+          >
             {member.bio}
-          </p>
+          </motion.p>
 
           {/* Focus Areas */}
           <div className="space-y-2.5">
-            <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+            <motion.h4 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.35, delay: 0.38 }}
+              className="text-[11px] font-bold uppercase tracking-widest text-slate-500"
+            >
               Focus Areas
-            </h4>
+            </motion.h4>
             <div className="flex flex-wrap gap-2">
-              {member.focusAreas.map((area) => (
-                <span
+              {member.focusAreas.map((area, idx) => (
+                <motion.span
                   key={area}
-                  className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-orange-500/30 hover:text-orange-300 transition-colors"
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ 
+                    duration: 0.28, 
+                    delay: 0.4 + idx * 0.05, 
+                    ease: [0.16, 1, 0.3, 1] 
+                  }}
+                  whileHover={{ 
+                    y: -2, 
+                    boxShadow: "0 0 12px rgba(255, 140, 0, 0.2)", 
+                    borderColor: "rgba(255, 140, 0, 0.45)",
+                    color: "rgba(255, 255, 255, 1)",
+                    backgroundColor: "rgba(255, 140, 0, 0.05)"
+                  }}
+                  className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 transition-all cursor-default"
                 >
                   {area}
-                </span>
+                </motion.span>
               ))}
             </div>
           </div>
 
           {/* Social links */}
-          <div className="flex items-center gap-3 pt-2 border-t border-slate-900">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center gap-3 pt-2 border-t border-slate-900"
+          >
             {member.linkedin && member.linkedin !== "javascript:void(0)" ? (
               <a
                 href={member.linkedin}
@@ -274,7 +609,7 @@ function MemberModal({
                 className="group/link inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-orange-500/35 transition-colors"
                 title="LinkedIn Profile"
               >
-                <svg className="h-4 w-4 fill-current text-orange-400" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 fill-current text-orange-400 group-hover/link:text-orange-300 transition-colors" viewBox="0 0 24 24">
                   <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                 </svg>
                 <span className="text-xs">LinkedIn</span>
@@ -284,15 +619,15 @@ function MemberModal({
                 className="group/link inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 cursor-not-allowed"
                 title="LinkedIn — Coming Soon"
               >
-                <svg className="h-4 w-4 fill-current text-slate-650" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 fill-current text-slate-700" viewBox="0 0 24 24">
                   <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                 </svg>
                 <span className="text-xs">LinkedIn</span>
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -464,14 +799,23 @@ export default function TeamPage() {
   const closeModal = useCallback(() => {
     setModalOpen(false);
     // Delay clearing member to allow exit animation
-    setTimeout(() => setSelectedMember(null), 200);
+    setTimeout(() => setSelectedMember(null), 450);
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-slate-950 bg-grid-pattern py-16">
+    <div className="relative min-h-screen bg-slate-950 overflow-hidden py-16">
+      {/* Background Grid Pattern with scale & drift */}
+      <div 
+        className="absolute inset-0 bg-grid-pattern pointer-events-none transition-all duration-600 ease-out z-0"
+        style={{
+          transform: modalOpen ? 'scale(1.02) translate(3px, -3px)' : 'scale(1) translate(0, 0)',
+          opacity: modalOpen ? 0.5 : 0.8,
+        }}
+      />
+
       {/* Background glow effects */}
-      <div className="absolute top-1/4 left-1/4 h-[30rem] w-[30rem] rounded-full bg-orange-500/5 blur-[120px] animate-pulse-slow pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 h-[30rem] w-[30rem] rounded-full bg-amber-500/5 blur-[120px] animate-pulse-slow pointer-events-none" />
+      <div className="absolute top-1/4 left-1/4 h-[30rem] w-[30rem] rounded-full bg-orange-500/5 blur-[120px] animate-pulse-slow pointer-events-none z-0" />
+      <div className="absolute bottom-1/4 right-1/4 h-[30rem] w-[30rem] rounded-full bg-amber-500/5 blur-[120px] animate-pulse-slow pointer-events-none z-0" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Page Header */}
@@ -528,6 +872,7 @@ export default function TeamPage() {
                 key={member.id}
                 member={member}
                 onOpen={() => openMember(member)}
+                isDimmed={selectedMember !== null && selectedMember.id !== member.id}
               />
             ))}
           </div>
@@ -537,44 +882,32 @@ export default function TeamPage() {
         )}
       </div>
 
-      {/* Member Detail Modal */}
-      <MemberModal
-        member={selectedMember}
-        isOpen={modalOpen}
-        onClose={closeModal}
-      />
+      {/* Member Detail Modal wrapped in AnimatePresence for smooth mounting/unmounting */}
+      <AnimatePresence mode="wait">
+        {modalOpen && selectedMember && (
+          <MemberModal
+            key={selectedMember.id}
+            member={selectedMember}
+            onClose={closeModal}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* CSS Animations */}
+      {/* Custom Styles */}
       <style jsx global>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
+        @keyframes avatar-pulse {
+          0% {
+            box-shadow: 0 0 0 0px rgba(255, 140, 0, 0.4);
           }
-          to {
-            opacity: 1;
+          30% {
+            box-shadow: 0 0 0 8px rgba(255, 140, 0, 0.2);
           }
-        }
-        @keyframes modal-in {
-          from {
-            opacity: 0;
-            transform: scale(0.92) translateY(12px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
+          100% {
+            box-shadow: 0 0 0 0px rgba(255, 140, 0, 0);
           }
         }
-        .animate-fade-in {
-          animation: fade-in 0.25s ease-out both;
-        }
-        .animate-modal-in {
-          animation: modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .animate-fade-in,
-          .animate-modal-in {
-            animation: none;
-          }
+        .animate-avatar-pulse {
+          animation: avatar-pulse 2s ease-out 1;
         }
       `}</style>
     </div>
