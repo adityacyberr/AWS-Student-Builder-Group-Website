@@ -109,7 +109,7 @@ export function MemberCard({
         {/* Avatar */}
         <motion.div 
           layoutId={`avatar-container-${member.id}`}
-          className="relative h-28 w-28 rounded-2xl ring-2 ring-slate-800 group-hover:ring-orange-500/50 group-hover:shadow-[0_0_20px_rgba(255,140,0,0.15)] bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden transition-all duration-300 shadow-lg motion-reduce:transition-none"
+          className="relative h-28 w-28 rounded-full ring-2 ring-slate-800 group-hover:ring-orange-500/50 group-hover:shadow-[0_0_20px_rgba(255,140,0,0.15)] bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden transition-all duration-300 shadow-lg motion-reduce:transition-none"
         >
           {member.photo ? (
             <motion.div 

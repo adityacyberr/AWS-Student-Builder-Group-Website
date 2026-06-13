@@ -219,9 +219,9 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
                   )}
 
                   {/* Glow */}
-                  <div className="absolute inset-0 rounded-2xl bg-orange-500/8 blur-xl pointer-events-none" />
+                  <div className="absolute inset-0 rounded-full bg-orange-500/8 blur-xl pointer-events-none" />
 
-                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden border-2 border-orange-500/25 shadow-[0_0_25px_rgba(255,140,0,0.12)]">
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-2 border-orange-500/25 shadow-[0_0_25px_rgba(255,140,0,0.12)]">
                     {activeMember.photo ? (
                       <Image
                         src={activeMember.photo}

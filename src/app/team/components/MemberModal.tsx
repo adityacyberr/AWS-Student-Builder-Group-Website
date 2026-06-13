@@ -245,7 +245,7 @@ export function MemberModal({
             {/* Avatar */}
             <motion.div 
               layoutId={`avatar-container-${member.id}`}
-              className="relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 rounded-2xl ring-2 ring-orange-500/30 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 overflow-hidden"
+              className="relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 rounded-full ring-2 ring-orange-500/30 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 overflow-hidden"
               style={{
                 x: reducedMotion || isMobile ? 0 : avatarX,
                 y: reducedMotion || isMobile ? 0 : avatarY,
@@ -253,10 +253,10 @@ export function MemberModal({
               }}
             >
               {!reducedMotion && (
-                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-orange-500/0 via-orange-500/40 to-orange-500/0 animate-[spin_18s_linear_infinite] blur-[1px] z-0" />
+                <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-orange-500/0 via-orange-500/40 to-orange-500/0 animate-[spin_18s_linear_infinite] blur-[1px] z-0" />
               )}
               
-              <div className="relative w-full h-full rounded-2xl overflow-hidden z-10 bg-slate-950">
+              <div className="relative w-full h-full rounded-full overflow-hidden z-10 bg-slate-950">
                 {member.photo ? (
                   <motion.div 
                     layoutId={`avatar-img-${member.id}`}
