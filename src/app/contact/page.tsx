@@ -121,7 +121,7 @@ export default function ContactPage() {
             <div className="relative flex flex-col gap-6 z-10 w-full pl-0 lg:pl-20">
               
               {/* Vertical Spine Line */}
-              <div className="absolute left-[24px] top-[50px] bottom-[50px] w-[1px] bg-orange-500/20 pointer-events-none z-0 hidden lg:block">
+              <div className="absolute left-[24px] top-[53px] bottom-[53px] w-[1px] bg-orange-500/20 pointer-events-none z-0 hidden lg:block">
                 {/* Animated signal dot */}
                 <div className="absolute left-[-2px] w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_#ffffff] animate-[signal_6s_linear_infinite]" />
               </div>
@@ -129,7 +129,7 @@ export default function ContactPage() {
               {/* Card 1 */}
               <div className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
-                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0">
+                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
                   {/* Left node */}
                   <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
                   {/* Right node */}
@@ -148,7 +148,7 @@ export default function ContactPage() {
               {/* Card 2 */}
               <div className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
-                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0">
+                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
                   {/* Left node */}
                   <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
                   {/* Right node */}
@@ -167,7 +167,7 @@ export default function ContactPage() {
               {/* Card 3 */}
               <div className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
-                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0">
+                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
                   {/* Left node */}
                   <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
                   {/* Right node */}
