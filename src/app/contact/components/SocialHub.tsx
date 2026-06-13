@@ -79,7 +79,7 @@ const SOCIAL_ITEMS: SocialItem[] = [
     id: "youtube",
     name: "YouTube",
     description: "Watch our talks & sessions",
-    href: "javascript:void(0)",
+    href: "#",
     icon: (
       <svg className="h-6 w-6 fill-current" viewBox="0 0 24 24">
         <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.508 9.388.508 9.388.508s7.517 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
@@ -173,7 +173,7 @@ export function SocialHub({ variants }: { variants?: Variants }) {
           <a
             key={item.id}
             href={item.href}
-            {...(item.href !== "javascript:void(0)" && !item.href.startsWith("mailto:") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            {...(item.href !== "#" && !item.href.startsWith("mailto:") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             className={`group flex items-center justify-between p-3.5 rounded-xl border border-slate-900 bg-slate-950/60 transition-all duration-300 ease-out hover:-translate-y-0.5 ${item.hoverBorder} hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-500/50`}
           >
             <div className="flex items-center gap-4">
@@ -192,7 +192,7 @@ export function SocialHub({ variants }: { variants?: Variants }) {
             </div>
 
             {/* External link indicator */}
-            {item.href !== "javascript:void(0)" && (
+            {item.href !== "#" && (
               <div className="text-slate-700 group-hover:text-orange-400/80 transition-colors pl-4">
                 <ArrowUpRight className="h-4.5 w-4.5 transform translate-x-0 translate-y-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
               </div>
