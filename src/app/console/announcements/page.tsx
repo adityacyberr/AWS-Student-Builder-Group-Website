@@ -1,0 +1,404 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { Toast, ToastType } from "@/components/console/Toast";
+import {
+  Megaphone,
+  Plus,
+  Search,
+  Loader,
+  Edit2,
+  Trash2,
+  X,
+  Save,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  active: boolean;
+  created_at?: string;
+}
+
+export default function ConsoleAnnouncements() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
+  // Lists and filters
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+
+  // Add/Edit Form Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  const [content, setContent] = useState("");
+  const [active, setActive] = useState(true);
+
+  const showToast = (message: string, type: ToastType = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  useEffect(() => {
+    loadAnnouncements();
+  }, []);
+
+  const loadAnnouncements = async () => {
+    setLoading(true);
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const { data, error } = await supabase
+          .from("announcements")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        setAnnouncements((data as Announcement[]) || []);
+      } else {
+        const stored = localStorage.getItem("aws_sbg_announcements");
+        if (stored) {
+          setAnnouncements(JSON.parse(stored));
+        } else {
+          const defaultAnns: Announcement[] = [
+            {
+              id: "1",
+              title: "AWS Cloud Practitioner Relaunch",
+              content: "Join our core study tracks starting July 2026. Weekly bootcamps and sandbox endpoints will be provided.",
+              date: "June 25, 2026",
+              active: true,
+            },
+          ];
+          localStorage.setItem("aws_sbg_announcements", JSON.stringify(defaultAnns));
+          setAnnouncements(defaultAnns);
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast("Error loading announcements", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenAdd = () => {
+    setEditingId(null);
+    setTitle("");
+    setDate(new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
+    setContent("");
+    setActive(true);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (ann: Announcement) => {
+    setEditingId(ann.id);
+    setTitle(ann.title);
+    setDate(ann.date);
+    setContent(ann.content);
+    setActive(ann.active);
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !content || !date) {
+      showToast("Please fill all fields", "error");
+      return;
+    }
+    setSaving(true);
+
+    try {
+      const payload = { title, content, date, active };
+
+      if (isSupabaseConfigured && supabase) {
+        if (editingId) {
+          // Update
+          const { error } = await supabase
+            .from("announcements")
+            .update(payload)
+            .eq("id", editingId);
+          if (error) throw error;
+          showToast("Announcement updated successfully!");
+        } else {
+          // Create
+          const { error } = await supabase.from("announcements").insert([payload]);
+          if (error) throw error;
+          showToast("Announcement published successfully!");
+        }
+      } else {
+        // Sandbox mode
+        let list = [...announcements];
+        if (editingId) {
+          list = list.map((a) => (a.id === editingId ? { ...a, ...payload } : a));
+          showToast("Announcement updated in sandbox.");
+        } else {
+          list.unshift({
+            id: Math.random().toString(36).substring(2, 9),
+            ...payload,
+          });
+          showToast("Announcement published in sandbox.");
+        }
+        localStorage.setItem("aws_sbg_announcements", JSON.stringify(list));
+      }
+      setIsModalOpen(false);
+      await loadAnnouncements();
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || "Failed to save announcement", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this announcement?")) return;
+
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const { error } = await supabase.from("announcements").delete().eq("id", id);
+        if (error) throw error;
+        showToast("Announcement deleted.");
+      } else {
+        const list = announcements.filter((a) => a.id !== id);
+        localStorage.setItem("aws_sbg_announcements", JSON.stringify(list));
+        showToast("Announcement deleted from sandbox.");
+      }
+      await loadAnnouncements();
+    } catch (err: any) {
+      console.error(err);
+      showToast("Failed to delete announcement", "error");
+    }
+  };
+
+  // Filter and search logic
+  const filteredAnnouncements = announcements.filter((ann) => {
+    const matchesSearch =
+      ann.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ann.content.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && ann.active) ||
+      (statusFilter === "inactive" && !ann.active);
+
+    return matchesSearch && matchesStatus;
+  });
+
+  return (
+    <div className="space-y-6">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            <Megaphone className="h-5 w-5 text-amber-500" />
+            Manage Announcements
+          </h1>
+          <p className="text-xs text-zinc-550 mt-1">
+            Publish site announcements, core update alerts, and chapter news.
+          </p>
+        </div>
+        <button
+          onClick={handleOpenAdd}
+          className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm self-start md:self-auto"
+        >
+          <Plus className="h-4 w-4" />
+          Add Announcement
+        </button>
+      </div>
+
+      {/* Controls: Search and filter tabs */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-zinc-900/10 border border-zinc-900 p-3 rounded-xl">
+        <div className="relative flex-grow max-w-md">
+          <input
+            type="text"
+            placeholder="Search title or content..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg bg-zinc-950 border border-zinc-850 text-white placeholder-zinc-650 focus:outline-none focus:border-amber-500/50"
+          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+        </div>
+
+        <div className="flex bg-zinc-950 border border-zinc-850 rounded-lg p-0.5 text-xs select-none self-start md:self-auto">
+          {(["all", "active", "inactive"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setStatusFilter(tab)}
+              className={`px-3 py-1.5 rounded-md font-bold transition-all capitalize text-[10px] ${
+                statusFilter === tab ? "bg-zinc-900 text-zinc-100 border border-zinc-800" : "text-zinc-500 hover:text-zinc-350"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table grid display */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader className="h-5 w-5 text-amber-500 animate-spin" />
+        </div>
+      ) : filteredAnnouncements.length === 0 ? (
+        <div className="text-center py-12 bg-zinc-900/10 border border-zinc-900/50 rounded-xl">
+          <p className="text-xs text-zinc-550">No announcements match search query or filter.</p>
+        </div>
+      ) : (
+        <div className="border border-zinc-900 rounded-xl overflow-hidden bg-zinc-900/5">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-zinc-900 text-[10px] font-black text-zinc-500 uppercase tracking-wider bg-zinc-950/20">
+                <th className="py-3 px-4 w-40">Date</th>
+                <th className="py-3 px-4">Title</th>
+                <th className="py-3 px-4">Content</th>
+                <th className="py-3 px-4 w-24">Status</th>
+                <th className="py-3 px-4 w-24 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-900/80 text-xs">
+              {filteredAnnouncements.map((ann) => (
+                <tr key={ann.id} className="hover:bg-zinc-900/20">
+                  <td className="py-3.5 px-4 font-mono text-zinc-400">{ann.date}</td>
+                  <td className="py-3.5 px-4 font-bold text-white max-w-[150px] truncate">{ann.title}</td>
+                  <td className="py-3.5 px-4 text-zinc-400 max-w-[280px] truncate">{ann.content}</td>
+                  <td className="py-3.5 px-4">
+                    <span
+                      className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                        ann.active
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/10"
+                          : "bg-zinc-800 text-zinc-500 border border-zinc-700/50"
+                      }`}
+                    >
+                      {ann.active ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        onClick={() => handleOpenEdit(ann)}
+                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors"
+                        title="Edit announcement"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(ann.id)}
+                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-450 hover:text-rose-400 transition-colors"
+                        title="Delete announcement"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Slide-out Panel / Dialog Modal Form */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-sm select-none">
+          <div className="w-full max-w-lg rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-350 p-1"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-zinc-900 pb-3 mb-4">
+              {editingId ? "Edit Announcement" : "Create Announcement"}
+            </h2>
+
+            <form onSubmit={handleSave} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5 col-span-2 md:col-span-1">
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                    Announcement Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. AWS Cloud Day Relaunch"
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white placeholder-zinc-700 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+                <div className="space-y-1.5 col-span-2 md:col-span-1">
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                    Display Date
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    placeholder="e.g. June 25, 2026"
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                  Announcement Details
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Provide details about what, when, and how students can participate..."
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white placeholder-zinc-700 focus:outline-none focus:border-amber-500/50 resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 py-2">
+                <input
+                  type="checkbox"
+                  id="activeCheck"
+                  checked={active}
+                  onChange={(e) => setActive(e.target.checked)}
+                  className="h-4 w-4 rounded bg-zinc-900 border-zinc-800 text-amber-500 focus:ring-amber-500/35"
+                />
+                <label htmlFor="activeCheck" className="text-xs text-zinc-350 cursor-pointer font-semibold">
+                  Publish Active (Make visible immediately in the header banner)
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-4 border-t border-zinc-900">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                >
+                  {saving ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Save Announcement
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

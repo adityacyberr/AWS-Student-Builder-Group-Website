@@ -11,6 +11,7 @@ export interface EventItem {
   registrationLink: string;
   status: 'upcoming' | 'completed';
   coverPlaceholderColor: 'orange' | 'blue' | 'purple' | 'mint' | 'amber';
+  imageUrl?: string;
 }
 
 export const EVENTS: EventItem[] = [

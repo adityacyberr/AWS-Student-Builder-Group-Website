@@ -3,8 +3,15 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // Check if Supabase variables are set in production
+  const hostname = request.headers.get("host") || "";
+  const isConsoleSubdomain = hostname.startsWith("console.");
+
+  // Bypass static file requests by checking if path contains a file extension
+  if (pathname.includes(".")) {
+    return NextResponse.next();
+  }
+
+  // Check if Supabase variables are set
   const hasSupabaseUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
   const hasSupabaseKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const isSupabaseConfigured = hasSupabaseUrl && hasSupabaseKey;
@@ -12,33 +19,64 @@ export function middleware(request: NextRequest) {
   // Retrieve the session cookie
   const sessionCookie = request.cookies.get("sb-session");
 
-  // Protect Admin route
-  if (pathname.startsWith("/admin")) {
-    // If Supabase is configured and no session exists, redirect to login page
-    if (isSupabaseConfigured && !sessionCookie) {
-      const loginUrl = new URL("/login", request.url);
-      return NextResponse.redirect(loginUrl);
+  // 1. Redirection if user accesses legacy paths on the main domain (e.g., adityacyber.in/admin or adityacyber.in/login)
+  if (!isConsoleSubdomain) {
+    if (pathname.startsWith("/admin") || pathname === "/login") {
+      const protocol = hostname.includes("localhost") ? "http" : "https";
+      
+      // If we are on localhost:3000, we redirect to console.localhost:3000
+      const newHost = `console.${hostname}`;
+      
+      // Map /admin/events to /events, and /admin or /login to / or /login
+      let targetPath = "/";
+      if (pathname === "/login") {
+        targetPath = "/login";
+      } else if (pathname.startsWith("/admin/")) {
+        targetPath = pathname.replace("/admin", "");
+      }
+      
+      return NextResponse.redirect(
+        new URL(`${protocol}://${newHost}${targetPath}${request.nextUrl.search}`)
+      );
     }
+    return NextResponse.next();
   }
 
-  // Handle Login route redirect
+  // 2. Subdomain Routing (e.g. console.localhost:3000 or console.adityacyber.in)
+  // If the path already has "/console" internally, avoid infinite loop
+  if (pathname.startsWith("/console")) {
+    return NextResponse.next();
+  }
+
+  // Authentication validation for console subdomain
   if (pathname === "/login") {
-    // If Supabase is configured and user is already logged in, redirect to admin
-    if (isSupabaseConfigured && sessionCookie) {
-      const adminUrl = new URL("/admin", request.url);
-      return NextResponse.redirect(adminUrl);
+    // If authenticated (or sandbox), redirect to home page of console
+    if (!isSupabaseConfigured || sessionCookie) {
+      return NextResponse.redirect(new URL("/", request.url));
     }
-    
-    // If Supabase is not configured (Sandbox Mode), we bypass login and direct to /admin
-    if (!isSupabaseConfigured) {
-      const adminUrl = new URL("/admin", request.url);
-      return NextResponse.redirect(adminUrl);
-    }
+    // Else rewrite to internal folder /console/login
+    return NextResponse.rewrite(new URL(`/console/login${request.nextUrl.search}`, request.url));
   }
 
-  return NextResponse.next();
+  // Any other page (dashboard routes like /, /events, etc.) require auth
+  if (isSupabaseConfigured && !sessionCookie) {
+    // Redirect to login page on the console domain
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Rewrite to internal route inside /console
+  return NextResponse.rewrite(new URL(`/console${pathname}${request.nextUrl.search}`, request.url));
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/login"],
+  matcher: [
+    /*
+     * Match all request paths except for:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     */
+    "/((?!api|_next/static|_next/image).*)",
+  ],
 };
+

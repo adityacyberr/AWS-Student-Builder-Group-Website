@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { headers } from "next/headers";
 
 const amazonEmberDisplay = localFont({
   src: [
@@ -58,11 +59,15 @@ export const metadata: Metadata = {
   authors: [{ name: "AWS Student Builder Group Core Team" }],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const host = headersList.get("host") || "";
+  const isConsole = host.startsWith("console.");
+
   return (
     <html
       lang="en"
@@ -70,10 +75,11 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-orange-500/30 selection:text-orange-300">
-        <Header />
+        {!isConsole && <Header />}
         <main className="flex-grow flex flex-col">{children}</main>
-        <Footer />
+        {!isConsole && <Footer />}
       </body>
     </html>
   );
 }
+
