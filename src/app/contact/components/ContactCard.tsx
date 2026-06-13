@@ -9,6 +9,7 @@ export function ContactCard({
   value,
   href,
   variants,
+  items,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -16,6 +17,7 @@ export function ContactCard({
   value: string;
   href?: string;
   variants?: Variants;
+  items?: string[];
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -49,7 +51,7 @@ export function ContactCard({
   const CardWrapper = href ? "a" : "div";
 
   return (
-    <motion.div 
+    <motion.div
       ref={cardRef}
       variants={variants}
       className="w-full"
@@ -62,13 +64,14 @@ export function ContactCard({
         href={href}
         {...(href ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         onMouseMove={handleMouseMove}
-        className={`group relative flex items-center justify-between p-6 rounded-2xl border border-slate-800/80 bg-slate-950/60 backdrop-blur-sm transition-all duration-300 ease-out hover:border-orange-500/40 hover:-translate-y-1.5 hover:shadow-[0_12px_40px_-12px_rgba(255,140,0,0.2),inset_0_0_12px_rgba(255,140,0,0.03)] cursor-default block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500`}
+        className={`group relative flex items-center justify-between py-7 px-7 sm:py-8 sm:px-8 rounded-2xl border border-slate-800/80 bg-slate-950/60 backdrop-blur-sm transition-all duration-300 ease-out hover:border-orange-500/40 hover:-translate-y-1.5 hover:shadow-[0_12px_40px_-12px_rgba(255,140,0,0.2),inset_0_0_12px_rgba(255,140,0,0.03)] cursor-default block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500`}
       >
         {/* Cursor Follow Light Overlay (Desktop Only) */}
-        <div 
+        <div
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none md:block hidden z-0"
           style={{
-            background: "radial-gradient(600px circle at var(--x, 0px) var(--y, 0px), rgba(255,140,0,0.08), transparent 40%)",
+            background:
+              "radial-gradient(600px circle at var(--x, 0px) var(--y, 0px), rgba(255,140,0,0.08), transparent 40%)",
           }}
         />
 
@@ -76,20 +79,33 @@ export function ContactCard({
         <div className="absolute inset-0 bg-gradient-to-b from-orange-500/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0" />
 
         {/* Left/Middle Content */}
-        <div className="flex gap-4 items-center relative z-10">
-          <div className="p-3.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 group-hover:scale-105 transition-transform duration-300 flex-shrink-0">
+        <div className="flex gap-5 items-start relative z-10">
+          <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 flex-shrink-0 group-hover:shadow-[0_0_20px_rgba(255,140,0,0.2)]">
             {icon}
           </div>
-          <div>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide">
+          <div className="space-y-1.5">
+            <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">
               {title}
             </h4>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 leading-relaxed">
               {subtitle}
             </p>
-            <p className="text-sm font-bold text-white font-mono mt-1 group-hover:text-orange-400 transition-colors">
+            <p className="text-sm font-bold text-white font-mono mt-1.5 group-hover:text-orange-400 transition-colors">
               {value}
             </p>
+            {/* Optional items list */}
+            {items && items.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-2">
+                {items.map((item, i) => (
+                  <span
+                    key={i}
+                    className="text-[10px] font-semibold text-slate-400 bg-slate-900/60 border border-slate-800/50 px-2.5 py-1 rounded-md group-hover:border-orange-500/20 group-hover:text-orange-400/80 transition-all duration-300"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

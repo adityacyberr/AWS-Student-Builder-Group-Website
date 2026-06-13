@@ -110,23 +110,44 @@ export default function ContactPage() {
         {/* ================================================= */}
         {/* MAIN SECTION                                      */}
         {/* ================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
           
-          {/* Left Column - Contact Info stacked */}
+          {/* Left Column - Contact Info stacked (5 cols) */}
           <motion.div 
             variants={scrollItemVariants}
-            className="lg:col-span-5 relative flex flex-col gap-6 w-full"
+            className="lg:col-span-5 relative flex flex-col gap-0 w-full"
           >
             {/* Vertically stacked cards */}
-            <div className="relative flex flex-col gap-6 z-10 w-full pl-0 lg:pl-20">
+            <div className="relative flex flex-col gap-5 z-10 w-full pl-0 lg:pl-20">
               
-              {/* Vertical Spine Line */}
-              <div className="absolute left-[24px] top-[53px] bottom-[53px] w-[1px] bg-orange-500/20 pointer-events-none z-0 hidden lg:block">
-                {/* Animated signal dot */}
+              {/* Enhanced Vertical Spine Line with energy particles */}
+              <div className="absolute left-[24px] top-[60px] bottom-[60px] w-[1px] bg-gradient-to-b from-orange-500/10 via-orange-500/25 to-orange-500/10 pointer-events-none z-0 hidden lg:block">
+                {/* Primary signal dot */}
                 <div className="absolute left-[-2px] w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_#ffffff] animate-[signal_6s_linear_infinite]" />
+                {/* Secondary energy particle 1 */}
+                <div 
+                  className="absolute left-[-1.5px] w-1 h-1 rounded-full bg-orange-400 shadow-[0_0_6px_#ff8c00]"
+                  style={{ animation: "signal 8s linear infinite 2s" }}
+                />
+                {/* Secondary energy particle 2 */}
+                <div 
+                  className="absolute left-[-1.5px] w-1 h-1 rounded-full bg-amber-400 shadow-[0_0_6px_#ffaa00]"
+                  style={{ animation: "signal 10s linear infinite 4s" }}
+                />
+                {/* Pulsing nodes at intervals */}
+                {[0.15, 0.38, 0.62, 0.85].map((pos, i) => (
+                  <div
+                    key={i}
+                    className="absolute left-[-2.5px] w-1.5 h-1.5 rounded-full bg-orange-500/50 border border-orange-500/40"
+                    style={{
+                      top: `${pos * 100}%`,
+                      animation: `pulse 3.5s ease-in-out infinite ${i * 0.8}s`,
+                    }}
+                  />
+                ))}
               </div>
 
-              {/* Card 1 */}
+              {/* Card 1 — Email */}
               <div className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
                 <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
@@ -137,7 +158,7 @@ export default function ContactPage() {
                 </div>
                 
                 <ContactCard
-                  icon={<Mail className="h-5 w-5" />}
+                  icon={<Mail className="h-6 w-6" />}
                   title="Email Us"
                   subtitle="Drop us a message anytime."
                   value="awsbuild@rimt.ac.in"
@@ -145,18 +166,16 @@ export default function ContactPage() {
                 />
               </div>
 
-              {/* Card 2 */}
+              {/* Card 2 — Visit */}
               <div className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
                 <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
-                  {/* Left node */}
                   <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
-                  {/* Right node */}
                   <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
                 </div>
 
                 <ContactCard
-                  icon={<MapPin className="h-5 w-5" />}
+                  icon={<MapPin className="h-6 w-6" />}
                   title="Visit Us"
                   subtitle="Building cloud leaders on campus."
                   value="RIMT University, Punjab, India"
@@ -164,27 +183,55 @@ export default function ContactPage() {
                 />
               </div>
 
-              {/* Card 3 */}
+              {/* Card 3 — Response Time */}
               <div className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
                 <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
-                  {/* Left node */}
                   <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
-                  {/* Right node */}
                   <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
                 </div>
 
                 <ContactCard
-                  icon={<Clock className="h-5 w-5" />}
+                  icon={<Clock className="h-6 w-6" />}
                   title="Response Time"
                   subtitle="We usually respond within"
                   value="24–48 hours"
                 />
               </div>
+
+              {/* Card 4 — Open to Collaborations (NEW) */}
+              <div className="relative flex items-center w-full">
+                {/* Horizontal Connector */}
+                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
+                  <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                  <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                </div>
+
+                <ContactCard
+                  icon={<Handshake className="h-6 w-6" />}
+                  title="Open to Collaborations"
+                  subtitle="We welcome all partnership opportunities."
+                  value="Let's build together"
+                  href="mailto:awsbuild@rimt.ac.in?subject=Collaboration%20Inquiry"
+                  items={["Workshops", "Partnerships", "Speaker Invitations", "Community Initiatives"]}
+                />
+              </div>
+            </div>
+
+            {/* Info Pills */}
+            <div className="flex flex-wrap gap-3 mt-6 pl-0 lg:pl-20">
+              <div className="inline-flex items-center gap-2 text-[10px] font-semibold text-orange-400 bg-orange-500/5 border border-orange-500/15 px-3.5 py-2 rounded-full">
+                <Zap className="h-3 w-3" />
+                <span>Usually replies within 24 hours</span>
+              </div>
+              <div className="inline-flex items-center gap-2 text-[10px] font-semibold text-orange-400 bg-orange-500/5 border border-orange-500/15 px-3.5 py-2 rounded-full">
+                <Cloud className="h-3 w-3" />
+                <span>Open globally for collaborations</span>
+              </div>
             </div>
           </motion.div>
 
-          {/* Right Column - Connect With Us Social Hub */}
+          {/* Right Column - Connect With Us Social Hub (7 cols) */}
           <motion.div 
             variants={scrollItemVariants}
             className="lg:col-span-7 flex w-full"
@@ -235,6 +282,15 @@ export default function ContactPage() {
         </motion.div>
 
       </motion.div>
+
+      <style jsx>{`
+        @keyframes signal {
+          0% { top: 0%; opacity: 0; }
+          5% { opacity: 1; }
+          95% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }

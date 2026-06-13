@@ -153,7 +153,7 @@ export function SocialHub({ variants }: { variants?: Variants }) {
       />
 
       {/* Connection Header */}
-      <div className="relative z-10 flex items-start justify-between mb-8">
+      <div className="relative z-10 flex items-start justify-between mb-5">
         <div>
           <h3 className="text-xl font-bold text-white tracking-tight">Connect With Us</h3>
           <p className="text-slate-400 text-xs mt-1 leading-relaxed">
@@ -168,13 +168,13 @@ export function SocialHub({ variants }: { variants?: Variants }) {
       </div>
 
       {/* Stacked platform links */}
-      <div className="relative z-10 space-y-3">
+      <div className="relative z-10 space-y-2">
         {SOCIAL_ITEMS.map((item) => (
           <a
             key={item.id}
             href={item.href}
             {...(item.href !== "javascript:void(0)" && !item.href.startsWith("mailto:") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            className={`group flex items-center justify-between p-4 rounded-xl border border-slate-900 bg-slate-950/60 transition-all duration-300 ease-out hover:-translate-y-0.5 ${item.hoverBorder} hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-500/50`}
+            className={`group flex items-center justify-between p-3.5 rounded-xl border border-slate-900 bg-slate-950/60 transition-all duration-300 ease-out hover:-translate-y-0.5 ${item.hoverBorder} hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-500/50`}
           >
             <div className="flex items-center gap-4">
               {/* Branding Icon */}
