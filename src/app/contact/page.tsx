@@ -7,7 +7,6 @@ import { useReducedMotion } from "./hooks/useReducedMotion";
 import { FloatingParticles } from "./components/FloatingParticles";
 import { RadarCircles } from "./components/RadarCircles";
 import { WireframeGlobe } from "./components/WireframeGlobe";
-import { CircuitConnector } from "./components/CircuitConnector";
 import { StatCard } from "./components/StatCard";
 import { ContactCard } from "./components/ContactCard";
 import { SocialHub } from "./components/SocialHub";
@@ -118,33 +117,70 @@ export default function ContactPage() {
             variants={scrollItemVariants}
             className="lg:col-span-5 relative flex flex-col gap-6 w-full"
           >
-            {/* SVG Connector (Spine lines on the left side) */}
-            <CircuitConnector />
-
             {/* Vertically stacked cards */}
-            <div className="flex flex-col gap-6 relative z-10 w-full pl-0 lg:pl-16">
-              <ContactCard
-                icon={<Mail className="h-5 w-5" />}
-                title="Email Us"
-                subtitle="Drop us a message anytime."
-                value="awsbuild@rimt.ac.in"
-                href="mailto:awsbuild@rimt.ac.in"
-              />
+            <div className="relative flex flex-col gap-6 z-10 w-full pl-0 lg:pl-20">
+              
+              {/* Vertical Spine Line */}
+              <div className="absolute left-[24px] top-[50px] bottom-[50px] w-[1px] bg-orange-500/20 pointer-events-none z-0 hidden lg:block">
+                {/* Animated signal dot */}
+                <div className="absolute left-[-2px] w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_#ffffff] animate-[signal_6s_linear_infinite]" />
+              </div>
 
-              <ContactCard
-                icon={<MapPin className="h-5 w-5" />}
-                title="Visit Us"
-                subtitle="Building cloud leaders on campus."
-                value="RIMT University, Punjab, India"
-                href="https://maps.google.com/?q=RIMT+University"
-              />
+              {/* Card 1 */}
+              <div className="relative flex items-center w-full">
+                {/* Horizontal Connector */}
+                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0">
+                  {/* Left node */}
+                  <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                  {/* Right node */}
+                  <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                </div>
+                
+                <ContactCard
+                  icon={<Mail className="h-5 w-5" />}
+                  title="Email Us"
+                  subtitle="Drop us a message anytime."
+                  value="awsbuild@rimt.ac.in"
+                  href="mailto:awsbuild@rimt.ac.in"
+                />
+              </div>
 
-              <ContactCard
-                icon={<Clock className="h-5 w-5" />}
-                title="Response Time"
-                subtitle="We usually respond within"
-                value="24–48 hours"
-              />
+              {/* Card 2 */}
+              <div className="relative flex items-center w-full">
+                {/* Horizontal Connector */}
+                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0">
+                  {/* Left node */}
+                  <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                  {/* Right node */}
+                  <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                </div>
+
+                <ContactCard
+                  icon={<MapPin className="h-5 w-5" />}
+                  title="Visit Us"
+                  subtitle="Building cloud leaders on campus."
+                  value="RIMT University, Punjab, India"
+                  href="https://maps.google.com/?q=RIMT+University"
+                />
+              </div>
+
+              {/* Card 3 */}
+              <div className="relative flex items-center w-full">
+                {/* Horizontal Connector */}
+                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0">
+                  {/* Left node */}
+                  <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                  {/* Right node */}
+                  <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                </div>
+
+                <ContactCard
+                  icon={<Clock className="h-5 w-5" />}
+                  title="Response Time"
+                  subtitle="We usually respond within"
+                  value="24–48 hours"
+                />
+              </div>
             </div>
           </motion.div>
 

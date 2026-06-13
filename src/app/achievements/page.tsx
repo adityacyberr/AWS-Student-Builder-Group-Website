@@ -10,9 +10,11 @@ import { WireframeCube } from "./components/WireframeCube";
 import { WireframeGlobe } from "./components/WireframeGlobe";
 import { HolographicSphere } from "./components/HolographicSphere";
 import { ImpactStats } from "./components/ImpactStats";
-import { MilestoneCard, Milestone } from "./components/MilestoneCard";
+import { HorizontalTimeline } from "./components/HorizontalTimeline";
+import { RoadmapRadar } from "./components/RoadmapRadar";
 import { MilestoneModal } from "./components/MilestoneModal";
 import { BottomJourney } from "./components/BottomJourney";
+import { Milestone } from "./components/MilestoneCard";
 
 interface DBAchievementRow {
   id: string;
@@ -171,90 +173,66 @@ export default function AchievementsPage() {
         {/* ================================================= */}
         {/* HERO SECTION                                      */}
         {/* ================================================= */}
-        <motion.div 
-          variants={scrollItemVariants} 
-          className="text-left max-w-4xl space-y-4"
-        >
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block">
-            {"// MILESTONES & IMPACT"}
-          </span>
-          
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-none">
-            Building. Learning.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">
-              Growing Together.
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center w-full">
+          {/* Left Column: Heading */}
+          <motion.div 
+            variants={scrollItemVariants} 
+            className="lg:col-span-7 text-left space-y-4"
+          >
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block">
+              {"// MILESTONES & IMPACT"}
             </span>
-          </h1>
-          
-          <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
-            Every milestone represents the builders, workshops, collaborations, and ideas that continue shaping our community.
-          </p>
-        </motion.div>
+            
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-none">
+              Building. Learning.<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">
+                Growing Together.
+              </span>
+            </h1>
+            
+            <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
+              Every milestone represents the builders, workshops, collaborations, and ideas that continue shaping our community.
+            </p>
+          </motion.div>
+
+          {/* Right Column: Holographic Sphere centerpiece */}
+          <motion.div variants={scrollItemVariants} className="lg:col-span-5 flex justify-center w-full">
+            <HolographicSphere />
+          </motion.div>
+        </div>
 
         {/* ================================================= */}
-        {/* CENTERPIECE                                       */}
-        {/* ================================================= */}
-        <motion.div variants={scrollItemVariants} className="w-full flex justify-center py-6">
-          <HolographicSphere />
-        </motion.div>
-
-        {/* ================================================= */}
-        {/* IMPACT STATS                                      */}
+        {/* COMPACT IMPACT STATS                              */}
         {/* ================================================= */}
         <motion.div variants={scrollItemVariants} className="w-full">
           <ImpactStats containerVariants={scrollContainerVariants} itemVariants={scrollItemVariants} />
         </motion.div>
 
         {/* ================================================= */}
-        {/* MILESTONES SECTION (MISSION LOGS)                 */}
+        {/* INTERACTIVE HORIZONTAL TIMELINE                   */}
         {/* ================================================= */}
         <motion.div 
           variants={scrollItemVariants}
-          className="space-y-8 max-w-4xl mx-auto pt-8"
+          className="w-full pt-8"
         >
-          <div className="text-left">
-            <span className="text-[9px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block mb-3">
-              {"// MISSION LOGS"}
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Active Operation Index</h2>
-            <p className="text-slate-500 text-xs sm:text-sm mt-1">Chronological catalog of foundational achievements and future mission parameters.</p>
-          </div>
-
-          {/* Connected timeline list */}
-          <div className="relative pl-0 md:pl-16 flex flex-col gap-6">
-            {/* SVG Spine Line (Desktop Only) */}
-            <div className="absolute left-6 top-3 bottom-3 w-[1.5px] bg-slate-900/60 hidden md:block pointer-events-none z-0">
-              <div className="absolute top-0 bottom-0 left-0 w-full bg-gradient-to-b from-orange-500/30 via-blue-500/30 to-slate-900/10" />
-              {/* Spine pulse node */}
-              <div className="absolute top-0 left-[-2px] w-[5px] h-[5px] rounded-full bg-orange-400 animate-[ping_4s_linear_infinite]" />
-            </div>
-
-            {achievements.map((item) => (
-              <div key={item.id} className="relative flex gap-6 items-start group z-10">
-                {/* Timeline status node element on left */}
-                <div className="hidden md:flex flex-shrink-0 w-12 h-12 rounded-xl border border-slate-900 bg-slate-950/90 items-center justify-center relative z-10 transition-all duration-300 group-hover:border-orange-500/30 group-hover:scale-105">
-                  <div className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                    item.status === "Completed"
-                      ? "bg-orange-500 shadow-[0_0_8px_#ff8c00] animate-pulse"
-                      : item.status === "In Progress"
-                      ? "bg-blue-500 shadow-[0_0_8px_#3b82f6]"
-                      : "bg-slate-800"
-                  }`} />
-                </div>
-                
-                <div className="flex-grow w-full">
-                  <MilestoneCard
-                    milestone={item}
-                    onOpen={() => setSelectedMilestone(item)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <HorizontalTimeline
+            milestones={achievements}
+            onSelect={setSelectedMilestone}
+          />
         </motion.div>
 
         {/* ================================================= */}
-        {/* BOTTOM SECTION                                    */}
+        {/* FUTURE ROADMAP RADAR                              */}
+        {/* ================================================= */}
+        <motion.div 
+          variants={scrollItemVariants}
+          className="w-full pt-8"
+        >
+          <RoadmapRadar />
+        </motion.div>
+
+        {/* ================================================= */}
+        {/* FINAL CTA SECTION                                 */}
         {/* ================================================= */}
         <motion.div 
           variants={scrollItemVariants}
