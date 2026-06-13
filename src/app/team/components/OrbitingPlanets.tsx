@@ -214,17 +214,26 @@ function PlanetMember({
 
         {/* Name + Role label */}
         {(() => {
-          const isLabelAbove = pos.y < 0;
+          const length = Math.sqrt(pos.x * pos.x + pos.y * pos.y) || 1;
+          const dx = pos.x / length;
+          const dy = pos.y / length;
+          const offset = 42; // 32px avatar radius + 10px base gap
+          const labelX = 32 + dx * offset;
+          const labelY = 32 + dy * offset;
+          
+          const hoverShift = hovered ? 4 : 0;
+          const tx = `calc(-50% + ${dx * 50}% + ${dx * hoverShift}px)`;
+          const ty = `calc(-50% + ${dy * 50}% + ${dy * hoverShift}px)`;
+
           return (
             <div
-              className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none transition-all duration-300 whitespace-nowrap"
+              className="absolute text-center pointer-events-none whitespace-nowrap z-50"
               style={{
-                top: isLabelAbove ? "auto" : "100%",
-                bottom: isLabelAbove ? "100%" : "auto",
-                marginTop: isLabelAbove ? 0 : 8,
-                marginBottom: isLabelAbove ? 8 : 0,
+                left: labelX,
+                top: labelY,
                 opacity: hovered ? 1 : 0.65,
-                transform: `translateX(-50%) translateY(${hovered ? 0 : isLabelAbove ? -2 : 2}px)`,
+                transform: `translate(${tx}, ${ty}) scale(${hovered ? 1.05 : 1})`,
+                transition: "opacity 0.3s ease, transform 0.3s ease",
               }}
             >
               <p
