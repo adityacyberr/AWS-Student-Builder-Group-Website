@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, Variants } from "framer-motion";
 import { Camera, Video, Calendar, Users } from "lucide-react";
+import { GalleryItem } from "@/data/gallery";
 
 interface StatItem {
   id: string;
@@ -10,43 +11,27 @@ interface StatItem {
   suffix: string;
 }
 
-const STATS_DATA: StatItem[] = [
-  {
-    id: "photos",
-    icon: <Camera className="h-5 w-5" />,
-    label: "Photos",
-    value: 128,
-    suffix: "+",
-  },
-  {
-    id: "videos",
-    icon: <Video className="h-5 w-5" />,
-    label: "Videos",
-    value: 14,
-    suffix: "+",
-  },
-  {
-    id: "events",
-    icon: <Calendar className="h-5 w-5" />,
-    label: "Events",
-    value: 22,
-    suffix: "+",
-  },
-  {
-    id: "participants",
-    icon: <Users className="h-5 w-5" />,
-    label: "Participants",
-    value: 500,
-    suffix: "+",
-  },
-];
+interface QuickStatsProps {
+  items: GalleryItem[];
+  completedEventsCount: number;
+  containerVariants?: Variants;
+  itemVariants?: Variants;
+}
+
+const isVideo = (url: string) => {
+  if (!url) return false;
+  return /\.(mp4|webm|mov|avi|mkv|ogg)($|\?)/i.test(url);
+};
 
 function CountUp({ end, duration = 1.2 }: { end: number; duration?: number }) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     const endVal = end;
-    if (endVal === 0) return;
+    if (endVal === 0) {
+      setCount(0);
+      return;
+    }
 
     let start = 0;
     const totalMs = duration * 1000;
@@ -130,13 +115,55 @@ function StatCard({ item, variants }: { item: StatItem; variants?: Variants }) {
   );
 }
 
-export function QuickStats({ containerVariants, itemVariants }: { containerVariants?: Variants; itemVariants?: Variants }) {
+export function QuickStats({
+  items = [],
+  completedEventsCount = 0,
+  containerVariants,
+  itemVariants,
+}: QuickStatsProps) {
+  const videoCount = items.filter(item => isVideo(item.imageUrl)).length;
+  const photoCount = items.filter(item => !isVideo(item.imageUrl)).length;
+  const memoriesCount = items.length;
+
+  const displayEventsCount = items.length === 0 ? 0 : completedEventsCount;
+
+  const statsData: StatItem[] = [
+    {
+      id: "photos",
+      icon: <Camera className="h-5 w-5" />,
+      label: "Photos",
+      value: photoCount,
+      suffix: "",
+    },
+    {
+      id: "videos",
+      icon: <Video className="h-5 w-5" />,
+      label: "Videos",
+      value: videoCount,
+      suffix: "",
+    },
+    {
+      id: "events",
+      icon: <Calendar className="h-5 w-5" />,
+      label: "Events Covered",
+      value: displayEventsCount,
+      suffix: "",
+    },
+    {
+      id: "memories",
+      icon: <Users className="h-5 w-5" />,
+      label: "Memories",
+      value: memoriesCount,
+      suffix: "",
+    },
+  ];
+
   return (
     <motion.div
       variants={containerVariants}
       className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full"
     >
-      {STATS_DATA.map((item) => (
+      {statsData.map((item) => (
         <StatCard key={item.id} item={item} variants={itemVariants} />
       ))}
     </motion.div>

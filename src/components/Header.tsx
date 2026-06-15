@@ -67,10 +67,10 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-900 bg-slate-950/85 backdrop-blur-md transition-all">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-20 items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-3.5 select-none group py-1">
-              <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden group-hover:border-orange-500/40 transition-colors duration-300">
+          {/* Logo and Partner Logos */}
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 select-none group py-1 flex-shrink-0">
+              <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden group-hover:border-orange-500/40 transition-colors duration-300 flex-shrink-0">
                 {/* Subtle orange accent line */}
                 <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-500 to-amber-500 opacity-90" />
                 <div className="flex flex-col leading-[1.1] text-left">
@@ -82,7 +82,7 @@ export default function Header() {
                   </span>
                 </div>
               </div>
-              <div className="flex flex-col text-left leading-none">
+              <div className="hidden sm:flex flex-col text-left leading-none">
                 <span className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors duration-300">
                   AWS Student Builder Group
                 </span>
@@ -91,6 +91,23 @@ export default function Header() {
                 </span>
               </div>
             </Link>
+
+            {/* Vertical Divider */}
+            <div className="h-6 w-px bg-slate-800 flex-shrink-0" />
+
+            {/* Institutional Logos Container */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              <img
+                src="/brand/rimt-university.jpg"
+                alt="RIMT University"
+                className="h-6.5 sm:h-7 w-auto object-contain bg-white px-1 sm:px-1.5 py-0.5 rounded shadow-sm border border-slate-800/10"
+              />
+              <img
+                src="/brand/dri-lab.png"
+                alt="DRI Lab"
+                className="h-6.5 sm:h-7 w-auto object-contain bg-[#0e1726]/80 border border-slate-800 p-0.5 rounded shadow-sm"
+              />
+            </div>
           </div>
 
           {/* Desktop Nav */}
@@ -237,8 +254,8 @@ export default function Header() {
             <div className="flex flex-col space-y-4 w-full">
               <div className="flex items-center justify-between pb-4 border-b border-slate-900/60 w-full">
                 {/* Logo replica */}
-                <div className="flex items-center gap-3 select-none">
-                  <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden">
+                <div className="flex items-center gap-2.5 select-none">
+                  <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden flex-shrink-0">
                     <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-500 to-amber-500 opacity-90" />
                     <div className="flex flex-col leading-[1.1] text-left">
                       <span className="text-xs font-black tracking-widest text-white flex items-center gap-0.5">
@@ -248,6 +265,21 @@ export default function Header() {
                         AWS SBG
                       </span>
                     </div>
+                  </div>
+
+                  <div className="h-6 w-px bg-slate-800 flex-shrink-0" />
+
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <img
+                      src="/brand/rimt-university.jpg"
+                      alt="RIMT University"
+                      className="h-6 w-auto object-contain bg-white px-1.5 py-0.5 rounded"
+                    />
+                    <img
+                      src="/brand/dri-lab.png"
+                      alt="DRI Lab"
+                      className="h-6 w-auto object-contain bg-[#0e1726]/80 border border-slate-800 p-0.5 rounded"
+                    />
                   </div>
                 </div>
 
@@ -266,8 +298,8 @@ export default function Header() {
                 <span className="text-sm font-bold text-white tracking-wide">
                   RIMT AWS Student Builder Group
                 </span>
-                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
-                  RIMT University, Punjab
+                <span className="text-[10px] font-semibold text-slate-400 mt-1">
+                  An initiative under RIMT University & DRI Lab
                 </span>
               </div>
             </div>

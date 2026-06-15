@@ -441,6 +441,25 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Institutional Support Subtext */}
+      <div className="mt-8 flex flex-col items-center gap-3 text-center z-10 max-w-sm px-4">
+        <p className="text-[11px] text-slate-500 font-semibold tracking-wide leading-relaxed">
+          Official portal of the RIMT AWS Student Builder Group under RIMT University and DRI Lab.
+        </p>
+        <div className="flex items-center gap-3 mt-0.5">
+          <img
+            src="/brand/rimt-university.jpg"
+            alt="RIMT University"
+            className="h-6 w-auto object-contain bg-white px-1 py-0.5 rounded filter grayscale opacity-45 hover:grayscale-0 hover:opacity-100 transition-all duration-300 shadow-sm border border-slate-800/10"
+          />
+          <img
+            src="/brand/dri-lab.png"
+            alt="DRI Lab"
+            className="h-6 w-auto object-contain bg-[#080c16]/80 border border-slate-900 px-1 py-0.5 rounded filter grayscale opacity-45 hover:grayscale-0 hover:opacity-100 transition-all duration-300 shadow-sm"
+          />
+        </div>
+      </div>
+
       {/* Embedded Animations styling block */}
       <style>{`
         @keyframes pulse-glow {

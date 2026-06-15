@@ -543,6 +543,28 @@ export function SolarSystemHero() {
                 </span>
               </motion.h1>
 
+              {/* Institutional Collaboration Notice */}
+              <motion.div
+                variants={itemVariants}
+                className="flex items-center justify-center lg:justify-start gap-2.5 pt-0.5 select-none"
+              >
+                <div className="flex items-center gap-1.5 opacity-40 hover:opacity-70 transition-opacity duration-300 flex-shrink-0">
+                  <img
+                    src="/brand/rimt-university.jpg"
+                    alt="RIMT University"
+                    className="h-4.5 w-auto object-contain brightness-0 invert"
+                  />
+                  <img
+                    src="/brand/dri-lab.png"
+                    alt="DRI Lab"
+                    className="h-4.5 w-auto object-contain brightness-0 invert"
+                  />
+                </div>
+                <span className="text-[11px] sm:text-xs font-semibold text-slate-400 tracking-wide text-left leading-normal">
+                  An initiative under RIMT University in collaboration with the DRI Lab.
+                </span>
+              </motion.div>
+
               <motion.p
                 variants={itemVariants}
                 className="text-slate-400 text-sm leading-relaxed max-w-md"

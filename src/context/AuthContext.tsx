@@ -297,6 +297,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             <div className="flex flex-col items-center gap-1.5 text-center">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Restoring Session</h3>
               <p className="text-xs text-slate-600 font-mono">Authenticating credentials...</p>
+              <p className="text-[10px] text-slate-500 font-semibold tracking-wider uppercase mt-4 select-none opacity-60">
+                Powered by RIMT University &bull; DRI Lab
+              </p>
             </div>
           </div>
         </div>

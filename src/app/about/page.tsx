@@ -6,6 +6,7 @@ import { SolarBackground } from "@/app/team/components/SolarBackground";
 import { SolarManifesto } from "./components/SolarManifesto";
 import { OrbitingPillars } from "./components/OrbitingPillars";
 import { AcademicIntegration } from "./components/AcademicIntegration";
+import { InstitutionalSupport } from "./components/InstitutionalSupport";
 import { SolarCTA } from "@/app/team/components/SolarCTA";
 
 export default function AboutPage() {
@@ -45,6 +46,9 @@ export default function AboutPage() {
 
         {/* 3. Academic Integration (CSE Sponsor & Curriculum) */}
         <AcademicIntegration reducedMotion={reducedMotion} />
+
+        {/* Institutional Support (RIMT & DRI Lab Sponsor Cards) */}
+        <InstitutionalSupport reducedMotion={reducedMotion} />
 
         {/* 4. Joining the Universe CTA Section */}
         <SolarCTA reducedMotion={reducedMotion} />

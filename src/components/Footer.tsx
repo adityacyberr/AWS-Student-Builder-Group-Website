@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { Info } from "lucide-react";
 
 interface DBSettingRow {
   key: string;
@@ -56,9 +57,9 @@ export default function Footer() {
   return (
     <footer className="border-t border-slate-900 bg-slate-980 text-slate-400">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Brand & Disclaimer */}
-          <div className="md:col-span-2 space-y-5">
+          <div className="md:col-span-5 space-y-5">
             <div className="flex items-center gap-2.5 select-none py-1 text-left">
               <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden">
                 <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-500 to-amber-500 opacity-90" />
@@ -83,16 +84,10 @@ export default function Footer() {
             <p className="text-sm text-slate-300 font-medium leading-relaxed max-w-md">
               Building the next generation of cloud builders through learning, collaboration, and innovation.
             </p>
-            <p className="text-xs text-slate-500 max-w-md leading-relaxed">
-              Disclaimer: AWS Student Builder Group (SBG) at RIMT University is a student-led community. 
-              This group is run independently of Amazon Web Services (AWS) Inc. The content, opinions, and 
-              activities hosted by this group are solely those of its members and do not represent the official 
-              positions or endorsement of Amazon Web Services.
-            </p>
           </div>
 
           {/* Quick Links */}
-          <div className="space-y-3">
+          <div className="md:col-span-2 space-y-3">
             <h4 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Navigation</h4>
             <ul className="space-y-2 text-sm">
               <li>
@@ -123,7 +118,7 @@ export default function Footer() {
           </div>
 
           {/* Contact & Connect Info */}
-          <div className="space-y-4">
+          <div className="md:col-span-2 space-y-4">
             <div className="space-y-1">
               <h4 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Connect</h4>
               <div className="flex flex-col text-xs space-y-1.5 pt-1 text-slate-500">
@@ -183,10 +178,43 @@ export default function Footer() {
               </div>
             </div>
           </div>
+
+          {/* Institutional Partners */}
+          <div className="md:col-span-3 space-y-4">
+            <h4 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Institutional Partners</h4>
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <img
+                src="/brand/rimt-university.jpg"
+                alt="RIMT University Logo"
+                className="h-10 w-auto object-contain bg-white px-2 py-1 rounded filter grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300 shadow-sm border border-slate-800/10"
+              />
+              <img
+                src="/brand/dri-lab.png"
+                alt="DRI Lab Logo"
+                className="h-10 w-auto object-contain bg-[#0e1726]/85 border border-slate-850 p-1 rounded filter grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300 shadow-sm"
+              />
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">
+              Proudly supported by RIMT University and the Department of Research & Innovation (DRI) Lab.
+            </p>
+          </div>
         </div>
 
-        {/* Divider */}
-        <div className="mt-8 pt-8 border-t border-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600">
+        {/* Legal Disclaimer Block */}
+        <div className="mt-8 pt-6 border-t border-slate-900/60 space-y-2.5 text-left">
+          <div className="flex items-center gap-1.5 text-slate-400 select-none">
+            <Info className="h-3.5 w-3.5 text-orange-500/80" />
+            <h5 className="text-[10px] font-bold tracking-widest uppercase text-slate-300">
+              Legal Disclaimer
+            </h5>
+          </div>
+          <p className="text-[10px] sm:text-[10.5px] text-slate-500 font-medium leading-relaxed max-w-7xl">
+            The AWS Student Builder Group at RIMT University is a student-led community initiative. AWS and Amazon are trademarks of Amazon.com, Inc. or its affiliates. This website and community are independently managed by student members and do not represent official positions, policies, or endorsements of Amazon Web Services or Amazon.
+          </p>
+        </div>
+
+        {/* Divider & Copyright */}
+        <div className="mt-6 pt-6 border-t border-slate-900/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600">
           <p>&copy; {new Date().getFullYear()} RIMT AWS Student Builder Group. All rights reserved.</p>
           <div className="flex gap-4">
             <span className="hover:text-slate-400 transition-colors">Powered by student builders at RIMT University</span>

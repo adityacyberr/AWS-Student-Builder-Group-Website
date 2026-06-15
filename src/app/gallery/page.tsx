@@ -7,6 +7,7 @@ import { Search, Grid, LayoutTemplate, ArrowUpDown, CalendarDays, SearchCode, Se
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 import { GALLERY_ITEMS, GalleryItem } from "@/data/gallery";
+import { getLocalEvents } from "@/data/events";
 import { useReducedMotion } from "@/app/team/hooks/useReducedMotion";
 import { FloatingBackground } from "@/app/achievements/components/FloatingBackground";
 import { WireframeCube } from "@/app/achievements/components/WireframeCube";
@@ -203,7 +204,8 @@ const CardContainer = ({
 };
 
 export default function GalleryPage() {
-  const [items, setItems] = useState<GalleryItem[]>(GALLERY_ITEMS);
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState<"all" | "workshops" | "events" | "community" | "celebrations">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "viewed" | "liked">("newest");
@@ -234,61 +236,79 @@ export default function GalleryPage() {
 
   // Fetch Supabase gallery items dynamically
   useEffect(() => {
-    async function fetchGallery() {
+    async function fetchGalleryAndEvents() {
       if (isSupabaseConfigured && supabase) {
         try {
-          const { data, error } = await supabase
-            .from("gallery_images")
-            .select("*")
-            .order("created_at", { ascending: false });
-          if (!error && data && data.length > 0) {
-            const dbItems: GalleryItem[] = (data as DBGalleryRow[]).map((d) => ({
+          const [galleryRes, eventsRes] = await Promise.all([
+            supabase
+              .from("gallery_images")
+              .select("*")
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("events")
+              .select("status")
+              .eq("status", "completed")
+          ]);
+
+          if (galleryRes.data) {
+            const dbItems: GalleryItem[] = galleryRes.data.map((d: any) => ({
               id: d.id,
               title: d.title,
               date: d.date,
               description: d.description,
               category: d.category,
               imageUrl: d.image_url || "/gallery/welcome-team.jpg",
-              participants: d.participants || 80,
-              location: d.location || "RIMT University",
-              photoCount: d.photo_count || 15,
+              participants: 80,
+              location: "RIMT University",
+              photoCount: 1,
             }));
+            setItems(dbItems);
+          }
 
-            // Only keep items that are in GALLERY_ITEMS (the two allowed default albums)
-            const allowedIds = ["launch-celebration", "security-workshop"];
-            const filteredDb = dbItems.filter((item) => allowedIds.includes(item.id));
-
-            setItems(() => {
-              const merged = [...filteredDb];
-              GALLERY_ITEMS.forEach((localItem) => {
-                if (!merged.some((i) => i.id === localItem.id)) {
-                  merged.push(localItem);
-                }
-              });
-              return merged;
-            });
+          if (eventsRes.data) {
+            setCompletedEventsCount(eventsRes.data.length);
           }
         } catch (err) {
           console.error("Supabase load failed, falling back to local files:", err);
         }
+      } else {
+        // Sandbox mode
+        const storedGallery = localStorage.getItem("aws_sbg_gallery");
+        if (storedGallery) {
+          const storedItems = JSON.parse(storedGallery).map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            date: item.date,
+            description: item.description,
+            category: item.category,
+            imageUrl: item.imageUrl || "/gallery/welcome-team.jpg",
+            participants: 80,
+            location: "RIMT University",
+            photoCount: 1,
+          }));
+          setItems(storedItems);
+        } else {
+          setItems([]);
+        }
+
+        const localEvents = getLocalEvents();
+        setCompletedEventsCount(localEvents.filter((e: any) => e.status === "completed").length);
       }
     }
-    fetchGallery();
+    fetchGalleryAndEvents();
   }, []);
 
   // Likes/Views initialization
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const initialLikes: Record<string, number> = {};
-      const initialViews: Record<string, number> = {};
-      items.forEach((item) => {
-        initialLikes[item.id] = Math.floor(Math.random() * 25) + 10;
-        initialViews[item.id] = Math.floor(Math.random() * 120) + 40;
-      });
-      setLikes(initialLikes);
-      setViews(initialViews);
-    }, 0);
-    return () => clearTimeout(timer);
+    if (items.length === 0) return;
+    const initialLikes: Record<string, number> = {};
+    const initialViews: Record<string, number> = {};
+    items.forEach((item) => {
+      initialLikes[item.id] = Math.floor(Math.random() * 25) + 10;
+      initialViews[item.id] = Math.floor(Math.random() * 120) + 40;
+    });
+    setLikes(initialLikes);
+    setViews(initialViews);
   }, [items]);
 
   // Handle like toggle
@@ -430,7 +450,12 @@ export default function GalleryPage() {
         {/* QUICK STATS                                       */}
         {/* ================================================= */}
         <motion.div variants={scrollItemVariants} className="w-full">
-          <QuickStats containerVariants={scrollContainerVariants} itemVariants={scrollItemVariants} />
+          <QuickStats
+            items={items}
+            completedEventsCount={completedEventsCount}
+            containerVariants={scrollContainerVariants}
+            itemVariants={scrollItemVariants}
+          />
         </motion.div>
 
         {/* ================================================= */}
@@ -590,7 +615,18 @@ export default function GalleryPage() {
         {/* ================================================= */}
         {/* IMAGE GRID                                        */}
         {/* ================================================= */}
-        {filteredItems.length === 0 ? (
+        {items.length === 0 ? (
+          <motion.div 
+            variants={scrollItemVariants}
+            className="text-center py-24 border border-dashed border-slate-900/60 rounded-3xl bg-slate-950/30 max-w-md mx-auto relative z-10"
+          >
+            <ImageIcon className="h-10 w-10 text-orange-500/80 mx-auto mb-4 animate-pulse" />
+            <h3 className="text-lg font-bold text-white mb-2">No Memories Yet</h3>
+            <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+              No memories have been added yet. Check back after our upcoming events.
+            </p>
+          </motion.div>
+        ) : filteredItems.length === 0 ? (
           <motion.div 
             variants={scrollItemVariants}
             className="text-center py-24 border border-dashed border-slate-900 rounded-3xl bg-slate-950/30 max-w-md mx-auto"

@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
 import { GALLERY_ITEMS, GalleryItem } from "@/data/gallery";
+import { getLocalEvents } from "@/data/events";
 import {
   Image as ImageIcon,
   Plus,
@@ -35,6 +36,7 @@ export default function ConsoleGallery() {
 
   // Lists and filters
   const [items, setItems] = useState<ConsoleGalleryItem[]>([]);
+  const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
@@ -59,17 +61,29 @@ export default function ConsoleGallery() {
     loadGallery();
   }, []);
 
+  const isVideo = (url: string) => {
+    if (!url) return false;
+    return /\.(mp4|webm|mov|avi|mkv|ogg)($|\?)/i.test(url);
+  };
+
   const loadGallery = async () => {
     setLoading(true);
     try {
       if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from("gallery_images")
-          .select("*")
-          .order("created_at", { ascending: false });
-        if (error) throw error;
+        const [galleryRes, eventsRes] = await Promise.all([
+          supabase
+            .from("gallery_images")
+            .select("*")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("events")
+            .select("status")
+            .eq("status", "completed")
+        ]);
 
-        const mapped = (data || []).map((d: any) => ({
+        if (galleryRes.error) throw galleryRes.error;
+
+        const mapped = (galleryRes.data || []).map((d: any) => ({
           id: d.id,
           title: d.title,
           date: d.date,
@@ -79,22 +93,25 @@ export default function ConsoleGallery() {
           placeholderColor: d.placeholder_color || "orange",
         }));
         setItems(mapped);
+
+        if (eventsRes.data) {
+          setCompletedEventsCount(eventsRes.data.length);
+        }
       } else {
         const stored = localStorage.getItem("aws_sbg_gallery");
         if (stored) {
           setItems(JSON.parse(stored));
         } else {
-          const defaultItems: ConsoleGalleryItem[] = GALLERY_ITEMS.map((item) => ({
-            id: item.id,
-            title: item.title,
-            date: item.date,
-            description: item.description,
-            category: item.category as any,
-            imageUrl: item.imageUrl,
-            placeholderColor: "orange",
-          }));
-          localStorage.setItem("aws_sbg_gallery", JSON.stringify(defaultItems));
-          setItems(defaultItems);
+          setItems([]);
+        }
+
+        const storedEvents = localStorage.getItem("aws_sbg_events");
+        if (storedEvents) {
+          const localEvents = JSON.parse(storedEvents);
+          setCompletedEventsCount(localEvents.filter((e: any) => e.status === "completed").length);
+        } else {
+          const localEvents = getLocalEvents();
+          setCompletedEventsCount(localEvents.filter((e: any) => e.status === "completed").length);
         }
       }
     } catch (err: any) {
@@ -247,6 +264,26 @@ export default function ConsoleGallery() {
           <Plus className="h-4 w-4" />
           Add Gallery Image
         </button>
+      </div>
+
+      {/* Dynamic Statistics Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-zinc-900/10 border border-zinc-900 p-4 rounded-xl">
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-bold text-zinc-550 uppercase tracking-wider block select-none">Total Photos</span>
+          <p className="text-lg font-black text-white leading-none mt-1">{items.filter(item => !isVideo(item.imageUrl)).length}</p>
+        </div>
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-bold text-zinc-550 uppercase tracking-wider block select-none">Total Videos</span>
+          <p className="text-lg font-black text-white leading-none mt-1">{items.filter(item => isVideo(item.imageUrl)).length}</p>
+        </div>
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-bold text-zinc-550 uppercase tracking-wider block select-none">Events Covered</span>
+          <p className="text-lg font-black text-white leading-none mt-1">{items.length === 0 ? 0 : completedEventsCount}</p>
+        </div>
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-bold text-zinc-550 uppercase tracking-wider block select-none">Total Memories</span>
+          <p className="text-lg font-black text-white leading-none mt-1">{items.length}</p>
+        </div>
       </div>
 
       {/* Controls: Search and Filters */}

@@ -58,6 +58,25 @@ export const metadata: Metadata = {
   description: "Official student-led cloud community of Amazon Web Services (AWS) at RIMT University. Build skills, attend bootcamps, and master cloud computing.",
   keywords: ["AWS", "RIMT University", "Student Builder Group", "Cloud Computing", "Amazon Web Services", "Generative AI", "Punjab Tech Clubs"],
   authors: [{ name: "AWS Student Builder Group Core Team" }],
+  openGraph: {
+    title: "AWS Student Builder Group | RIMT University",
+    description: "Official student-led cloud community of Amazon Web Services (AWS) at RIMT University. Build skills, attend bootcamps, and master cloud computing.",
+    images: [
+      {
+        url: "/brand/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "AWS Student Builder Group - RIMT University & DRI Lab",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AWS Student Builder Group | RIMT University",
+    description: "Official student-led cloud community of Amazon Web Services (AWS) at RIMT University. Build skills, attend bootcamps, and master cloud computing.",
+    images: ["/brand/og-image.png"],
+  },
 };
 
 export default async function RootLayout({
