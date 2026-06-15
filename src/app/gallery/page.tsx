@@ -254,9 +254,12 @@ export default function GalleryPage() {
               photoCount: d.photo_count || 15,
             }));
 
-            // Merge unique DB items with local defaults
+            // Only keep items that are in GALLERY_ITEMS (the two allowed default albums)
+            const allowedIds = ["launch-celebration", "security-workshop"];
+            const filteredDb = dbItems.filter((item) => allowedIds.includes(item.id));
+
             setItems(() => {
-              const merged = [...dbItems];
+              const merged = [...filteredDb];
               GALLERY_ITEMS.forEach((localItem) => {
                 if (!merged.some((i) => i.id === localItem.id)) {
                   merged.push(localItem);
