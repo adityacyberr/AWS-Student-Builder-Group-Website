@@ -25,7 +25,7 @@ interface DBEventRow {
   slug: string;
   date: string;
   time?: string;
-  type: "Workshop" | "Hackathon" | "Meetup" | "Webinar";
+  type: "Workshop" | "Bootcamp" | "Meetup" | "Webinar" | "Hackathon" | "Celebration" | "Community Event" | "Other";
   location: string;
   description: string;
   long_description?: string;
@@ -58,27 +58,32 @@ const getTypeIcon = (type: string, className = "h-5 w-5") => {
   switch (type) {
     case "Workshop":
       return <Cloud className={className} />;
+    case "Bootcamp":
+      return <Rocket className={className} />;
     case "Meetup":
       return <Mic className={className} />;
-    case "Hackathon":
-      return <Trophy className={className} />;
     case "Webinar":
       return <Rocket className={className} />;
+    case "Hackathon":
+      return <Trophy className={className} />;
+    case "Celebration":
+      return <Star className={className} />;
+    case "Community Event":
+      return <Users className={className} />;
+    case "Other":
+      return <Sun className={className} />;
     default:
       return <Cloud className={className} />;
   }
 };
 
 // ─── Filter types ────────────────────────────────────────────────
-type FilterType = "all" | "upcoming" | "completed" | "Workshop" | "Meetup" | "Hackathon";
+type FilterType = "all" | "upcoming" | "completed";
 
 const FILTERS: { key: FilterType; label: string }[] = [
   { key: "all", label: "All" },
   { key: "upcoming", label: "Upcoming" },
   { key: "completed", label: "Completed" },
-  { key: "Workshop", label: "Workshops" },
-  { key: "Meetup", label: "Meetups" },
-  { key: "Hackathon", label: "Hackathons" },
 ];
 
 // ─── Reduced motion hook (inline) ───────────────────────────────
@@ -143,8 +148,7 @@ export default function EventsPage() {
   // ─── Filtering ──────────────────────────────────────────────────
   const filteredEvents = events.filter((event) => {
     if (filter === "all") return true;
-    if (filter === "upcoming" || filter === "completed") return event.status === filter;
-    return event.type === filter;
+    return event.status === filter;
   });
 
   const upcomingEvents = events.filter((e) => e.status === "upcoming");
@@ -895,7 +899,7 @@ function EmptyState() {
         }}
       >
         <span className="text-orange-400 group-hover:text-white transition-colors">
-          Join Our Community
+          Join the Club
         </span>
         <ArrowRight className="h-4 w-4 text-orange-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
       </a>
@@ -925,8 +929,10 @@ function BottomCTA({ reducedMotion }: { reducedMotion: boolean }) {
             Be a part of our upcoming events and build the future with us.
           </p>
 
-          <Link
-            href="/contact"
+          <a
+            href="https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups"
+            target="_blank"
+            rel="noopener noreferrer"
             className="group relative inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider overflow-hidden transition-all duration-300 self-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             style={{
               background: "linear-gradient(135deg, rgba(255,140,0,0.15), rgba(255,140,0,0.08))",
@@ -944,10 +950,10 @@ function BottomCTA({ reducedMotion }: { reducedMotion: boolean }) {
               />
             )}
             <span className="relative z-10 text-orange-400 group-hover:text-white transition-colors">
-              Join Our Events
+              Join the Club
             </span>
             <ArrowRight className="relative z-10 h-4 w-4 text-orange-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
-          </Link>
+          </a>
         </div>
 
         {/* Right - Partial sun emerging from bottom-right */}

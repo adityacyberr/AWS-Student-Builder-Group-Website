@@ -31,7 +31,7 @@ export interface GalleryItem {
   title: string;
   date: string;
   description: string;
-  category: 'events' | 'workshops' | 'labs';
+  category: 'events' | 'workshops' | 'labs' | 'celebrations' | 'community' | 'achievements';
   placeholderColor: 'orange' | 'blue' | 'purple' | 'mint';
   imageUrl?: string;
 }

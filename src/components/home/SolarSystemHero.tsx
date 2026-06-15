@@ -18,6 +18,8 @@ import { useReducedMotion } from "@/app/team/hooks/useReducedMotion";
 import { CosmicBackground } from "./CosmicBackground";
 import { SolarCoreSun } from "./SolarCoreSun";
 import { PlanetInfoPanel } from "./PlanetInfoPanel";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { getLocalEvents } from "@/data/events";
 
 // ─────────────────────────────────────────────
 // PLANET DEFINITIONS
@@ -452,6 +454,83 @@ export function SolarSystemHero() {
   const [sunHovered, setSunHovered] = useState(false);
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetDef | null>(null);
   const [scaleFactor, setScaleFactor] = useState(1);
+  const [upcomingEventsCount, setUpcomingEventsCount] = useState<string>("0");
+
+  useEffect(() => {
+    async function loadUpcomingEventsCount() {
+      let count = 0;
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const { data, error } = await supabase
+            .from("events")
+            .select("date, status");
+          if (!error && data) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            count = data.filter((d: any) => {
+              const parsed = Date.parse(d.date);
+              if (isNaN(parsed)) {
+                return d.status === "upcoming";
+              }
+              const eventDate = new Date(parsed);
+              eventDate.setHours(0, 0, 0, 0);
+              return eventDate.getTime() >= today.getTime();
+            }).length;
+          }
+        } catch (err) {
+          console.error("Error fetching events from Supabase:", err);
+        }
+      } else {
+        // Fallback to local storage
+        const local = getLocalEvents();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        count = local.filter((ev) => {
+          const parsed = Date.parse(ev.date);
+          if (isNaN(parsed)) {
+            return ev.status === "upcoming";
+          }
+          const eventDate = new Date(parsed);
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate.getTime() >= today.getTime();
+        }).length;
+      }
+      setUpcomingEventsCount(String(count));
+    }
+
+    loadUpcomingEventsCount();
+    
+    // Listen for storage changes
+    const handleStorageChange = () => {
+      if (!isSupabaseConfigured || !supabase) {
+        loadUpcomingEventsCount();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    // Supabase Real-time listener
+    let channel: any;
+    if (isSupabaseConfigured && supabase) {
+      channel = supabase
+        .channel("realtime-events-count")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "events" },
+          () => {
+            loadUpcomingEventsCount();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -581,7 +660,7 @@ export function SolarSystemHero() {
               >
                 {[
                   { value: "150+", label: "Members" },
-                  { value: "3+", label: "Bootcamps" },
+                  { value: upcomingEventsCount, label: "Upcoming Events" },
                   { value: "100%", label: "Student-Led" },
                 ].map((stat, idx) => (
                   <div key={idx} className="flex flex-col text-left">

@@ -4,7 +4,7 @@ export interface EventItem {
   slug: string;
   date: string;
   time?: string;
-  type: 'Workshop' | 'Hackathon' | 'Meetup' | 'Webinar';
+  type: 'Workshop' | 'Bootcamp' | 'Meetup' | 'Webinar' | 'Hackathon' | 'Celebration' | 'Community Event' | 'Other';
   location: string;
   description: string;
   longDescription?: string;

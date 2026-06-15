@@ -467,7 +467,7 @@ export default function ConsoleEvents() {
                     onChange={(e) => setType(e.target.value as EventItem["type"])}
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
                   >
-                    {["Workshop", "Hackathon", "Meetup", "Webinar"].map((t) => (
+                    {["Workshop", "Bootcamp", "Meetup", "Webinar", "Hackathon", "Celebration", "Community Event", "Other"].map((t) => (
                       <option key={t} value={t} className="bg-zinc-950">
                         {t}
                       </option>

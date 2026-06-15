@@ -208,7 +208,7 @@ export default function TeamPage() {
   }, [selectedIndex, sortedMembers]);
 
   return (
-    <div className="relative min-h-screen bg-[#050816] bg-grid-pattern overflow-hidden text-slate-300">
+    <div className="relative min-h-screen bg-[#050816] bg-grid-pattern overflow-x-clip text-slate-300">
       {/* Shared living background */}
       <SolarBackground reducedMotion={reducedMotion} />
 

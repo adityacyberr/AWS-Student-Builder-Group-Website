@@ -16,7 +16,7 @@ create table if not exists public.events (
   slug text not null unique,
   date text not null,
   time text,
-  type text not null check (type in ('Workshop', 'Hackathon', 'Meetup', 'Webinar')),
+  type text not null check (type in ('Workshop', 'Bootcamp', 'Meetup', 'Webinar', 'Hackathon', 'Celebration', 'Community Event', 'Other')),
   location text not null,
   description text not null,
   long_description text,
@@ -57,9 +57,11 @@ create table if not exists public.gallery_images (
   title text not null,
   date text not null,
   description text not null,
-  category text not null check (category in ('events', 'workshops', 'labs')),
+  category text not null check (category in ('events', 'workshops', 'labs', 'celebrations', 'community', 'achievements')),
   placeholder_color text not null default 'orange',
   image_url text,
+  event_id uuid references public.events(id) on delete set null,
+  instagram_url text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   constraint unique_gallery_title unique (title)
 );
@@ -137,6 +139,40 @@ do $$ begin
   ) then
     alter table public.team_members add column portal_role text not null default 'Member' check (portal_role in ('Super Admin', 'Editor', 'Member'));
   end if;
+end $$;
+
+-- Alter check constraint on events type
+do $$ begin
+  alter table public.events drop constraint if exists events_type_check;
+  alter table public.events add constraint events_type_check check (type in ('Workshop', 'Bootcamp', 'Meetup', 'Webinar', 'Hackathon', 'Celebration', 'Community Event', 'Other'));
+exception
+  when others then null;
+end $$;
+
+-- Alter gallery_images to add event_id and instagram_url columns & update category check constraint
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'gallery_images' and column_name = 'event_id'
+  ) then
+    alter table public.gallery_images add column event_id uuid references public.events(id) on delete set null;
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'gallery_images' and column_name = 'instagram_url'
+  ) then
+    alter table public.gallery_images add column instagram_url text;
+  end if;
+end $$;
+
+do $$ begin
+  alter table public.gallery_images drop constraint if exists gallery_images_category_check;
+  alter table public.gallery_images add constraint gallery_images_category_check check (category in ('events', 'workshops', 'labs', 'celebrations', 'community', 'achievements'));
+exception
+  when others then null;
 end $$;
 
 -- 2c. AUTO-UPDATE updated_at TRIGGER for team_members

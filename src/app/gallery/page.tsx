@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Grid, LayoutTemplate, ArrowUpDown, CalendarDays, SearchCode, Settings, ChevronUp, Image as ImageIcon, Heart, Eye, Share2 } from "lucide-react";
+import { Search, Grid, LayoutTemplate, ArrowUpDown, CalendarDays, SearchCode, Settings, ChevronUp, Image as ImageIcon, Heart, Eye, Share2, ArrowRight } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 import { GALLERY_ITEMS, GalleryItem } from "@/data/gallery";
@@ -54,20 +54,12 @@ const scrollItemVariants = {
 
 interface CardContainerProps {
   item: GalleryItem;
-  likes: number;
-  views: number;
-  isLiked: boolean;
-  onLike: (e: React.MouseEvent, id: string) => void;
-  onInspect: (item: GalleryItem) => void;
+  resolvedCategory: string;
 }
 
 const CardContainer = ({
   item,
-  likes,
-  views,
-  isLiked,
-  onLike,
-  onInspect,
+  resolvedCategory,
 }: CardContainerProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -98,11 +90,16 @@ const CardContainer = ({
     };
   }, []);
 
+  const handleClick = () => {
+    const instagramUrl = item.instagramUrl || "https://www.instagram.com/aws_sbg_rimt";
+    window.open(instagramUrl, "_blank");
+  };
+
   return (
     <div
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      onClick={() => onInspect(item)}
+      onClick={handleClick}
       className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-900 bg-slate-950/60 p-4 shadow-[inset_0_0_12px_rgba(255,140,0,0.01)] transition-all duration-300 hover:border-orange-500/35 hover:-translate-y-2 hover:shadow-[0_12px_36px_rgba(255,140,0,0.1),inset_0_0_12px_rgba(255,140,0,0.02)] cursor-pointer select-none text-left"
     >
       {/* Cursor spotlight layer */}
@@ -116,9 +113,9 @@ const CardContainer = ({
       {/* Linear light sweep overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/[0.015] to-transparent opacity-0 group-hover:opacity-100 transition-all duration-750 ease-out translate-x-[-100%] group-hover:translate-x-[100%] pointer-events-none z-0" />
 
-      <div className="space-y-4 relative z-10">
+      <div className="space-y-4 relative z-10 flex-grow flex flex-col justify-between">
         {/* Cover Media container */}
-        <div className="h-48 rounded-xl relative overflow-hidden border border-slate-900/60 flex items-center justify-center bg-slate-950">
+        <div className="h-48 rounded-xl relative overflow-hidden border border-slate-900/60 flex items-center justify-center bg-slate-950 flex-shrink-0">
           <Image
             src={item.imageUrl}
             alt={item.title}
@@ -129,52 +126,23 @@ const CardContainer = ({
           {/* Dark grid mask */}
           <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/35 transition-colors duration-300" />
           
-          {/* View/Like Action controls overlay on hover */}
-          <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 translate-y-2 group-hover:translate-y-0 transform transition-transform duration-300">
-            {/* View */}
-            <button className="p-2.5 rounded-full bg-slate-950/80 border border-slate-800/80 text-slate-300 hover:text-orange-400 hover:border-orange-500/50 hover:shadow-[0_0_12px_rgba(255,140,0,0.2)] transition-all cursor-pointer">
-              <Eye className="h-4 w-4" />
-            </button>
-            {/* Like */}
-            <button 
-              onClick={(e) => onLike(e, item.id)}
-              className={`p-2.5 rounded-full bg-slate-950/80 border border-slate-800/80 transition-all cursor-pointer ${
-                isLiked 
-                  ? "text-orange-400 border-orange-500/50 shadow-[0_0_12px_rgba(255,140,0,0.2)]" 
-                  : "text-slate-300 hover:text-orange-400 hover:border-orange-500/50"
-              }`}
-            >
-              <Heart className={`h-4 w-4 ${isLiked ? "fill-orange-400" : ""}`} />
-            </button>
-            {/* Share */}
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                navigator.clipboard.writeText(`${window.location.origin}/gallery?id=${item.id}`);
-                alert("Link copied!");
-              }}
-              className="p-2.5 rounded-full bg-slate-950/80 border border-slate-800/80 text-slate-300 hover:text-orange-400 hover:border-orange-500/50 hover:shadow-[0_0_12px_rgba(255,140,0,0.2)] transition-all cursor-pointer"
-            >
-              <Share2 className="h-4 w-4" />
-            </button>
+          {/* Action overlay on hover */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 translate-y-2 group-hover:translate-y-0 transform transition-transform duration-300">
+            <span className="px-4 py-2 rounded-xl bg-orange-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(255,140,0,0.4)] transition-all">
+              View on Instagram
+            </span>
           </div>
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10 pointer-events-none">
             <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-950/85 border border-slate-800 text-orange-400 uppercase tracking-wider">
-              {item.category}
-            </span>
-          </div>
-          <div className="absolute top-3 right-3 flex items-center gap-1 z-10 pointer-events-none">
-            <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-slate-950/80 border border-slate-800 text-slate-400 flex items-center gap-1">
-              <ImageIcon className="h-3 w-3 text-orange-400/80" />
-              {item.photoCount} Photos
+              {resolvedCategory}
             </span>
           </div>
         </div>
 
         {/* Text block */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 mt-4">
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-sm font-bold text-white tracking-tight leading-tight truncate group-hover:text-orange-400 transition-colors">
               {item.title}
@@ -189,15 +157,12 @@ const CardContainer = ({
         </div>
       </div>
 
-      {/* Dynamic Social Stats line bottom */}
-      <div className="relative z-10 pt-3.5 mt-3 border-t border-slate-900/60 flex items-center justify-between text-[10px] font-mono text-slate-500">
-        <span className="flex items-center gap-1">
-          <Eye className="h-3.5 w-3.5 text-slate-650" /> {views} views
-        </span>
-        <span className="flex items-center gap-1">
-          <Heart className={`h-3.5 w-3.5 ${isLiked ? "text-orange-400 fill-orange-400" : "text-slate-650"}`} />
-          {likes} likes
-        </span>
+      {/* View on Social Media Button */}
+      <div className="relative z-10 pt-3.5 mt-3 border-t border-slate-900/60 flex justify-center">
+        <button className="w-full text-center py-2 px-4 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all duration-300 border border-orange-500/30 bg-orange-500/10 text-orange-400 group-hover:bg-orange-500 group-hover:text-white flex items-center justify-center gap-1.5 h-9">
+          <span>View on Social Media</span>
+          <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+        </button>
       </div>
     </div>
   );
@@ -205,8 +170,9 @@ const CardContainer = ({
 
 export default function GalleryPage() {
   const [items, setItems] = useState<GalleryItem[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<"all" | "workshops" | "events" | "community" | "celebrations">("all");
+  const [activeCategory, setActiveCategory] = useState<"all" | "events" | "workshops" | "labs" | "celebrations" | "community" | "achievements">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "viewed" | "liked">("newest");
   const [viewMode, setViewMode] = useState<"grid" | "masonry">("grid");
@@ -246,8 +212,7 @@ export default function GalleryPage() {
               .order("created_at", { ascending: false }),
             supabase
               .from("events")
-              .select("status")
-              .eq("status", "completed")
+              .select("*")
           ]);
 
           if (galleryRes.data) {
@@ -261,12 +226,15 @@ export default function GalleryPage() {
               participants: 80,
               location: "RIMT University",
               photoCount: 1,
+              eventId: d.event_id || undefined,
+              instagramUrl: d.instagram_url || undefined,
             }));
             setItems(dbItems);
           }
 
           if (eventsRes.data) {
-            setCompletedEventsCount(eventsRes.data.length);
+            setEvents(eventsRes.data);
+            setCompletedEventsCount(eventsRes.data.filter((e: any) => e.status === "completed").length);
           }
         } catch (err) {
           console.error("Supabase load failed, falling back to local files:", err);
@@ -285,6 +253,8 @@ export default function GalleryPage() {
             participants: 80,
             location: "RIMT University",
             photoCount: 1,
+            eventId: item.eventId || undefined,
+            instagramUrl: item.instagramUrl || undefined,
           }));
           setItems(storedItems);
         } else {
@@ -292,6 +262,7 @@ export default function GalleryPage() {
         }
 
         const localEvents = getLocalEvents();
+        setEvents(localEvents);
         setCompletedEventsCount(localEvents.filter((e: any) => e.status === "completed").length);
       }
     }
@@ -469,7 +440,7 @@ export default function GalleryPage() {
             
             {/* Left: Filter categories */}
             <div className="flex flex-wrap items-center gap-1.5">
-              {(["all", "workshops", "events", "community", "celebrations"] as const).map((cat) => (
+              {(["all", "events", "workshops", "labs", "celebrations", "community", "achievements"] as const).map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
@@ -646,18 +617,19 @@ export default function GalleryPage() {
                 : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
             }
           >
-            {filteredItems.map((item) => (
-              <div key={item.id} className={viewMode === "masonry" ? "break-inside-avoid" : ""}>
-                <CardContainer 
-                  item={item}
-                  likes={likes[item.id] || 0}
-                  views={views[item.id] || 0}
-                  isLiked={!!likedItems[item.id]}
-                  onLike={handleLike}
-                  onInspect={handleInspect}
-                />
-              </div>
-            ))}
+            {filteredItems.map((item) => {
+              const linkedEvent = events.find((e) => e.id === item.eventId);
+              const resolvedCategory = linkedEvent ? linkedEvent.type : item.category;
+
+              return (
+                <div key={item.id} className={viewMode === "masonry" ? "break-inside-avoid" : ""}>
+                  <CardContainer 
+                    item={item}
+                    resolvedCategory={resolvedCategory}
+                  />
+                </div>
+              );
+            })}
           </motion.div>
         )}
 
