@@ -394,7 +394,7 @@ export function OrbitingPlanets({
 
       {/* Members Avatars layer (translated by parallaxAvatars) */}
       <div
-        className="absolute inset-0 w-full h-full pointer-events-auto"
+        className="absolute inset-0 w-full h-full pointer-events-none"
         style={{
           transform: `translate(${parallaxAvatars.x}px, ${parallaxAvatars.y}px)`,
           transition: reducedMotion ? "none" : "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
@@ -410,7 +410,7 @@ export function OrbitingPlanets({
           return (
             <div
               key={`avatar-orbit-${orbitId}`}
-              className="absolute"
+              className="absolute pointer-events-none"
               style={{
                 width: r * 2,
                 height: r * 2,
@@ -476,7 +476,7 @@ export function OrbitingPlanets({
                         damping: 15,
                         delay: globalIdx * 0.1,
                       }}
-                      className="absolute"
+                      className="absolute pointer-events-auto"
                       style={{
                         left: r,
                         top: r,
@@ -506,10 +506,13 @@ export function OrbitingPlanets({
                         >
                           {/* DIV 4: Avatar floating & breathing wrapper */}
                           <div
-                            className="relative w-full h-full flex items-center justify-center rounded-full touch-target-expand cursor-pointer"
+                            className="relative w-full h-full flex items-center justify-center rounded-full touch-target-expand cursor-pointer pointer-events-auto"
                             onMouseEnter={() => setHoveredMemberId(member.id)}
                             onMouseLeave={() => setHoveredMemberId(null)}
-                            onClick={() => onSelect(member)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelect(member);
+                            }}
                             style={{
                               animation: reducedMotion ? "none" : `avatar-breathe 3.5s ease-in-out infinite`,
                             }}
@@ -592,6 +595,7 @@ export function OrbitingPlanets({
                                   animate={{ opacity: 1, scale: 1 }}
                                   exit={{ opacity: 0, scale: 0.95 }}
                                   transition={{ duration: 0.2, ease: "easeOut" }}
+                                  onClick={(e) => e.stopPropagation()}
                                   className="absolute z-50 pointer-events-auto select-none text-left"
                                   style={{
                                     width: "220px",
