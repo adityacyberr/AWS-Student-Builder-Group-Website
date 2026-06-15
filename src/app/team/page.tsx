@@ -308,7 +308,7 @@ export default function TeamPage() {
               <div
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
-                className="relative w-full aspect-square max-w-[850px] mx-auto overflow-hidden bg-transparent rounded-full"
+                className="relative w-full aspect-square max-w-[850px] mx-auto bg-transparent"
               >
                 {/* The Sun at the center */}
                 <div
