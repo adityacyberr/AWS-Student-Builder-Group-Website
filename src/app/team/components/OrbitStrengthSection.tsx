@@ -287,6 +287,89 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
     });
   }, [members.length]);
 
+  // ─── Keynote Intercept: wheel/touch scroll intercepts when pinned ───
+  useEffect(() => {
+    if (!isStickyEnabled || !containerRef.current) return;
+
+    const container = containerRef.current;
+    let startY = 0;
+    let isTransitioning = false;
+    let cooldownTimer: NodeJS.Timeout | null = null;
+
+    const startCooldown = () => {
+      isTransitioning = true;
+      cooldownTimer = setTimeout(() => {
+        isTransitioning = false;
+      }, 850); // 850ms cooldown prevents rapid skipping during smooth scroll
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      const rect = container.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      
+      // Check if the section is currently stuck/pinned in the viewport
+      const isPinned = rect.top <= 90 && rect.bottom >= viewportHeight - 10;
+      if (!isPinned) return;
+
+      const scrollDown = e.deltaY > 0;
+      const scrollUp = e.deltaY < 0;
+
+      if (scrollDown && activeMemberIndex < members.length - 1) {
+        e.preventDefault();
+        if (!isTransitioning) {
+          scrollToMember(activeMemberIndex + 1);
+          startCooldown();
+        }
+      } else if (scrollUp && activeMemberIndex > 0) {
+        e.preventDefault();
+        if (!isTransitioning) {
+          scrollToMember(activeMemberIndex - 1);
+          startCooldown();
+        }
+      }
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      startY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const rect = container.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      
+      const isPinned = rect.top <= 90 && rect.bottom >= viewportHeight - 10;
+      if (!isPinned) return;
+
+      const currentY = e.touches[0].clientY;
+      const diffY = startY - currentY; // positive = scroll down (swipe up)
+
+      if (diffY > 40 && activeMemberIndex < members.length - 1) {
+        e.preventDefault();
+        if (!isTransitioning) {
+          scrollToMember(activeMemberIndex + 1);
+          startCooldown();
+        }
+      } else if (diffY < -40 && activeMemberIndex > 0) {
+        e.preventDefault();
+        if (!isTransitioning) {
+          scrollToMember(activeMemberIndex - 1);
+          startCooldown();
+        }
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      if (cooldownTimer) clearTimeout(cooldownTimer);
+    };
+  }, [isStickyEnabled, activeMemberIndex, members.length, scrollToMember]);
+
   const handleCardClick = useCallback((index: number) => {
     if (isStickyEnabled) {
       scrollToMember(index);
