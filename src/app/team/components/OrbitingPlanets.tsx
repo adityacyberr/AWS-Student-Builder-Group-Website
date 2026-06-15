@@ -421,6 +421,8 @@ export function OrbitingPlanets({
           const orbitMembers = members.filter((m) => MEMBER_ORBITS[getMemberKey(m)] === orbitId);
           const orbitAngle = angles[orbitId - 1];
 
+          const isOrbitHovered = hoveredOrbitId === orbitId;
+
           return (
             <div
               key={`avatar-orbit-${orbitId}`}
@@ -433,6 +435,7 @@ export function OrbitingPlanets({
                 transformOrigin: "center center",
                 transform: `rotate(${orbitAngle}deg)`,
                 transition: "none",
+                zIndex: isOrbitHovered ? 40 : 10,
               }}
             >
                {orbitMembers.map((member) => {
@@ -731,7 +734,7 @@ export function OrbitingPlanets({
                                       className="relative z-50 pointer-events-auto select-none text-left rounded-[22px] border border-orange-500/25 bg-[#080a16]/92 backdrop-blur-[20px] shadow-[0_0_40px_rgba(255,145,0,0.15)] p-5 overflow-hidden"
                                       style={{
                                         width: "320px",
-                                        background: "linear-gradient(-45deg, rgba(8,10,22,0.96), rgba(16,18,36,0.94), rgba(255,145,0,0.03), rgba(8,10,22,0.96))",
+                                        background: "linear-gradient(-45deg, #080a16, #101224, #0c0e1c, #080a16)",
                                         backgroundSize: "400% 400%",
                                         animation: "bg-gradient-shift 12s ease infinite",
                                       }}
