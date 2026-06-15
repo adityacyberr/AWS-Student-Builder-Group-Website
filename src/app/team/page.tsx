@@ -11,6 +11,7 @@ import { SolarBackground } from "./components/SolarBackground";
 import { SolarCore } from "./components/SolarCore";
 import { OrbitingPlanets } from "./components/OrbitingPlanets";
 import { SolarProfileConsole } from "./components/SolarProfileConsole";
+import { BottomSheet } from "./components/BottomSheet";
 import { OrbitStrengthSection } from "./components/OrbitStrengthSection";
 import { PrinciplesSection } from "./components/PrinciplesSection";
 import { SolarCTA } from "./components/SolarCTA";
@@ -60,6 +61,8 @@ export default function TeamPage() {
   const reducedMotion = useReducedMotion();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [activeMobileMember, setActiveMobileMember] = useState<TeamMember | null>(null);
+  const [hoveredMember, setHoveredMember] = useState<string | null>(null);
   const [sunHovered, setSunHovered] = useState(false);
   const [scaleFactor, setScaleFactor] = useState(1);
   const [mousePos, setMousePos] = useState({ x: -9999, y: -9999 });
@@ -177,7 +180,11 @@ export default function TeamPage() {
   );
 
   const openMember = useCallback((member: TeamMember) => {
-    setSelectedMember(member);
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setActiveMobileMember(member);
+    } else {
+      setSelectedMember(member);
+    }
   }, []);
 
   const closeModal = useCallback(() => {
@@ -323,7 +330,7 @@ export default function TeamPage() {
                   }}
                 >
                   <SolarCore
-                    isHovered={sunHovered}
+                    isHovered={sunHovered || hoveredMember !== null}
                     onHover={setSunHovered}
                     reducedMotion={reducedMotion}
                     visible={loadStage >= 1}
@@ -343,6 +350,7 @@ export default function TeamPage() {
                     parallaxOrbits={parallax.orbits}
                     parallaxAvatars={parallax.avatars}
                     loadStage={loadStage}
+                    onHoverMember={setHoveredMember}
                   />
                 )}
               </div>
@@ -397,6 +405,15 @@ export default function TeamPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Sheet Summary */}
+      <BottomSheet
+        member={activeMobileMember}
+        onClose={() => setActiveMobileMember(null)}
+        onViewProfile={(member) => {
+          setSelectedMember(member);
+        }}
+      />
 
       {/* Global keyframes */}
       <style jsx global>{`

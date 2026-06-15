@@ -232,7 +232,7 @@ export function SolarProfileConsole({
           <button
             onClick={onPrev}
             aria-label="Previous member"
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-orange-400 hover:border-orange-500/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            className="hidden sm:block absolute left-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-orange-400 hover:border-orange-500/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -243,7 +243,7 @@ export function SolarProfileConsole({
           <button
             onClick={onNext}
             aria-label="Next member"
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-orange-400 hover:border-orange-500/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-orange-400 hover:border-orange-500/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

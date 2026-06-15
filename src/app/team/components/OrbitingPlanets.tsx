@@ -79,6 +79,7 @@ export interface OrbitingPlanetsProps {
   parallaxOrbits: { x: number; y: number };
   parallaxAvatars: { x: number; y: number };
   loadStage: number;
+  onHoverMember?: (id: string | null) => void;
 }
 
 export function OrbitingPlanets({
@@ -92,10 +93,15 @@ export function OrbitingPlanets({
   parallaxOrbits,
   parallaxAvatars,
   loadStage,
+  onHoverMember,
 }: OrbitingPlanetsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(600);
   const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
+
+  useEffect(() => {
+    onHoverMember?.(hoveredMemberId);
+  }, [hoveredMemberId, onHoverMember]);
 
   // requestAnimationFrame continuous angles state
   const [angles, setAngles] = useState([0, 0, 0, 0]);
@@ -142,8 +148,8 @@ export function OrbitingPlanets({
         const config = ORBIT_CONFIGS[i + 1];
         const baseSpeed = 360 / config.speed; // degrees per second
         
-        // Slow down by 75% if a member of this orbit is hovered
-        const speedMultiplier = (hoveredOrbitId === i + 1) ? 0.25 : 1.0;
+        // Pause orbit completely if a member of this orbit is hovered
+        const speedMultiplier = (hoveredOrbitId === i + 1) ? 0.0 : 1.0;
         const deltaAngle = baseSpeed * speedMultiplier * delta;
         
         const dir = config.direction === "cw" ? 1 : -1;
@@ -171,7 +177,11 @@ export function OrbitingPlanets({
   );
 
   return (
-    <div ref={containerRef} className="absolute inset-0 w-full h-full select-none z-10">
+    <div
+      ref={containerRef}
+      className="absolute inset-0 w-full h-full select-none pointer-events-none"
+      style={{ zIndex: 30 }}
+    >
       {/* CW/CCW Rotations, breathing, & dust drift stylesheets */}
       <style jsx global>{`
         @keyframes orbit-spin-cw {
@@ -199,6 +209,10 @@ export function OrbitingPlanets({
             transform: translateY(12px) scale(1.2);
             opacity: 0.95;
           }
+        }
+        @keyframes bg-gradient-shift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
         }
       `}</style>
 
@@ -421,11 +435,12 @@ export function OrbitingPlanets({
                 transition: "none",
               }}
             >
-              {orbitMembers.map((member) => {
+               {orbitMembers.map((member) => {
                 const { angle: angleOffset } = getMemberOrbitAndAngle(member, members);
                 
                 const isHovered = hoveredMemberId === member.id;
-                const isDimmed = selectedId !== null && selectedId !== member.id;
+                const isAnyMemberHovered = hoveredMemberId !== null;
+                const isDimmed = (selectedId !== null && selectedId !== member.id) || (isAnyMemberHovered && hoveredMemberId !== member.id);
 
                 // Calculate current coordinates in container reference frame to check mouse distance
                 const currentAngleRad = angleOffset + (orbit.direction === "cw" ? 1 : -1) * (orbitAngle * Math.PI / 180);
@@ -453,13 +468,79 @@ export function OrbitingPlanets({
                 // Polar rectangular offsets inside rotating coordinate system
                 const x = r * Math.cos(angleOffset);
                 const y = r * Math.sin(angleOffset);
-
                 // Entry coordinates
                 const globalIdx = members.findIndex((m) => getMemberKey(m) === getMemberKey(member));
                 const flyStart = getFlyInStartCoords(globalIdx);
 
-                const isTopHalf = (r + y) / (r * 2) < 0.5;
-                const isLeftHalf = (r + x) / (r * 2) < 0.5;
+                const avatarX = centerX + x;
+                const avatarY = centerY + y;
+
+                const spaceLeft = avatarX - avatarSize / 2;
+                const spaceRight = containerWidth - avatarX - avatarSize / 2;
+                const spaceTop = avatarY - avatarSize / 2;
+                const spaceBottom = containerWidth - avatarY - avatarSize / 2;
+
+                // Choose the direction with the most space
+                let direction: "left" | "right" | "top" | "bottom" = "right";
+                let maxSpace = spaceRight;
+
+                if (spaceLeft > maxSpace) {
+                  direction = "left";
+                  maxSpace = spaceLeft;
+                }
+                if (spaceBottom > maxSpace) {
+                  direction = "bottom";
+                  maxSpace = spaceBottom;
+                }
+                if (spaceTop > maxSpace) {
+                  direction = "top";
+                  maxSpace = spaceTop;
+                }
+
+                // Dynamic style for the positioning container of the popup card
+                const wrapperStyle: React.CSSProperties = {
+                  position: "absolute",
+                  zIndex: 100,
+                  pointerEvents: "auto",
+                };
+
+                if (direction === "left" || direction === "right") {
+                  if (direction === "left") {
+                    wrapperStyle.right = "calc(100% + 18px)";
+                  } else {
+                    wrapperStyle.left = "calc(100% + 18px)";
+                  }
+
+                  // Vertical alignment with viewport boundary checks
+                  const halfPopupHeight = 120; // 240 / 2
+                  const margin = 10;
+                  if (spaceTop < halfPopupHeight + margin) {
+                    wrapperStyle.top = `${-spaceTop + avatarSize / 2 + margin}px`;
+                  } else if (spaceBottom < halfPopupHeight + margin) {
+                    wrapperStyle.bottom = `${-spaceBottom + avatarSize / 2 + margin}px`;
+                  } else {
+                    wrapperStyle.top = "50%";
+                    wrapperStyle.transform = "translateY(-50%)";
+                  }
+                } else {
+                  if (direction === "top") {
+                    wrapperStyle.bottom = "calc(100% + 18px)";
+                  } else {
+                    wrapperStyle.top = "calc(100% + 18px)";
+                  }
+
+                  // Horizontal alignment with viewport boundary checks
+                  const halfPopupWidth = 160; // 320 / 2
+                  const margin = 10;
+                  if (spaceLeft < halfPopupWidth + margin) {
+                    wrapperStyle.left = `${-spaceLeft + avatarSize / 2 + margin}px`;
+                  } else if (spaceRight < halfPopupWidth + margin) {
+                    wrapperStyle.right = `${-spaceRight + avatarSize / 2 + margin}px`;
+                  } else {
+                    wrapperStyle.left = "50%";
+                    wrapperStyle.transform = "translateX(-50%)";
+                  }
+                }
 
                 return (
                   <div key={member.id}>
@@ -467,7 +548,7 @@ export function OrbitingPlanets({
                     <motion.div
                       initial={{ x: flyStart.x, y: flyStart.y, scale: 0, opacity: 0 }}
                       animate={loadStage >= 4
-                        ? { x: x, y: y, scale: 1, opacity: isDimmed ? 0.2 : 1 }
+                        ? { x: x, y: y, scale: 1, opacity: isDimmed ? 0.55 : 1 }
                         : { x: flyStart.x, y: flyStart.y, scale: 0, opacity: 0 }
                       }
                       transition={{
@@ -507,7 +588,10 @@ export function OrbitingPlanets({
                           {/* DIV 4: Avatar floating & breathing wrapper */}
                           <div
                             className="relative w-full h-full flex items-center justify-center rounded-full touch-target-expand cursor-pointer pointer-events-auto"
-                            onMouseEnter={() => setHoveredMemberId(member.id)}
+                            onMouseEnter={() => {
+                              setHoveredMemberId(member.id);
+                              if (onHoverMember) onHoverMember(member.id);
+                            }}
                             onMouseLeave={() => setHoveredMemberId(null)}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -522,8 +606,8 @@ export function OrbitingPlanets({
                               className="absolute rounded-full pointer-events-none transition-all duration-300"
                               style={{
                                 inset: -6 * scaleFactor,
-                                background: `radial-gradient(circle, rgba(255,140,0,${isHovered ? 0.42 : 0.08}) 0%, transparent 70%)`,
-                                filter: `blur(${isHovered ? 8 * scaleFactor : 4 * scaleFactor}px)`,
+                                background: `radial-gradient(circle, rgba(255,140,0,${isHovered ? 0.6 : 0.08}) 0%, transparent 70%)`,
+                                filter: `blur(${isHovered ? 12 * scaleFactor : 4 * scaleFactor}px)`,
                               }}
                             />
 
@@ -532,8 +616,8 @@ export function OrbitingPlanets({
                               className="absolute rounded-full pointer-events-none transition-all duration-300"
                               style={{
                                 inset: -2.5 * scaleFactor,
-                                border: `${1.5 * scaleFactor}px solid rgba(255,140,0,${isHovered ? 0.8 : 0.2})`,
-                                boxShadow: isHovered ? "0 0 12px rgba(255,140,0,0.3)" : "none",
+                                border: `${1.5 * scaleFactor}px solid rgba(255,140,0,${isHovered ? 1.0 : 0.2})`,
+                                boxShadow: isHovered ? "0 0 16px rgba(255,140,0,0.5)" : "none",
                               }}
                             />
 
@@ -590,43 +674,177 @@ export function OrbitingPlanets({
                             {/* Expanded Glassmorphic Info Card */}
                             <AnimatePresence>
                               {isHovered && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.95 }}
-                                  transition={{ duration: 0.2, ease: "easeOut" }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="absolute z-50 pointer-events-auto select-none text-left"
-                                  style={{
-                                    width: "220px",
-                                    // Inward alignment quadrant-checks to prevent cutting off
-                                    ...(isTopHalf ? { top: "125%" } : { bottom: "125%" }),
-                                    ...(isLeftHalf ? { left: "0%" } : { right: "0%" }),
-                                  }}
-                                >
-                                  <div className="rounded-2xl border border-orange-500/35 bg-[#080c16]/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.85)] p-4 relative">
-                                    {/* Inner upper line flare */}
-                                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent rounded-t-2xl" />
-                                    
-                                    <h4 className="text-xs font-black text-white">{member.name}</h4>
-                                    <p className="text-[9.5px] text-orange-400 font-bold uppercase tracking-wider mt-0.5">{member.role}</p>
-                                    <p className="text-[9.5px] text-slate-300 mt-2 leading-relaxed">
-                                      {member.bio.length > 90 ? member.bio.slice(0, 90) + "..." : member.bio}
-                                    </p>
-                                    
-                                    {member.linkedin && (
-                                      <a
-                                        href={member.linkedin}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="mt-3 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-95 text-[9px] font-black text-white uppercase tracking-wider transition-all cursor-pointer pointer-events-auto shadow-md"
-                                      >
-                                        <span>LinkedIn Profile</span>
-                                        <ArrowRight className="h-3 w-3" />
-                                      </a>
-                                    )}
+                                <>
+                                  {/* Dynamic Connecting SVG Line */}
+                                  {direction === 'left' && (
+                                    <svg className="absolute overflow-visible pointer-events-none z-50" style={{ left: '100%', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '2px' }}>
+                                      <line x1="18" y1="1" x2="0" y2="1" stroke="rgba(255,145,0,0.6)" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="18">
+                                        <animate attributeName="stroke-dashoffset" values="18;0" dur="0.25s" fill="freeze" />
+                                      </line>
+                                      <circle cx="18" cy="1" r="3" fill="#ff9100" filter="drop-shadow(0 0 3px #ff9100)">
+                                        <animate attributeName="cx" values="18;0" dur="1.5s" repeatCount="indefinite" />
+                                        <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="1.5s" repeatCount="indefinite" />
+                                      </circle>
+                                    </svg>
+                                  )}
+                                  {direction === 'right' && (
+                                    <svg className="absolute overflow-visible pointer-events-none z-50" style={{ right: '100%', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '2px' }}>
+                                      <line x1="0" y1="1" x2="18" y2="1" stroke="rgba(255,145,0,0.6)" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="18">
+                                        <animate attributeName="stroke-dashoffset" values="18;0" dur="0.25s" fill="freeze" />
+                                      </line>
+                                      <circle cx="0" cy="1" r="3" fill="#ff9100" filter="drop-shadow(0 0 3px #ff9100)">
+                                        <animate attributeName="cx" values="0;18" dur="1.5s" repeatCount="indefinite" />
+                                        <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="1.5s" repeatCount="indefinite" />
+                                      </circle>
+                                    </svg>
+                                  )}
+                                  {direction === 'top' && (
+                                    <svg className="absolute overflow-visible pointer-events-none z-50" style={{ left: '50%', top: '100%', transform: 'translateX(-50%)', width: '2px', height: '18px' }}>
+                                      <line x1="1" y1="18" x2="1" y2="0" stroke="rgba(255,145,0,0.6)" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="18">
+                                        <animate attributeName="stroke-dashoffset" values="18;0" dur="0.25s" fill="freeze" />
+                                      </line>
+                                      <circle cx="1" cy="18" r="3" fill="#ff9100" filter="drop-shadow(0 0 3px #ff9100)">
+                                        <animate attributeName="cy" values="18;0" dur="1.5s" repeatCount="indefinite" />
+                                        <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="1.5s" repeatCount="indefinite" />
+                                      </circle>
+                                    </svg>
+                                  )}
+                                  {direction === 'bottom' && (
+                                    <svg className="absolute overflow-visible pointer-events-none z-50" style={{ left: '50%', bottom: '100%', transform: 'translateX(-50%)', width: '2px', height: '18px' }}>
+                                      <line x1="1" y1="0" x2="1" y2="18" stroke="rgba(255,145,0,0.6)" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="18">
+                                        <animate attributeName="stroke-dashoffset" values="18;0" dur="0.25s" fill="freeze" />
+                                      </line>
+                                      <circle cx="1" cy="0" r="3" fill="#ff9100" filter="drop-shadow(0 0 3px #ff9100)">
+                                        <animate attributeName="cy" values="0;18" dur="1.5s" repeatCount="indefinite" />
+                                        <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="1.5s" repeatCount="indefinite" />
+                                      </circle>
+                                    </svg>
+                                  )}
+
+                                  <div style={wrapperStyle}>
+                                    <motion.div
+                                      initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                                      exit={{ opacity: 0, scale: 0.92, y: 12 }}
+                                      transition={{ duration: 0.25, ease: "easeOut" }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="relative z-50 pointer-events-auto select-none text-left rounded-[22px] border border-orange-500/25 bg-[#080a16]/92 backdrop-blur-[20px] shadow-[0_0_40px_rgba(255,145,0,0.15)] p-5 overflow-hidden"
+                                      style={{
+                                        width: "320px",
+                                        background: "linear-gradient(-45deg, rgba(8,10,22,0.96), rgba(16,18,36,0.94), rgba(255,145,0,0.03), rgba(8,10,22,0.96))",
+                                        backgroundSize: "400% 400%",
+                                        animation: "bg-gradient-shift 12s ease infinite",
+                                      }}
+                                    >
+                                      {/* Tiny floating particles */}
+                                      {[...Array(4)].map((_, idx) => {
+                                        const angles = [45, 135, 225, 315];
+                                        const rad = angles[idx] * Math.PI / 180;
+                                        return (
+                                          <motion.div
+                                            key={idx}
+                                            className="absolute w-1 h-1 rounded-full bg-orange-400/80 shadow-[0_0_4px_#ff8c00]"
+                                            animate={{
+                                              x: [Math.cos(rad) * 155, Math.cos(rad) * 162, Math.cos(rad) * 155],
+                                              y: [Math.sin(rad) * 95, Math.sin(rad) * 102, Math.sin(rad) * 95],
+                                              opacity: [0.2, 0.8, 0.2],
+                                            }}
+                                            transition={{
+                                              duration: 3 + idx,
+                                              repeat: Infinity,
+                                              ease: "easeInOut",
+                                            }}
+                                            style={{
+                                              left: "50%",
+                                              top: "50%",
+                                            }}
+                                          />
+                                        );
+                                      })}
+
+                                      {/* Outer border top glow line */}
+                                      <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-orange-500/40 to-transparent pointer-events-none" />
+
+                                      {/* Header Row */}
+                                      <div className="flex items-center gap-4">
+                                        {/* 64px Avatar with orange glow ring */}
+                                        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-orange-500/40 shadow-[0_0_12px_rgba(255,140,0,0.35)] bg-slate-950 flex-shrink-0">
+                                          {member.photo ? (
+                                            <Image
+                                              src={member.photo}
+                                              alt={member.name}
+                                              fill
+                                              sizes="64px"
+                                              className="object-cover"
+                                            />
+                                          ) : (
+                                            <div className="w-full h-full bg-slate-900 flex items-center justify-center font-bold text-orange-400 text-sm">
+                                              {member.initials}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Name & Role */}
+                                        <div className="min-w-0">
+                                          <h4 className="text-xl font-bold text-white tracking-tight leading-tight truncate">
+                                            {member.name}
+                                          </h4>
+                                          <p className="text-[10px] text-orange-400 font-extrabold uppercase tracking-widest mt-1">
+                                            {member.role}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {/* Bio section (max 2-3 lines with gradient fade-out) */}
+                                      <div className="mt-4 relative">
+                                        <p className="text-xs text-slate-350 leading-relaxed max-h-[50px] overflow-hidden text-ellipsis line-clamp-2">
+                                          {member.bio}
+                                        </p>
+                                        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-t from-[#080a16] to-transparent pointer-events-none" />
+                                      </div>
+
+                                      {/* Focus Areas (Skills pills) */}
+                                      <div className="mt-4 flex flex-wrap gap-1.5">
+                                        {member.focusAreas.slice(0, 4).map((area) => (
+                                          <span
+                                            key={area}
+                                            className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-500/5 border border-orange-500/15 text-orange-300/95 shadow-[0_0_6px_rgba(255,140,0,0.04)]"
+                                          >
+                                            {area}
+                                          </span>
+                                        ))}
+                                      </div>
+
+                                      {/* Action Buttons */}
+                                      <div className="grid grid-cols-2 gap-2.5 mt-5">
+                                        {member.linkedin && member.linkedin !== "javascript:void(0)" ? (
+                                          <a
+                                            href={member.linkedin}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-center h-[42px] rounded-xl border border-orange-500/40 hover:border-orange-500 hover:bg-orange-500/5 text-[11px] font-bold text-orange-400 hover:text-white hover:shadow-[0_0_12px_rgba(255,145,0,0.15)] transition-all cursor-pointer pointer-events-auto text-center"
+                                          >
+                                            LinkedIn
+                                          </a>
+                                        ) : (
+                                          <div className="flex items-center justify-center h-[42px] rounded-xl border border-slate-800 text-[11px] font-bold text-slate-600 select-none text-center">
+                                            No LinkedIn
+                                          </div>
+                                        )}
+
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onSelect(member);
+                                          }}
+                                          className="flex items-center justify-center h-[42px] rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-[11px] font-extrabold text-white uppercase tracking-wider shadow-md hover:shadow-[0_0_15px_rgba(255,145,0,0.3)] transition-all cursor-pointer pointer-events-auto active:scale-95 text-center"
+                                        >
+                                          View Profile
+                                        </button>
+                                      </div>
+                                    </motion.div>
                                   </div>
-                                </motion.div>
+                                </>
                               )}
                             </AnimatePresence>
                           </div>
