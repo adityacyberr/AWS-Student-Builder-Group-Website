@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
@@ -16,6 +16,8 @@ import {
   Save,
   ArrowUp,
   ArrowDown,
+  ShieldAlert,
+  RefreshCw,
 } from "lucide-react";
 
 const LinkedInIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
@@ -30,14 +32,32 @@ const GitHubIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
   </svg>
 );
 
+// ─── Client-side dedup safety net ────────────────────────────────────────────
+// Even if DB has duplicates, the UI will never show them while the proper
+// DB cleanup is being applied.
+function deduplicateMembers(list: TeamMember[]): TeamMember[] {
+  const seen = new Map<string, TeamMember>();
+  for (const m of list) {
+    const key = `${m.name.trim().toLowerCase()}||${m.role.trim().toLowerCase()}`;
+    if (!seen.has(key)) {
+      seen.set(key, m);
+    }
+  }
+  return Array.from(seen.values());
+}
 
 export default function ConsoleTeam() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [removingDups, setRemovingDups] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
+  // ── useRef guard prevents React Strict Mode double-invocation ────────────
+  const hasFetched = useRef(false);
 
   // Lists
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [dbCount, setDbCount] = useState<number | null>(null); // raw DB row count
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modal State
@@ -61,10 +81,13 @@ export default function ConsoleTeam() {
 
   const showToast = (message: string, type: ToastType = "success") => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 4000);
   };
 
   useEffect(() => {
+    // Guard: only fetch once even in React Strict Mode (which mounts twice in dev)
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     loadTeam();
   }, []);
 
@@ -76,9 +99,13 @@ export default function ConsoleTeam() {
           .from("team_members")
           .select("*")
           .order("display_order", { ascending: true });
+
         if (error) throw error;
 
-        const mapped = (data || []).map((d: any) => ({
+        const rawCount = (data || []).length;
+        setDbCount(rawCount);
+
+        const mapped: TeamMember[] = (data || []).map((d: any) => ({
           id: d.id,
           name: d.name,
           role: d.role,
@@ -90,25 +117,106 @@ export default function ConsoleTeam() {
           initials: d.initials,
           themeColor: d.theme_color,
           photo: d.photo || "",
-          linkedin: d.linkedin,
-          github: d.github,
+          linkedin: d.linkedin || "",
+          github: d.github || "",
           displayOrder: d.display_order,
         }));
-        setMembers(mapped);
-      } else {
-        const stored = localStorage.getItem("aws_sbg_team");
-        if (stored) {
-          setMembers(JSON.parse(stored).sort((a: any, b: any) => a.displayOrder - b.displayOrder));
-        } else {
-          localStorage.setItem("aws_sbg_team", JSON.stringify(TEAM_MEMBERS));
-          setMembers(TEAM_MEMBERS);
+
+        // Safety-net dedup on the client side
+        const deduped = deduplicateMembers(mapped);
+
+        console.log(
+          `[Team Roster] DB rows: ${rawCount} | After dedup: ${deduped.length}`
+        );
+
+        if (rawCount > deduped.length) {
+          console.warn(
+            `[Team Roster] ⚠️ ${rawCount - deduped.length} duplicate row(s) detected in DB. Use "Remove Duplicates" to clean up.`
+          );
         }
+
+        // ALWAYS replace, never append
+        setMembers(deduped);
+      } else {
+        // Sandbox mode
+        const stored = localStorage.getItem("aws_sbg_team");
+        const raw: TeamMember[] = stored
+          ? JSON.parse(stored)
+          : TEAM_MEMBERS;
+        const deduped = deduplicateMembers(
+          raw.sort((a: any, b: any) => a.displayOrder - b.displayOrder)
+        );
+        setDbCount(raw.length);
+        setMembers(deduped);
       }
     } catch (err: any) {
-      console.error(err);
+      console.error("[Team Roster] Load error:", err);
       showToast("Error loading team members", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Remove Duplicates (calls DB RPC) ─────────────────────────────────────
+  const handleRemoveDuplicates = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      // Sandbox: just dedup localStorage
+      const stored = localStorage.getItem("aws_sbg_team");
+      if (stored) {
+        const raw = JSON.parse(stored);
+        const deduped = deduplicateMembers(raw);
+        localStorage.setItem("aws_sbg_team", JSON.stringify(deduped));
+        setMembers(deduped);
+        showToast(`Sandbox: removed ${raw.length - deduped.length} duplicate(s).`);
+      }
+      return;
+    }
+
+    setRemovingDups(true);
+    try {
+      // Approach: fetch all rows, find duplicates by (name, role),
+      // keep the one with the smallest created_at (oldest), delete the rest.
+      const { data: allRows, error: fetchErr } = await supabase
+        .from("team_members")
+        .select("id, name, role, created_at")
+        .order("created_at", { ascending: true });
+
+      if (fetchErr) throw fetchErr;
+
+      const seen = new Map<string, string>(); // key → id to keep
+      const toDelete: string[] = [];
+
+      for (const row of allRows || []) {
+        const key = `${row.name.trim().toLowerCase()}||${row.role.trim().toLowerCase()}`;
+        if (seen.has(key)) {
+          toDelete.push(row.id);
+        } else {
+          seen.set(key, row.id);
+        }
+      }
+
+      if (toDelete.length === 0) {
+        showToast("No duplicates found — roster is clean ✓");
+        setRemovingDups(false);
+        return;
+      }
+
+      const { error: delErr } = await supabase
+        .from("team_members")
+        .delete()
+        .in("id", toDelete);
+
+      if (delErr) throw delErr;
+
+      showToast(`${toDelete.length} duplicate record(s) removed successfully.`);
+      hasFetched.current = false; // allow reload
+      await loadTeam();
+      hasFetched.current = true;
+    } catch (err: any) {
+      console.error("[Remove Duplicates] Error:", err);
+      showToast(err.message || "Failed to remove duplicates.", "error");
+    } finally {
+      setRemovingDups(false);
     }
   };
 
@@ -124,8 +232,8 @@ export default function ConsoleTeam() {
     setInitials("");
     setThemeColor("orange");
     setPhoto("");
-    setLinkedin("javascript:void(0)");
-    setGithub("javascript:void(0)");
+    setLinkedin("");
+    setGithub("");
     setDisplayOrder(members.length + 1);
     setIsModalOpen(true);
   };
@@ -163,19 +271,8 @@ export default function ConsoleTeam() {
 
     try {
       const payload = {
-        name,
-        role,
-        branch,
-        specialization,
-        bio,
-        quote,
-        focusAreas,
-        initials,
-        themeColor,
-        photo,
-        linkedin,
-        github,
-        displayOrder,
+        name, role, branch, specialization, bio, quote,
+        focusAreas, initials, themeColor, photo, linkedin, github, displayOrder,
       };
 
       if (isSupabaseConfigured && supabase) {
@@ -196,129 +293,201 @@ export default function ConsoleTeam() {
         };
 
         if (editingId) {
-          const { error } = await supabase.from("team_members").update(dbRow).eq("id", editingId);
+          const { error } = await supabase
+            .from("team_members")
+            .update(dbRow)
+            .eq("id", editingId);
           if (error) throw error;
-          showToast("Member details updated!");
+          showToast("Member updated successfully!");
         } else {
-          const { error } = await supabase.from("team_members").insert([dbRow]);
+          // Use UPSERT to prevent duplicates on insert
+          const { error } = await supabase
+            .from("team_members")
+            .upsert([dbRow], { onConflict: "name,role" });
           if (error) throw error;
-          showToast("Member created successfully!");
+          showToast("Member added successfully!");
         }
       } else {
-        // Sandbox mode
         let list = [...members];
         if (editingId) {
           list = list.map((m) => (m.id === editingId ? { ...m, ...payload } : m));
-          showToast("Member details updated in sandbox.");
+          showToast("Member updated in sandbox.");
         } else {
           list.push({
             id: Math.random().toString(36).substring(2, 9),
             ...payload,
           });
-          showToast("Member created in sandbox.");
+          showToast("Member added in sandbox.");
         }
+        list = deduplicateMembers(list);
         localStorage.setItem("aws_sbg_team", JSON.stringify(list));
       }
+
       setIsModalOpen(false);
+      hasFetched.current = false;
       await loadTeam();
+      hasFetched.current = true;
     } catch (err: any) {
-      console.error(err);
-      showToast(err.message || "Failed to save member details.", "error");
+      console.error("[Save Member]", err);
+      showToast(err.message || "Failed to save member.", "error");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this member from the roster?")) return;
+    if (!confirm("Remove this member from the roster permanently?")) return;
     try {
       if (isSupabaseConfigured && supabase) {
         const { error } = await supabase.from("team_members").delete().eq("id", id);
         if (error) throw error;
-        showToast("Member deleted.");
+        showToast("Member removed.");
       } else {
-        const list = members.filter((m) => m.id !== id);
+        const list = deduplicateMembers(members.filter((m) => m.id !== id));
         localStorage.setItem("aws_sbg_team", JSON.stringify(list));
-        showToast("Member deleted from sandbox.");
+        showToast("Member removed from sandbox.");
       }
+      hasFetched.current = false;
       await loadTeam();
+      hasFetched.current = true;
     } catch (err: any) {
       console.error(err);
       showToast("Failed to delete member.", "error");
     }
   };
 
-  // Move a member up or down the display list
   const handleMove = async (index: number, direction: "up" | "down") => {
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= members.length) return;
 
     const list = [...members];
-    const memberA = list[index];
-    const memberB = list[targetIndex];
-
-    // Swap displayOrder values
-    const tempOrder = memberA.displayOrder;
-    memberA.displayOrder = memberB.displayOrder;
-    memberB.displayOrder = tempOrder;
+    const a = list[index];
+    const b = list[targetIndex];
+    const tempOrder = a.displayOrder;
+    a.displayOrder = b.displayOrder;
+    b.displayOrder = tempOrder;
 
     try {
       if (isSupabaseConfigured && supabase) {
-        // Update both in database
         await Promise.all([
-          supabase.from("team_members").update({ display_order: memberA.displayOrder }).eq("id", memberA.id),
-          supabase.from("team_members").update({ display_order: memberB.displayOrder }).eq("id", memberB.id),
+          supabase.from("team_members").update({ display_order: a.displayOrder }).eq("id", a.id),
+          supabase.from("team_members").update({ display_order: b.displayOrder }).eq("id", b.id),
         ]);
-        showToast("Roster ordering updated.");
+        showToast("Order updated.");
       } else {
         localStorage.setItem("aws_sbg_team", JSON.stringify(list));
-        showToast("Roster ordering updated in sandbox.");
+        showToast("Order updated in sandbox.");
       }
+      hasFetched.current = false;
       await loadTeam();
+      hasFetched.current = true;
     } catch (err: any) {
       console.error(err);
-      showToast("Failed to change order.", "error");
+      showToast("Failed to update order.", "error");
     }
   };
 
-  const filteredMembers = members.filter((m) => {
-    return (
+  const filteredMembers = members.filter(
+    (m) =>
       m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.specialization.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  );
+
+  const hasDuplicatesInDb =
+    dbCount !== null && dbCount > members.length;
 
   return (
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* ── Header ─────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             <Users className="h-5 w-5 text-amber-500" />
             Team Roster
           </h1>
           <p className="text-xs text-zinc-550 mt-1">
-            Manage student leader details, bios, specializations, and custom display orders.
+            Manage student leader details, bios, specializations, and display order.
           </p>
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm self-start md:self-auto"
-        >
-          <Plus className="h-4 w-4" />
-          Add Team Member
-        </button>
+
+        <div className="flex items-center gap-2 flex-wrap self-start">
+          {/* Remove Duplicates button — shown when DB has more rows than displayed */}
+          {hasDuplicatesInDb && (
+            <button
+              onClick={handleRemoveDuplicates}
+              disabled={removingDups}
+              className="px-3 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/15 border border-rose-500/30 text-rose-400 hover:text-rose-300 text-xs font-bold transition-all flex items-center gap-1.5"
+              title={`DB has ${dbCount} rows but only ${members.length} unique — click to clean up`}
+            >
+              {removingDups ? (
+                <Loader className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ShieldAlert className="h-3.5 w-3.5" />
+              )}
+              {removingDups ? "Cleaning…" : `Remove Duplicates (${(dbCount ?? 0) - members.length} found)`}
+            </button>
+          )}
+
+          {/* Manual refresh */}
+          <button
+            onClick={() => { hasFetched.current = false; loadTeam(); hasFetched.current = true; }}
+            disabled={loading}
+            className="h-8 w-8 rounded-lg border border-zinc-800 hover:border-zinc-700 flex items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors"
+            title="Refresh roster"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
+
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Add Member
+          </button>
+        </div>
       </div>
 
-      {/* Controls: Search */}
+      {/* ── Debug info bar ─────────────────────────────────── */}
+      {dbCount !== null && (
+        <div
+          className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border text-xs font-mono ${
+            hasDuplicatesInDb
+              ? "border-rose-500/30 bg-rose-500/5 text-rose-400"
+              : "border-zinc-900 bg-zinc-900/20 text-zinc-500"
+          }`}
+        >
+          <span>
+            DB rows: <strong className="text-zinc-300">{dbCount}</strong>
+          </span>
+          <span className="text-zinc-700">·</span>
+          <span>
+            Unique: <strong className="text-zinc-300">{members.length}</strong>
+          </span>
+          <span className="text-zinc-700">·</span>
+          <span>
+            Rendered: <strong className="text-zinc-300">{filteredMembers.length}</strong>
+          </span>
+          {hasDuplicatesInDb && (
+            <>
+              <span className="text-zinc-700">·</span>
+              <span className="text-rose-400 font-bold">
+                ⚠ {(dbCount ?? 0) - members.length} duplicate(s) in DB — click "Remove Duplicates" above
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Search ─────────────────────────────────────────── */}
       <div className="flex items-center bg-zinc-900/10 border border-zinc-900 p-3 rounded-xl">
         <div className="relative flex-grow max-w-md">
           <input
             type="text"
-            placeholder="Search roster by name, role, skills..."
+            placeholder="Search by name, role, specialization…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg bg-zinc-950 border border-zinc-850 text-white placeholder-zinc-650 focus:outline-none focus:border-amber-500/50"
@@ -327,14 +496,14 @@ export default function ConsoleTeam() {
         </div>
       </div>
 
-      {/* Roster Listing */}
+      {/* ── Roster List ────────────────────────────────────── */}
       {loading ? (
         <div className="flex justify-center py-12">
           <Loader className="h-5 w-5 text-amber-500 animate-spin" />
         </div>
       ) : filteredMembers.length === 0 ? (
         <div className="text-center py-12 bg-zinc-900/10 border border-zinc-900/50 rounded-xl">
-          <p className="text-xs text-zinc-550">No team members match query.</p>
+          <p className="text-xs text-zinc-550">No members match your search.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -344,8 +513,8 @@ export default function ConsoleTeam() {
               className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-zinc-900 bg-zinc-950/20 gap-4 hover:border-zinc-800 transition-all"
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                {/* Photo/Avatar */}
-                <div className="h-10 w-10 rounded-lg overflow-hidden border border-zinc-850 bg-zinc-900 flex-shrink-0 flex items-center justify-center font-bold text-xs select-none">
+                {/* Photo / Avatar */}
+                <div className="h-10 w-10 rounded-full overflow-hidden border border-zinc-850 bg-zinc-900 flex-shrink-0 flex items-center justify-center font-bold text-xs select-none">
                   {m.photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={m.photo} alt={m.name} className="w-full h-full object-cover" />
@@ -355,7 +524,7 @@ export default function ConsoleTeam() {
                 </div>
 
                 <div className="min-w-0">
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex items-baseline gap-2 flex-wrap">
                     <h3 className="text-xs font-black text-white truncate">{m.name}</h3>
                     <span className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold">{m.role}</span>
                   </div>
@@ -365,49 +534,55 @@ export default function ConsoleTeam() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-zinc-900/80 pt-3.5 md:pt-0">
-                {/* Display order arrows */}
+              <div className="flex items-center justify-between md:justify-end gap-5 border-t md:border-t-0 border-zinc-900/80 pt-3.5 md:pt-0">
+                {/* Order controls */}
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-zinc-550 mr-2 font-mono">Pos: {m.displayOrder}</span>
+                  <span className="text-[10px] text-zinc-550 mr-1.5 font-mono">Pos: {m.displayOrder}</span>
                   <button
                     onClick={() => handleMove(index, "up")}
                     disabled={index === 0}
                     className="h-7 w-7 rounded border border-zinc-855 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                    title="Move Up"
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={() => handleMove(index, "down")}
-                    disabled={index === members.length - 1}
+                    disabled={index === filteredMembers.length - 1}
                     className="h-7 w-7 rounded border border-zinc-855 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                    title="Move Down"
                   >
                     <ArrowDown className="h-3.5 w-3.5" />
                   </button>
                 </div>
 
-                {/* Social icons indicator */}
+                {/* Social links */}
                 <div className="flex items-center gap-2">
-                  {m.linkedin && m.linkedin !== "javascript:void(0)" && (
-                    <LinkedInIcon className="h-3.5 w-3.5 text-zinc-550" />
+                  {m.linkedin && m.linkedin !== "javascript:void(0)" && m.linkedin !== "" && (
+                    <a href={m.linkedin} target="_blank" rel="noopener noreferrer"
+                       className="text-zinc-550 hover:text-blue-400 transition-colors">
+                      <LinkedInIcon className="h-3.5 w-3.5" />
+                    </a>
                   )}
-                  {m.github && m.github !== "javascript:void(0)" && (
-                    <GitHubIcon className="h-3.5 w-3.5 text-zinc-550" />
+                  {m.github && m.github !== "javascript:void(0)" && m.github !== "" && (
+                    <a href={m.github} target="_blank" rel="noopener noreferrer"
+                       className="text-zinc-550 hover:text-zinc-200 transition-colors">
+                      <GitHubIcon className="h-3.5 w-3.5" />
+                    </a>
                   )}
                 </div>
 
-                {/* Action buttons */}
+                {/* Actions */}
                 <div className="flex gap-1">
                   <button
                     onClick={() => handleOpenEdit(m)}
                     className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors"
+                    title="Edit"
                   >
                     <Edit2 className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => handleDelete(m.id)}
                     className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-450 hover:text-rose-400 transition-colors"
+                    title="Delete"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -418,7 +593,7 @@ export default function ConsoleTeam() {
         </div>
       )}
 
-      {/* Modal Dialog Form */}
+      {/* ── Edit / Add Modal ───────────────────────────────── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-sm select-none overflow-y-auto">
           <div className="w-full max-w-2xl rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative my-8">
@@ -430,186 +605,115 @@ export default function ConsoleTeam() {
             </button>
 
             <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-zinc-900 pb-3 mb-4">
-              {editingId ? "Edit Member details" : "Add Team Member"}
+              {editingId ? "Edit Member" : "Add Team Member"}
             </h2>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Name */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Full Name *</label>
+                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Pranav Bansal"
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
-                  />
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none focus:border-amber-500/50" />
                 </div>
 
+                {/* Role */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                    Roster Role *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Roster Role *</label>
+                  <input type="text" required value={role} onChange={(e) => setRole(e.target.value)}
                     placeholder="e.g. Group Leader"
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-855 text-white focus:outline-none"
-                  />
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-855 text-white focus:outline-none focus:border-amber-500/50" />
                 </div>
 
+                {/* Branch */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                    Academic Branch *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={branch}
-                    onChange={(e) => setBranch(e.target.value)}
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Academic Branch *</label>
+                  <input type="text" required value={branch} onChange={(e) => setBranch(e.target.value)}
                     placeholder="e.g. B.Tech CSE"
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
-                  />
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
                 </div>
 
+                {/* Specialization */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                    Core Specialization *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={specialization}
-                    onChange={(e) => setSpecialization(e.target.value)}
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Specialization *</label>
+                  <input type="text" required value={specialization} onChange={(e) => setSpecialization(e.target.value)}
                     placeholder="e.g. Cybersecurity, AI & ML"
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
-                  />
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
                 </div>
 
+                {/* Initials */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                    Profile Initials *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={2}
-                    value={initials}
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Initials *</label>
+                  <input type="text" required maxLength={2} value={initials}
                     onChange={(e) => setInitials(e.target.value.toUpperCase())}
                     placeholder="e.g. PB"
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
-                  />
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
                 </div>
 
+                {/* Display Order */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                    Display Order Position
-                  </label>
-                  <input
-                    type="number"
-                    value={displayOrder}
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Display Order</label>
+                  <input type="number" value={displayOrder}
                     onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 1)}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
-                  />
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
                 </div>
               </div>
 
+              {/* Photo */}
               <div className="space-y-1.5">
-                <MediaPicker
-                  value={photo}
-                  onChange={setPhoto}
-                  folder="team"
-                  label="Upload Profile Picture"
-                />
+                <MediaPicker value={photo} onChange={setPhoto} folder="team" label="Upload Profile Picture" />
               </div>
 
+              {/* Social Links */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                    LinkedIn Link
-                  </label>
-                  <input
-                    type="text"
-                    value={linkedin}
-                    onChange={(e) => setLinkedin(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
-                  />
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">LinkedIn URL</label>
+                  <input type="text" value={linkedin} onChange={(e) => setLinkedin(e.target.value)}
+                    placeholder="https://linkedin.com/in/..."
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
                 </div>
-
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                    GitHub Link
-                  </label>
-                  <input
-                    type="text"
-                    value={github}
-                    onChange={(e) => setGithub(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
-                  />
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">GitHub URL</label>
+                  <input type="text" value={github} onChange={(e) => setGithub(e.target.value)}
+                    placeholder="https://github.com/..."
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
                 </div>
               </div>
 
+              {/* Focus Areas */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                  Focus Areas (Comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={focusAreasText}
-                  onChange={(e) => setFocusAreasText(e.target.value)}
+                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Focus Areas (comma-separated)</label>
+                <input type="text" value={focusAreasText} onChange={(e) => setFocusAreasText(e.target.value)}
                   placeholder="e.g. Cloud Security, IAM, Web & Infrastructure"
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-855 text-white focus:outline-none"
-                />
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-855 text-white focus:outline-none" />
               </div>
 
+              {/* Quote */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                  Signature Quote *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={quote}
-                  onChange={(e) => setQuote(e.target.value)}
+                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Signature Quote *</label>
+                <input type="text" required value={quote} onChange={(e) => setQuote(e.target.value)}
                   placeholder="e.g. Secure by design — building cloud skills the right way."
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
-                />
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
               </div>
 
+              {/* Bio */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                  Short Biography *
-                </label>
-                <textarea
-                  required
-                  rows={4}
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Describe the member's contributions, focus areas, and cloud objectives..."
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none resize-none"
-                />
+                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Biography *</label>
+                <textarea required rows={4} value={bio} onChange={(e) => setBio(e.target.value)}
+                  placeholder="Describe the member's contributions, focus, and cloud objectives…"
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none resize-none" />
               </div>
 
               <div className="flex justify-end gap-2.5 pt-4 border-t border-zinc-900">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
-                >
+                <button type="button" onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
-                >
+                <button type="submit" disabled={saving}
+                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
                   {saving ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  Save Member Details
+                  Save Member
                 </button>
               </div>
             </form>

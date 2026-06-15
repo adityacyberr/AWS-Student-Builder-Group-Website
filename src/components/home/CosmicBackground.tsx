@@ -6,56 +6,65 @@ interface CosmicBackgroundProps {
   reducedMotion: boolean;
 }
 
+// Deterministic pseudo-random so server/client renders match (no hydration mismatch)
+function seededRand(seed: number): number {
+  const x = Math.sin(seed + 1) * 10000;
+  return x - Math.floor(x);
+}
+
 export function CosmicBackground({ reducedMotion }: CosmicBackgroundProps) {
   const [stars] = useState(() =>
-    Array.from({ length: 80 }).map((_, i) => ({
+    Array.from({ length: 100 }).map((_, i) => ({
       id: i,
-      x: (i * 17 + 7) % 100,
-      y: (i * 23 + 13) % 100,
-      size: 0.5 + (i % 4) * 0.4,
-      opacity: 0.08 + (i % 6) * 0.06,
-      duration: 2.5 + (i % 8),
-      delay: (i % 12) * 0.4,
+      x: (seededRand(i * 3 + 0) * 100).toFixed(3),
+      y: (seededRand(i * 3 + 1) * 100).toFixed(3),
+      size: 0.5 + seededRand(i * 3 + 2) * 1.2,
+      opacity: 0.06 + seededRand(i * 5) * 0.22,
+      duration: 2.5 + seededRand(i * 7) * 7,
+      delay: seededRand(i * 11) * 8,
     }))
   );
 
   const [particles] = useState(() =>
-    Array.from({ length: 18 }).map((_, i) => ({
+    Array.from({ length: 22 }).map((_, i) => ({
       id: i,
-      x: (i * 19 + 11) % 100,
-      y: (i * 31 + 5) % 100,
-      size: 1.5 + (i % 3),
-      duration: 14 + (i % 8) * 3,
-      delay: -(i * 2),
+      x: (seededRand(i * 13 + 5) * 100).toFixed(3),
+      y: (seededRand(i * 13 + 7) * 100).toFixed(3),
+      size: 1 + seededRand(i * 13 + 9) * 2.5,
+      duration: 18 + seededRand(i * 13 + 11) * 20,
+      delay: -(seededRand(i * 13 + 13) * 20),
+      driftX: (seededRand(i * 13 + 15) - 0.5) * 60,
+      driftY: -(30 + seededRand(i * 13 + 17) * 80),
+      opacity: 0.06 + seededRand(i * 13 + 19) * 0.15,
     }))
   );
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-      {/* Deep navy background gradients */}
+      {/* Deep space background gradients */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 50% 40%, rgba(255,140,0,0.035) 0%, transparent 55%)",
+            "radial-gradient(ellipse at 62% 38%, rgba(255,140,0,0.04) 0%, transparent 52%)",
         }}
       />
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 20% 80%, rgba(255,140,0,0.02) 0%, transparent 45%)",
+            "radial-gradient(ellipse at 18% 75%, rgba(255,120,0,0.025) 0%, transparent 42%)",
         }}
       />
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 85% 20%, rgba(255,100,0,0.02) 0%, transparent 40%)",
+            "radial-gradient(ellipse at 88% 15%, rgba(255,100,0,0.02) 0%, transparent 38%)",
         }}
       />
 
-      {/* Stars */}
+      {/* Stars — twinkling with varied speeds */}
       {stars.map((star) => (
         <div
           key={star.id}
@@ -68,105 +77,79 @@ export function CosmicBackground({ reducedMotion }: CosmicBackgroundProps) {
             opacity: star.opacity,
             animation: reducedMotion
               ? "none"
-              : `cosmic-twinkle ${star.duration}s ease-in-out infinite`,
+              : `star-twinkle ${star.duration}s ease-in-out infinite`,
             animationDelay: `${star.delay}s`,
           }}
         />
       ))}
 
-      {/* Floating particles */}
+      {/* Floating micro-particles — very subtle upward drift */}
       {!reducedMotion &&
         particles.map((p) => (
           <div
             key={p.id}
-            className="absolute rounded-full bg-orange-500/15 blur-[0.5px]"
+            className="absolute rounded-full"
             style={{
               left: `${p.x}%`,
               top: `${p.y}%`,
               width: p.size,
               height: p.size,
-              animation: `cosmic-float ${p.duration}s linear infinite`,
+              background: `rgba(255,140,0,${p.opacity})`,
+              boxShadow: `0 0 ${p.size * 2}px rgba(255,140,0,${p.opacity * 0.8})`,
+              animation: `particle-drift-${p.id} ${p.duration}s linear infinite`,
               animationDelay: `${p.delay}s`,
-              willChange: "transform",
-              transform: "translate3d(0,0,0)",
+              willChange: "transform, opacity",
             }}
           />
         ))}
 
-      {/* Large nebula glow — upper left */}
+      {/* Large nebula glow — upper-left */}
       <div
-        className="absolute -top-40 -left-40 w-[45rem] h-[45rem] rounded-full animate-pulse-slow"
+        className="absolute -top-48 -left-48 w-[50rem] h-[50rem] rounded-full"
         style={{
           background:
-            "radial-gradient(circle, rgba(255,140,0,0.04) 0%, transparent 70%)",
+            "radial-gradient(circle, rgba(255,140,0,0.035) 0%, transparent 68%)",
+          animation: reducedMotion ? "none" : "nebula-pulse 12s ease-in-out infinite",
         }}
       />
 
-      {/* Large nebula glow — lower right */}
+      {/* Large nebula glow — lower-right */}
       <div
-        className="absolute -bottom-32 -right-32 w-[40rem] h-[40rem] rounded-full animate-pulse-slow"
+        className="absolute -bottom-40 -right-40 w-[44rem] h-[44rem] rounded-full"
         style={{
           background:
-            "radial-gradient(circle, rgba(255,140,0,0.03) 0%, transparent 70%)",
-          animationDelay: "4s",
+            "radial-gradient(circle, rgba(255,100,0,0.028) 0%, transparent 68%)",
+          animation: reducedMotion
+            ? "none"
+            : "nebula-pulse 14s ease-in-out infinite 5s",
         }}
       />
 
-      {/* Energy pulse rings from center */}
+      {/* Particle drift keyframes (per-particle so each has unique trajectory) */}
       {!reducedMotion && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="absolute rounded-full border border-orange-500/[0.04]"
-              style={{
-                width: 300 + i * 150,
-                height: 300 + i * 150,
-                top: -(150 + i * 75),
-                left: -(150 + i * 75),
-                animation: `cosmic-pulse 8s ease-out infinite`,
-                animationDelay: `${i * 2.5}s`,
-              }}
-            />
-          ))}
-        </div>
+        <style>{particles
+          .map(
+            (p) => `
+          @keyframes particle-drift-${p.id} {
+            0%   { transform: translate3d(0, 0, 0);
+                   opacity: 0; }
+            8%   { opacity: ${p.opacity}; }
+            88%  { opacity: ${p.opacity}; }
+            100% { transform: translate3d(${p.driftX}px, ${p.driftY}px, 0);
+                   opacity: 0; }
+          }`
+          )
+          .join("\n")}</style>
       )}
 
-      <style jsx>{`
-        @keyframes cosmic-twinkle {
-          0%,
-          100% {
-            opacity: 0.08;
-          }
-          50% {
-            opacity: 0.45;
-          }
+      <style>{`
+        @keyframes star-twinkle {
+          0%, 100% { opacity: var(--star-lo, 0.08); transform: scale(1); }
+          50%       { opacity: var(--star-hi, 0.5);  transform: scale(1.3); }
         }
-        @keyframes cosmic-float {
-          0% {
-            transform: translate3d(0, 0, 0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 0.4;
-          }
-          90% {
-            opacity: 0.4;
-          }
-          100% {
-            transform: translate3d(25px, -120px, 0);
-            opacity: 0;
-          }
-        }
-        @keyframes cosmic-pulse {
-          0% {
-            transform: scale(0.8);
-            opacity: 0.3;
-          }
-          100% {
-            transform: scale(1.8);
-            opacity: 0;
-          }
+        @keyframes nebula-pulse {
+          0%, 100% { opacity: 0.6; transform: scale(1); }
+          50%       { opacity: 1;   transform: scale(1.06); }
         }
       `}</style>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SolarCoreSunProps {
   reducedMotion: boolean;
@@ -9,6 +9,7 @@ interface SolarCoreSunProps {
   isHovered: boolean;
   onHover: (hovered: boolean) => void;
   scaleFactor?: number;
+  sunPulsed?: boolean; // triggered when a planet is clicked
 }
 
 export function SolarCoreSun({
@@ -18,176 +19,256 @@ export function SolarCoreSun({
   isHovered,
   onHover,
   scaleFactor = 1,
+  sunPulsed = false,
 }: SolarCoreSunProps) {
-  // Subtle parallax based on mouse
-  const parallaxX = reducedMotion ? 0 : mouseX * 8;
-  const parallaxY = reducedMotion ? 0 : mouseY * 8;
+  const [pulseRing, setPulseRing] = useState(false);
 
-  const sunSize = 160 * scaleFactor;
-  const flare1Size = 210 * scaleFactor;
-  const flare2Size = 240 * scaleFactor;
-  const glow1Size = 380 * scaleFactor;
-  const glow2Size = 260 * scaleFactor;
+  // Trigger an extra pulse ring when a planet is clicked
+  useEffect(() => {
+    if (sunPulsed) {
+      setPulseRing(true);
+      const t = setTimeout(() => setPulseRing(false), 800);
+      return () => clearTimeout(t);
+    }
+  }, [sunPulsed]);
+
+  const parallaxX = reducedMotion ? 0 : mouseX * 7;
+  const parallaxY = reducedMotion ? 0 : mouseY * 7;
+
+  // Scaled sizes
+  const s = Math.max(scaleFactor, 0.35);
+  const sunSize   = Math.round(148 * s);
+  const flare1    = Math.round(200 * s);
+  const flare2    = Math.round(238 * s);
+  const halo1     = Math.round(310 * s);
+  const halo2     = Math.round(420 * s);
+  const atmos     = Math.round(560 * s);
 
   return (
     <div
-      className="relative flex items-center justify-center select-none"
+      className="absolute flex items-center justify-center select-none"
       style={{
-        transform: `translate3d(${parallaxX}px, ${parallaxY}px, 0)`,
-        transition: "transform 0.3s ease-out",
+        top: "50%",
+        left: "50%",
+        transform: `translate3d(calc(-50% + ${parallaxX}px), calc(-50% + ${parallaxY}px), 0)`,
+        transition: "transform 0.35s ease-out",
+        zIndex: 10,
       }}
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
     >
-      {/* Outermost volumetric glow */}
+      {/* ── Layer 4: Atmospheric outer glow ─── */}
       <div
-        className="absolute rounded-full"
+        className="absolute rounded-full pointer-events-none"
         style={{
-          width: glow1Size,
-          height: glow1Size,
+          width: atmos,
+          height: atmos,
+          top: -atmos / 2,
+          left: -atmos / 2,
           background:
-            "radial-gradient(circle, rgba(255,140,0,0.06) 0%, rgba(255,140,0,0.02) 40%, transparent 70%)",
-          filter: "blur(30px)",
-          animation: reducedMotion ? "none" : "sun-breathe 6s ease-in-out infinite",
-          transform: isHovered ? "scale(1.15)" : "scale(1)",
-          transition: "transform 0.8s ease-out",
+            "radial-gradient(circle, rgba(255,120,0,0.035) 0%, rgba(255,80,0,0.015) 45%, transparent 72%)",
+          animation: reducedMotion ? "none" : "sun-atmos 9s ease-in-out infinite",
+          willChange: "transform, opacity",
         }}
       />
 
-      {/* Mid glow layer */}
+      {/* ── Layer 3: Large soft halo ─────────── */}
       <div
-        className="absolute rounded-full"
+        className="absolute rounded-full pointer-events-none"
         style={{
-          width: glow2Size,
-          height: glow2Size,
+          width: halo2,
+          height: halo2,
+          top: -halo2 / 2,
+          left: -halo2 / 2,
           background:
-            "radial-gradient(circle, rgba(255,160,0,0.12) 0%, rgba(255,140,0,0.04) 50%, transparent 70%)",
-          filter: "blur(20px)",
-          animation: reducedMotion
-            ? "none"
-            : "sun-breathe 5s ease-in-out infinite 1s",
-          transform: isHovered ? "scale(1.1)" : "scale(1)",
-          transition: "transform 0.6s ease-out",
+            "radial-gradient(circle, rgba(255,140,0,0.07) 0%, rgba(255,120,0,0.03) 50%, transparent 72%)",
+          filter: "blur(18px)",
+          animation: reducedMotion ? "none" : "sun-breathe 7s ease-in-out infinite",
+          transform: isHovered ? "scale(1.18)" : "scale(1)",
+          transition: "transform 0.9s ease-out",
+          willChange: "transform",
         }}
       />
 
-      {/* Solar flare ring */}
+      {/* ── Layer 2: Radial orange gradient ──── */}
+      <div
+        className="absolute rounded-full pointer-events-none"
+        style={{
+          width: halo1,
+          height: halo1,
+          top: -halo1 / 2,
+          left: -halo1 / 2,
+          background:
+            "radial-gradient(circle, rgba(255,160,0,0.14) 0%, rgba(255,140,0,0.06) 40%, transparent 70%)",
+          filter: "blur(10px)",
+          animation: reducedMotion ? "none" : "sun-breathe 5s ease-in-out infinite 1.5s",
+          transform: isHovered ? "scale(1.12)" : "scale(1)",
+          transition: "transform 0.7s ease-out",
+          willChange: "transform",
+        }}
+      />
+
+      {/* ── Conic flare ring 1 (slow clockwise) ── */}
       {!reducedMotion && (
         <div
-          className="absolute rounded-full"
+          className="absolute rounded-full pointer-events-none"
           style={{
-            width: flare1Size,
-            height: flare1Size,
-            border: "1px solid rgba(255,140,0,0.08)",
-            background: `conic-gradient(from 0deg, transparent 0%, rgba(255,140,0,0.08) 10%, transparent 20%, transparent 50%, rgba(255,140,0,0.06) 60%, transparent 70%)`,
-            animation: "sun-flare-rotate 20s linear infinite",
-            opacity: isHovered ? 0.8 : 0.4,
+            width: flare1,
+            height: flare1,
+            top: -flare1 / 2,
+            left: -flare1 / 2,
+            background:
+              "conic-gradient(from 0deg, transparent 0%, rgba(255,140,0,0.09) 12%, transparent 24%, transparent 48%, rgba(255,140,0,0.07) 62%, transparent 76%)",
+            border: "1px solid rgba(255,140,0,0.07)",
+            animation: "sun-flare-cw 22s linear infinite",
+            opacity: isHovered ? 0.9 : 0.45,
             transition: "opacity 0.5s ease",
           }}
         />
       )}
 
-      {/* Second flare ring (counter-rotate) */}
+      {/* ── Conic flare ring 2 (counter-clockwise) ── */}
       {!reducedMotion && (
         <div
-          className="absolute rounded-full"
+          className="absolute rounded-full pointer-events-none"
           style={{
-            width: flare2Size,
-            height: flare2Size,
-            background: `conic-gradient(from 180deg, transparent 0%, rgba(255,180,0,0.05) 15%, transparent 30%, transparent 60%, rgba(255,140,0,0.04) 75%, transparent 90%)`,
-            animation: "sun-flare-counter 28s linear infinite",
-            opacity: isHovered ? 0.7 : 0.3,
+            width: flare2,
+            height: flare2,
+            top: -flare2 / 2,
+            left: -flare2 / 2,
+            background:
+              "conic-gradient(from 180deg, transparent 0%, rgba(255,180,0,0.06) 18%, transparent 36%, transparent 62%, rgba(255,140,0,0.05) 80%, transparent 95%)",
+            animation: "sun-flare-ccw 30s linear infinite",
+            opacity: isHovered ? 0.75 : 0.3,
             transition: "opacity 0.5s ease",
           }}
         />
       )}
 
-      {/* Core sun body */}
+      {/* ── Planet-click pulse ring ─────────── */}
+      {pulseRing && (
+        <div
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            width: halo1,
+            height: halo1,
+            top: -halo1 / 2,
+            left: -halo1 / 2,
+            border: "1.5px solid rgba(255,140,0,0.5)",
+            animation: "sun-click-pulse 0.8s ease-out forwards",
+          }}
+        />
+      )}
+
+      {/* ── Layer 1: Bright core body ─────────── */}
       <div
-        className="relative z-10 rounded-full flex flex-col items-center justify-center cursor-pointer text-center"
+        className="relative z-20 rounded-full flex flex-col items-center justify-center cursor-pointer text-center"
         style={{
           width: sunSize,
           height: sunSize,
           background:
-            "radial-gradient(circle at 40% 35%, rgba(255,200,80,0.95) 0%, rgba(255,140,0,0.9) 40%, rgba(200,100,0,0.85) 80%)",
+            "radial-gradient(circle at 38% 32%, rgba(255,220,100,0.98) 0%, rgba(255,150,0,0.95) 38%, rgba(210,105,0,0.92) 72%, rgba(160,70,0,0.88) 100%)",
           boxShadow: isHovered
-            ? "0 0 60px rgba(255,140,0,0.5), 0 0 120px rgba(255,140,0,0.2), inset 0 0 30px rgba(255,255,255,0.15)"
-            : "0 0 40px rgba(255,140,0,0.35), 0 0 80px rgba(255,140,0,0.12), inset 0 0 20px rgba(255,255,255,0.1)",
-          transform: isHovered ? "scale(1.05)" : "scale(1)",
+            ? `0 0 ${Math.round(55*s)}px rgba(255,140,0,0.55),
+               0 0 ${Math.round(100*s)}px rgba(255,140,0,0.22),
+               0 0 ${Math.round(160*s)}px rgba(255,120,0,0.1),
+               inset 0 0 ${Math.round(28*s)}px rgba(255,255,255,0.18)`
+            : `0 0 ${Math.round(38*s)}px rgba(255,140,0,0.4),
+               0 0 ${Math.round(72*s)}px rgba(255,140,0,0.15),
+               0 0 ${Math.round(120*s)}px rgba(255,120,0,0.07),
+               inset 0 0 ${Math.round(20*s)}px rgba(255,255,255,0.12)`,
+          transform: isHovered ? "scale(1.06)" : "scale(1)",
           transition: "box-shadow 0.5s ease, transform 0.5s ease",
+          animation: reducedMotion ? "none" : "sun-shimmer 4s ease-in-out infinite",
+          willChange: "transform",
         }}
       >
-        {/* Inner shine */}
+        {/* Inner shine highlight */}
         <div
-          className="absolute top-2 left-4 w-12 h-6 rounded-full opacity-20"
+          className="absolute rounded-full opacity-25 pointer-events-none"
           style={{
+            top: Math.round(sunSize * 0.1),
+            left: Math.round(sunSize * 0.2),
+            width: Math.round(sunSize * 0.38),
+            height: Math.round(sunSize * 0.22),
             background:
-              "radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 70%)",
+              "radial-gradient(ellipse, rgba(255,255,255,0.9) 0%, transparent 70%)",
           }}
         />
 
-        {/* Text scaled down on mobile */}
-        <span 
-          className="font-black tracking-[0.2em] text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] uppercase leading-none"
-          style={{ fontSize: `${Math.max(7, 11 * scaleFactor)}px` }}
+        {/* Energy shimmer inner ring */}
+        {!reducedMotion && (
+          <div
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              width: Math.round(sunSize * 0.82),
+              height: Math.round(sunSize * 0.82),
+              border: "1px solid rgba(255,220,100,0.25)",
+              animation: "sun-inner-ring 3s ease-in-out infinite",
+            }}
+          />
+        )}
+
+        {/* Text */}
+        <span
+          className="font-black text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] uppercase leading-none relative z-10"
+          style={{
+            fontSize: `${Math.max(8, Math.round(11 * s))}px`,
+            letterSpacing: "0.2em",
+          }}
         >
           AWS
         </span>
-        <span 
-          className="font-bold tracking-[0.15em] text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase mt-0.5 leading-none"
-          style={{ fontSize: `${Math.max(5, 7 * scaleFactor)}px` }}
+        <span
+          className="font-bold text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase mt-0.5 leading-none relative z-10"
+          style={{
+            fontSize: `${Math.max(5, Math.round(7 * s))}px`,
+            letterSpacing: "0.15em",
+          }}
         >
           Student Builder
         </span>
-        <span 
-          className="font-bold tracking-[0.15em] text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase leading-none mt-0.5"
-          style={{ fontSize: `${Math.max(5, 7 * scaleFactor)}px` }}
+        <span
+          className="font-bold text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase leading-none mt-0.5 relative z-10"
+          style={{
+            fontSize: `${Math.max(5, Math.round(7 * s))}px`,
+            letterSpacing: "0.15em",
+          }}
         >
           Group
         </span>
       </div>
 
-      {/* Orbit ring decorations */}
-      {[190, 240, 300, 370].map((size, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            width: size * scaleFactor,
-            height: size * scaleFactor,
-            border: `1px ${i % 2 === 0 ? "solid" : "dashed"} rgba(255,140,0,${isHovered ? 0.12 + i * 0.02 : 0.05 + i * 0.01})`,
-            transition: "border-color 0.5s ease",
-          }}
-        />
-      ))}
-
-      <style jsx>{`
+      <style>{`
         @keyframes sun-breathe {
-          0%,
-          100% {
-            opacity: 0.7;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.06);
-          }
+          0%, 100% { opacity: 0.65; transform: scale(1); }
+          50%       { opacity: 1;    transform: scale(1.08); }
         }
-        @keyframes sun-flare-rotate {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+        @keyframes sun-atmos {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          33%       { opacity: 0.8; transform: scale(1.04); }
+          66%       { opacity: 0.6; transform: scale(0.98); }
         }
-        @keyframes sun-flare-counter {
-          from {
-            transform: rotate(360deg);
-          }
-          to {
-            transform: rotate(0deg);
-          }
+        @keyframes sun-shimmer {
+          0%, 100% { filter: brightness(1); }
+          40%       { filter: brightness(1.04); }
+          70%       { filter: brightness(0.97); }
+        }
+        @keyframes sun-flare-cw {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        @keyframes sun-flare-ccw {
+          from { transform: rotate(360deg); }
+          to   { transform: rotate(0deg); }
+        }
+        @keyframes sun-inner-ring {
+          0%, 100% { opacity: 0.15; transform: scale(0.96); }
+          50%       { opacity: 0.4;  transform: scale(1); }
+        }
+        @keyframes sun-click-pulse {
+          0%   { transform: scale(1);    opacity: 0.8; }
+          100% { transform: scale(2.2);  opacity: 0; }
         }
       `}</style>
     </div>

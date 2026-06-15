@@ -36,14 +36,17 @@ create table if not exists public.team_members (
   specialization text not null,
   bio text not null,
   quote text not null,
-  focus_areas text[] not null,
+  focus_areas text[] not null default '{}',
   initials text not null,
   theme_color text not null default 'orange',
   photo text,
-  linkedin text not null default 'javascript:void(0)',
-  github text not null default 'javascript:void(0)',
-  display_order integer not null,
+  linkedin text not null default '',
+  github text not null default '',
+  email text,
+  display_order integer not null default 0,
+  is_active boolean not null default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   constraint unique_name_role unique (name, role)
 );
 
@@ -97,6 +100,75 @@ create table if not exists public.site_settings (
   value text not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- 2b. MIGRATIONS — Add new columns to existing tables (idempotent)
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'team_members' and column_name = 'is_active'
+  ) then
+    alter table public.team_members add column is_active boolean not null default true;
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'team_members' and column_name = 'updated_at'
+  ) then
+    alter table public.team_members add column updated_at timestamp with time zone default timezone('utc'::text, now()) not null;
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'team_members' and column_name = 'email'
+  ) then
+    alter table public.team_members add column email text;
+  end if;
+end $$;
+
+-- 2c. AUTO-UPDATE updated_at TRIGGER for team_members
+create or replace function public.handle_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = timezone('utc'::text, now());
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists team_members_updated_at on public.team_members;
+create trigger team_members_updated_at
+  before update on public.team_members
+  for each row execute procedure public.handle_updated_at();
+
+-- 2d. DUPLICATE CLEANUP RPC
+-- Removes duplicate team_members rows, keeping the oldest (min created_at) per (name, role).
+create or replace function public.delete_duplicate_team_members()
+returns integer as $$
+declare
+  deleted_count integer;
+begin
+  with ranked as (
+    select
+      id,
+      row_number() over (
+        partition by lower(name), lower(role)
+        order by created_at asc
+      ) as rn
+    from public.team_members
+  ),
+  to_delete as (
+    select id from ranked where rn > 1
+  )
+  delete from public.team_members
+  where id in (select id from to_delete);
+
+  get diagnostics deleted_count = row_count;
+  return deleted_count;
+end;
+$$ language plpgsql security definer;
 
 -- 3. ENABLE RLS
 alter table public.events enable row level security;
@@ -193,15 +265,17 @@ values (
 ) on conflict (slug) do nothing;
 
 -- Seed team members
-insert into public.team_members (name, role, branch, specialization, bio, quote, focus_areas, initials, theme_color, photo, linkedin, github, display_order)
+insert into public.team_members (name, role, branch, specialization, bio, quote, focus_areas, initials, theme_color, photo, linkedin, github, display_order, is_active)
 values 
-('Pranav Bansal', 'Group Leader', 'B.Tech ECE', 'AI & ML', 'Founder and driving force behind the chapter, setting the vision and building the partnerships that bring it to life. Passionate about applying AI/ML and edge computing on the cloud, and about creating a space where every student can become a builder.', 'Building a community where students learn, innovate, and grow through cloud, Generative AI, and AWS.', array['Community Strategy', 'Generative AI', 'Cloud Architecture', 'Leadership'], 'PB', 'orange', '/team/pranav.jpg', 'https://www.linkedin.com/in/pranav-bansal-31ba4a261/', 'javascript:void(0)', 1),
-('Aditya', 'Technical Head', 'B.Tech CSE', 'Cybersecurity', 'Leads all technical programming — hands-on workshops, cloud labs, and the club''s own infrastructure. A cybersecurity enthusiast focused on secure cloud practices, IAM, and teaching builders to ship projects safely.', 'Secure by design — building cloud skills the right way.', array['Cloud Security', 'IAM', 'Hands-on Labs', 'Web & Infrastructure'], 'AK', 'orange', '/team/aditya.jpg', 'https://www.linkedin.com/in/adityacyber/', 'javascript:void(0)', 2),
-('Amisha', 'Marketing Head', 'B.Tech CSE', 'AI & ML', 'Owns the club''s brand, content, and outreach, turning every event into reach across LinkedIn, Instagram, and WhatsApp. Drives community growth and makes sure the right students hear about us.', 'Telling the story of every builder.', array['Brand & Content', 'Social Growth', 'Outreach', 'Design'], 'AM', 'orange', '/team/amisha.jpg', 'https://www.linkedin.com/in/amisha-amisha-644aa3390/', 'javascript:void(0)', 3),
-('Amber Prashar', 'Treasurer', 'B.Tech CSE', 'AI & ML', 'Manages budgets, sponsorships, and resource planning so events run smoothly and sustainably. Keeps the club''s operations financially healthy as it scales.', 'Making sure every resource builds something.', array['Budgeting', 'Sponsorships', 'Operations', 'Resource Planning'], 'AP', 'orange', '/team/amber.jpg', 'https://www.linkedin.com/in/amber-prashar-a57b65395/', 'javascript:void(0)', 4),
-('Rohan Verma', 'Director of Photography', 'B.Tech CE', 'AI & ML', 'Documents every workshop and hackathon through photography, video, and visual storytelling — building the credibility archive that shows the world what the community does.', 'Capturing the moments that become our legacy.', array['Photography', 'Videography', 'Visual Storytelling', 'Media'], 'RV', 'orange', '/team/rohan.jpg', 'https://www.linkedin.com/in/rohan-verma-5a768b3b3/', 'javascript:void(0)', 5),
-('Rinku Bhalotiya', 'Event Head', 'B.Tech CSE', 'Software Engineering', 'Plans and runs workshops, bootcamps, and hackathons end-to-end, bridging industry mentors and student builders. Turns ideas into well-run events that people remember.', 'From idea to packed room.', array['Event Operations', 'Hackathons', 'Logistics', 'Partnerships'], 'RB', 'orange', '/team/rinku.jpg', 'https://www.linkedin.com/in/rinku-bhalotiya-7507003b3/', 'javascript:void(0)', 6)
-on conflict (name, role) do nothing;
+('Pranav Bansal', 'Group Leader', 'B.Tech ECE', 'AI & ML', 'Founder and driving force behind the chapter, setting the vision and building the partnerships that bring it to life. Passionate about applying AI/ML and edge computing on the cloud, and about creating a space where every student can become a builder.', 'Building a community where students learn, innovate, and grow through cloud, Generative AI, and AWS.', array['Community Strategy', 'Generative AI', 'Cloud Architecture', 'Leadership'], 'PB', 'orange', '/team/pranav.jpg', 'https://www.linkedin.com/in/pranav-bansal-31ba4a261/', '', 1, true),
+('Aditya', 'Technical Head', 'B.Tech CSE', 'Cybersecurity', 'Leads all technical programming — hands-on workshops, cloud labs, and the club''s own infrastructure. A cybersecurity enthusiast focused on secure cloud practices, IAM, and teaching builders to ship projects safely.', 'Secure by design — building cloud skills the right way.', array['Cloud Security', 'IAM', 'Hands-on Labs', 'Web & Infrastructure'], 'AK', 'orange', '/team/aditya.jpg', 'https://www.linkedin.com/in/adityacyber/', '', 2, true),
+('Amisha', 'Marketing Head', 'B.Tech CSE', 'AI & ML', 'Owns the club''s brand, content, and outreach, turning every event into reach across LinkedIn, Instagram, and WhatsApp. Drives community growth and makes sure the right students hear about us.', 'Telling the story of every builder.', array['Brand & Content', 'Social Growth', 'Outreach', 'Design'], 'AM', 'orange', '/team/amisha.jpg', 'https://www.linkedin.com/in/amisha-amisha-644aa3390/', '', 3, true),
+('Amber Prashar', 'Treasurer', 'B.Tech CSE', 'AI & ML', 'Manages budgets, sponsorships, and resource planning so events run smoothly and sustainably. Keeps the club''s operations financially healthy as it scales.', 'Making sure every resource builds something.', array['Budgeting', 'Sponsorships', 'Operations', 'Resource Planning'], 'AP', 'orange', '/team/amber.jpg', 'https://www.linkedin.com/in/amber-prashar-a57b65395/', '', 4, true),
+('Rohan Verma', 'Director of Photography', 'B.Tech CE', 'AI & ML', 'Documents every workshop and hackathon through photography, video, and visual storytelling — building the credibility archive that shows the world what the community does.', 'Capturing the moments that become our legacy.', array['Photography', 'Videography', 'Visual Storytelling', 'Media'], 'RV', 'orange', '/team/rohan.jpg', 'https://www.linkedin.com/in/rohan-verma-5a768b3b3/', '', 5, true),
+('Rinku Bhalotiya', 'Event Head', 'B.Tech CSE', 'Software Engineering', 'Plans and runs workshops, bootcamps, and hackathons end-to-end, bridging industry mentors and student builders. Turns ideas into well-run events that people remember.', 'From idea to packed room.', array['Event Operations', 'Hackathons', 'Logistics', 'Partnerships'], 'RB', 'orange', '/team/rinku.jpg', 'https://www.linkedin.com/in/rinku-bhalotiya-7507003b3/', '', 6, true)
+on conflict (name, role) do update set
+  is_active = coalesce(excluded.is_active, true),
+  updated_at = timezone('utc'::text, now());
 
 -- Seed gallery
 insert into public.gallery_images (title, date, description, category, placeholder_color)
