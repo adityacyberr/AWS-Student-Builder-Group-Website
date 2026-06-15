@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { Menu, X, ArrowRight, LogOut, Settings, User as UserIcon, Layout, ChevronDown, Lock } from "lucide-react";
-import Image from "next/image";
+import { Menu, X, ArrowRight, LogOut, Settings, Layout, ChevronDown, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-
 
 export default function Header() {
   const pathname = usePathname();
@@ -23,6 +21,18 @@ export default function Header() {
     pathname.startsWith("/forgot-password") || 
     pathname.startsWith("/reset-password");
 
+  // Handle body scroll locking when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen && !isAuthOrPanelPath) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [mobileMenuOpen, isAuthOrPanelPath]);
+
   // Handle outside click to close dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -36,7 +46,7 @@ export default function Header() {
 
   if (isAuthOrPanelPath) return null;
 
-  // Public Nav Items (Admin is removed because it moves to the user menu)
+  // Public Nav Items
   const navItems = [
     { name: "Home", href: "/" },
     { name: "About", href: "/about" },
@@ -49,6 +59,7 @@ export default function Header() {
 
   const handleSignOutClick = async () => {
     setDropdownOpen(false);
+    setMobileMenuOpen(false);
     await logout();
   };
 
@@ -151,8 +162,6 @@ export default function Header() {
                       </Link>
                     )}
 
-
-
                     <div className="my-1 border-t border-slate-900/60" />
 
                     <button
@@ -188,7 +197,7 @@ export default function Header() {
             </a>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Hamburger Button */}
           <div className="flex md:hidden items-center gap-3">
             {profile && (
               <Link
@@ -209,109 +218,142 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Menu Drawer with Framer Motion */}
+      {/* Fullscreen Mobile Navigation Overlay Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <>
-            {/* Backdrop blur overlay */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 z-45 bg-slate-950/60 backdrop-blur-sm md:hidden"
-            />
-
-            {/* Slide-out Panel */}
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 z-50 w-[280px] max-w-full border-l border-slate-900 bg-slate-950/95 p-6 shadow-2xl backdrop-blur-md md:hidden flex flex-col justify-between"
-            >
-              <div className="space-y-6">
-                {/* Drawer Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-slate-900/60">
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-black tracking-widest text-white">RIMT AWS SBG</span>
-                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">Navigation Menu</span>
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="fixed inset-0 z-[9999] w-screen h-screen flex flex-col justify-between p-6 md:hidden overflow-y-auto"
+            style={{
+              backgroundColor: "rgba(5, 8, 20, 0.98)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+            }}
+          >
+            {/* Header top section */}
+            <div className="flex flex-col space-y-4 w-full">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-900/60 w-full">
+                {/* Logo replica */}
+                <div className="flex items-center gap-3 select-none">
+                  <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden">
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-500 to-amber-500 opacity-90" />
+                    <div className="flex flex-col leading-[1.1] text-left">
+                      <span className="text-xs font-black tracking-widest text-white flex items-center gap-0.5">
+                        RIMT<span className="h-1.5 w-1.5 rounded-full bg-orange-500 inline-block" />
+                      </span>
+                      <span className="text-[8px] font-extrabold uppercase tracking-wider text-slate-305">
+                        AWS SBG
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="p-2.5 rounded-lg border border-slate-800/80 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                    aria-label="Close menu"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
                 </div>
 
-                {/* Nav items list */}
-                <nav className="flex flex-col gap-1.5">
-                  {navItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`block px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
-                          isActive
-                            ? "text-orange-500 bg-slate-900/60"
-                            : "text-slate-300 hover:text-orange-400 hover:bg-slate-900/40"
-                        }`}
-                      >
-                        {item.name}
-                      </Link>
-                    );
-                  })}
-                  
-                  {profile ? (
-                    <>
-                      <div className="my-2 border-t border-slate-900/60" />
-                      <Link
-                        href="/admin"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block px-4 py-3 rounded-xl text-sm font-semibold text-orange-400 hover:bg-slate-900/40 cursor-pointer"
-                      >
-                        Admin Dashboard
-                      </Link>
-                      <button
-                        onClick={handleSignOutClick}
-                        className="w-full text-left px-4 py-3 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/5 transition-all cursor-pointer"
-                      >
-                        Sign Out
-                      </button>
-                    </>
-                  ) : (
-                    <Link
-                      href="/login"
-                      onClick={() => setMobileMenuOpen(false)}
-                      title="Administrator Access"
-                      className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-slate-350 hover:text-orange-400 hover:bg-slate-900/40 cursor-pointer"
-                    >
-                      <Lock className="h-4 w-4 text-orange-500/80" />
-                      <span>Admin Portal</span>
-                    </Link>
-                  )}
-                </nav>
+                {/* Close X Button */}
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2.5 rounded-lg border border-slate-900 hover:border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer bg-slate-900/40"
+                  aria-label="Close menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
-              {/* Join our club CTA */}
-              <div className="pt-4 border-t border-slate-900/60">
-                <a
-                  href="https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-1.5 h-12 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-sm hover:from-orange-600 hover:to-amber-600 transition-all select-none cursor-pointer"
-                >
-                  Join Our Club
-                  <ArrowRight className="h-4 w-4" />
-                </a>
+              {/* Sub-header Brand text */}
+              <div className="flex flex-col items-start text-left mt-2">
+                <span className="text-sm font-bold text-white tracking-wide">
+                  RIMT AWS Student Builder Group
+                </span>
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-0.5">
+                  RIMT University, Punjab
+                </span>
               </div>
-            </motion.div>
-          </>
+            </div>
+
+            {/* Menu Items Centered Vertically */}
+            <nav className="flex flex-col items-center justify-center space-y-6 my-auto py-6">
+              {navItems.map((item, idx) => {
+                const isActive = pathname === item.href;
+                return (
+                  <motion.div
+                    key={item.name}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + idx * 0.04, duration: 0.25 }}
+                  >
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`text-2xl font-semibold transition-all duration-200 block py-1 cursor-pointer ${
+                        isActive
+                          ? "text-orange-500 border-b-2 border-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]"
+                          : "text-slate-200 hover:text-orange-400"
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  </motion.div>
+                );
+              })}
+              
+              {/* Admin Portal option */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + navItems.length * 0.04, duration: 0.25 }}
+              >
+                {profile ? (
+                  <div className="flex flex-col items-center space-y-4 pt-4 border-t border-slate-900/60 w-44">
+                    <Link
+                      href="/admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`text-2xl font-semibold transition-all duration-200 cursor-pointer ${
+                        pathname === "/admin"
+                          ? "text-orange-500 border-b-2 border-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]"
+                          : "text-slate-200 hover:text-orange-400"
+                      }`}
+                    >
+                      Admin Dashboard
+                    </Link>
+                    <button
+                      onClick={handleSignOutClick}
+                      className="text-sm font-bold text-red-400 hover:text-red-300 transition-colors py-1 cursor-pointer"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`text-2xl font-semibold transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                      pathname === "/login"
+                        ? "text-orange-500 border-b-2 border-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]"
+                        : "text-slate-200 hover:text-orange-400"
+                    }`}
+                  >
+                    <Lock className="h-4.5 w-4.5 text-orange-500/80" />
+                    <span>Admin Portal</span>
+                  </Link>
+                )}
+              </motion.div>
+            </nav>
+
+            {/* Bottom Join CTA Button (Single Only, Never Duplicated) */}
+            <div className="pb-8 w-full flex justify-center">
+              <a
+                href="https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-[85%] max-w-[320px] items-center justify-center gap-1.5 h-12 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-sm hover:from-orange-600 hover:to-amber-600 transition-all select-none cursor-pointer shadow-lg shadow-orange-500/10 active:scale-95"
+              >
+                Join Our Club
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </header>
