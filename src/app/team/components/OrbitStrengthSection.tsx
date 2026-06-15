@@ -78,19 +78,17 @@ const splitQuoteIntoLines = (quote: string): string[] => {
 
 /* ───────────────────────── Animation Variants ─────────────────── */
 
-// Direction-aware profile card animations
-const getProfileVariants = (direction: "down" | "up") => ({
+// Profile card transitions (outgoing/incoming)
+const getProfileVariants = () => ({
   initial: {
     opacity: 0,
-    y: direction === "down" ? 40 : -40,
+    y: 30, // Slide upward 30px
     scale: 0.95,
-    filter: "blur(6px)",
   },
   animate: {
     opacity: 1,
     y: 0,
     scale: 1,
-    filter: "blur(0px)",
     transition: {
       duration: 0.6,
       ease: [0.16, 1, 0.3, 1] as const,
@@ -98,9 +96,8 @@ const getProfileVariants = (direction: "down" | "up") => ({
   },
   exit: {
     opacity: 0,
-    y: direction === "down" ? -30 : 30,
+    y: -20, // Move upward 20px
     scale: 0.95,
-    filter: "blur(4px)",
     transition: {
       duration: 0.35,
       ease: [0.4, 0, 1, 1] as const,
@@ -194,7 +191,7 @@ interface OrbitStrengthSectionProps {
 }
 
 export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSectionProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeMemberIndex, setActiveMemberIndex] = useState(0);
   const [scrollDirection, setScrollDirection] = useState<"down" | "up">("down");
   const [isStickyEnabled, setIsStickyEnabled] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
@@ -203,14 +200,14 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const prevIndexRef = useRef(0);
 
-  // ─── Responsive: enable sticky only on tall screens ───
+  // ─── Responsive: enable sticky scroll showcase on desktop viewports ───
   useEffect(() => {
-    const checkHeight = () => {
-      setIsStickyEnabled(window.innerHeight >= 650);
+    const checkResponsive = () => {
+      setIsStickyEnabled(window.innerWidth >= 768);
     };
-    checkHeight();
-    window.addEventListener("resize", checkHeight);
-    return () => window.removeEventListener("resize", checkHeight);
+    checkResponsive();
+    window.addEventListener("resize", checkResponsive);
+    return () => window.removeEventListener("resize", checkResponsive);
   }, []);
 
   // ─── IntersectionObserver: auto-select first member on viewport entry ───
@@ -221,7 +218,7 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
       ([entry]) => {
         if (entry.isIntersecting && !hasEntered) {
           setHasEntered(true);
-          setActiveIndex(0);
+          setActiveMemberIndex(0);
         }
       },
       { threshold: 0.05 }
@@ -251,10 +248,17 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
       const n = members.length;
       const index = Math.min(Math.floor(progress * n), n - 1);
 
+      // Temporary debugging logs
+      console.log({
+        progress,
+        activeMemberIndex: index,
+        activeMemberName: members[index]?.name,
+      });
+
       if (index !== prevIndexRef.current) {
         setScrollDirection(index > prevIndexRef.current ? "down" : "up");
         prevIndexRef.current = index;
-        setActiveIndex(index);
+        setActiveMemberIndex(index);
       }
     };
 
@@ -264,7 +268,7 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [isStickyEnabled, members.length]);
+  }, [isStickyEnabled, members]);
 
   // ─── Scroll page to bring a specific member into view ───
   const scrollToMember = useCallback((index: number) => {
@@ -287,47 +291,47 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
     if (isStickyEnabled) {
       scrollToMember(index);
     } else {
-      setScrollDirection(index > activeIndex ? "down" : "up");
-      setActiveIndex(index);
+      setScrollDirection(index > activeMemberIndex ? "down" : "up");
+      setActiveMemberIndex(index);
     }
-  }, [isStickyEnabled, scrollToMember, activeIndex]);
+  }, [isStickyEnabled, scrollToMember, activeMemberIndex]);
 
   const goNext = useCallback(() => {
-    const nextIndex = (activeIndex + 1) % members.length;
+    const nextIndex = (activeMemberIndex + 1) % members.length;
     if (isStickyEnabled) {
       scrollToMember(nextIndex);
     } else {
       setScrollDirection("down");
-      setActiveIndex(nextIndex);
+      setActiveMemberIndex(nextIndex);
     }
-  }, [activeIndex, members.length, isStickyEnabled, scrollToMember]);
+  }, [activeMemberIndex, members.length, isStickyEnabled, scrollToMember]);
 
   const goPrev = useCallback(() => {
-    const prevIndex = (activeIndex - 1 + members.length) % members.length;
+    const prevIndex = (activeMemberIndex - 1 + members.length) % members.length;
     if (isStickyEnabled) {
       scrollToMember(prevIndex);
     } else {
       setScrollDirection("up");
-      setActiveIndex(prevIndex);
+      setActiveMemberIndex(prevIndex);
     }
-  }, [activeIndex, members.length, isStickyEnabled, scrollToMember]);
+  }, [activeMemberIndex, members.length, isStickyEnabled, scrollToMember]);
 
   // ─── Auto-scroll active role card into horizontal view on mobile ───
   useEffect(() => {
-    if (buttonRefs.current[activeIndex]) {
-      buttonRefs.current[activeIndex]?.scrollIntoView({
+    if (buttonRefs.current[activeMemberIndex]) {
+      buttonRefs.current[activeMemberIndex]?.scrollIntoView({
         behavior: "smooth",
         block: "nearest",
         inline: "center",
       });
     }
-  }, [activeIndex]);
+  }, [activeMemberIndex]);
 
   if (members.length === 0) return null;
 
-  const activeMember = members[activeIndex];
+  const activeMember = members[activeMemberIndex];
   const quoteLines = splitQuoteIntoLines(activeMember.quote);
-  const profileVariants = getProfileVariants(scrollDirection);
+  const profileVariants = getProfileVariants();
   const counterVariants = numberFlipVariants(scrollDirection);
 
   return (
@@ -371,7 +375,7 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
 
           <div className="flex overflow-x-auto md:grid md:grid-cols-6 gap-3 md:gap-4 relative z-10 scrollbar-none pb-3 pt-1 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
             {members.map((member, i) => {
-              const isActive = i === activeIndex;
+              const isActive = i === activeMemberIndex;
               return (
                 <button
                   key={member.id}
@@ -545,10 +549,14 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
                       className="relative w-28 h-28 sm:w-40 sm:h-40 rounded-full overflow-hidden border-2 border-orange-500/25"
                       initial={{ scale: 1, boxShadow: "0 0 0px rgba(255,140,0,0)" }}
                       animate={{
-                        scale: 1.05,
-                        boxShadow: "0 0 30px rgba(255,140,0,0.18)",
+                        scale: [1, 1.08, 1.05],
+                        boxShadow: [
+                          "0 0 0px rgba(255,140,0,0)",
+                          "0 0 35px rgba(255,140,0,0.45)",
+                          "0 0 30px rgba(255,140,0,0.18)",
+                        ],
                       }}
-                      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                      transition={{ duration: 0.7, ease: "easeOut" }}
                       style={{ willChange: "transform" }}
                     >
                       {activeMember.photo ? (
@@ -585,14 +593,14 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
                       <div className="flex items-center gap-1 text-[11px] font-mono tabular-nums overflow-hidden">
                         <AnimatePresence mode="wait" initial={false}>
                           <motion.span
-                            key={`counter-${activeIndex}`}
+                            key={`counter-${activeMemberIndex}`}
                             variants={counterVariants}
                             initial="initial"
                             animate="animate"
                             exit="exit"
                             className="text-orange-400 font-bold inline-block"
                           >
-                            {String(activeIndex + 1).padStart(2, "0")}
+                            {String(activeMemberIndex + 1).padStart(2, "0")}
                           </motion.span>
                         </AnimatePresence>
                         <span className="text-slate-600">/</span>
@@ -623,21 +631,21 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
                             className="absolute inset-0 rounded-full transition-all duration-500 ease-out"
                             style={{
                               background:
-                                idx <= activeIndex
+                                idx <= activeMemberIndex
                                   ? "rgb(249, 115, 22)"
                                   : "rgb(30, 41, 59)",
                               boxShadow:
-                                idx <= activeIndex
+                                idx <= activeMemberIndex
                                   ? "0 0 8px rgba(255,140,0,0.6)"
                                   : "none",
                               transform:
-                                idx === activeIndex
+                                idx === activeMemberIndex
                                   ? "scale(1.3)"
                                   : "scale(1)",
                             }}
                           />
                           {/* Active dot pulse */}
-                          {idx === activeIndex && !reducedMotion && (
+                          {idx === activeMemberIndex && !reducedMotion && (
                             <div
                               className="absolute inset-0 rounded-full bg-orange-500/40"
                               style={{
