@@ -15,7 +15,6 @@ export default function Footer() {
   const pathname = usePathname();
   const isAuthOrPanelPath = 
     pathname.startsWith("/admin") || 
-    pathname.startsWith("/member") || 
     pathname.startsWith("/login") || 
     pathname.startsWith("/forgot-password") || 
     pathname.startsWith("/reset-password");

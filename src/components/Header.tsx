@@ -19,7 +19,6 @@ export default function Header() {
   // Hide header on panels and login/reset flows
   const isAuthOrPanelPath = 
     pathname.startsWith("/admin") || 
-    pathname.startsWith("/member") || 
     pathname.startsWith("/login") || 
     pathname.startsWith("/forgot-password") || 
     pathname.startsWith("/reset-password");
@@ -133,14 +132,12 @@ export default function Header() {
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-900 bg-slate-950 p-2 shadow-2xl transition-all">
                     <Link
-                      href={profile.portal_role === "Member" ? "/member" : "/admin"}
+                      href="/admin"
                       onClick={() => setDropdownOpen(false)}
                       className="flex w-full items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
                     >
                       <Layout className="h-4 w-4 text-orange-500" />
-                      <span>
-                        {profile.portal_role === "Member" ? "Member Portal" : "Admin Dashboard"}
-                      </span>
+                      <span>Admin Dashboard</span>
                     </Link>
                     
                     {profile.portal_role !== "Member" && (
@@ -154,14 +151,7 @@ export default function Header() {
                       </Link>
                     )}
 
-                    <Link
-                      href="/member"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex w-full items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-900 transition-colors"
-                    >
-                      <UserIcon className="h-4 w-4 text-orange-500" />
-                      <span>My Profile</span>
-                    </Link>
+
 
                     <div className="my-1 border-t border-slate-900/60" />
 
@@ -202,7 +192,7 @@ export default function Header() {
           <div className="flex md:hidden items-center gap-3">
             {profile && (
               <Link
-                href={profile.portal_role === "Member" ? "/member" : "/admin"}
+                href="/admin"
                 className="h-8 w-8 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-orange-400 font-extrabold text-[10px]"
               >
                 {profile.name.substring(0, 2).toUpperCase()}
@@ -281,11 +271,11 @@ export default function Header() {
                     <>
                       <div className="my-2 border-t border-slate-900/60" />
                       <Link
-                        href={profile.portal_role === "Member" ? "/member" : "/admin"}
+                        href="/admin"
                         onClick={() => setMobileMenuOpen(false)}
                         className="block px-4 py-3 rounded-xl text-sm font-semibold text-orange-400 hover:bg-slate-900/40 cursor-pointer"
                       >
-                        {profile.portal_role === "Member" ? "Member Portal" : "Admin Dashboard"}
+                        Admin Dashboard
                       </Link>
                       <button
                         onClick={handleSignOutClick}

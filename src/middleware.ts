@@ -24,12 +24,7 @@ export function middleware(request: NextRequest) {
     }
     return NextResponse.next();
   }
-  if (pathname === "/member/login") {
-    if (!isSupabaseConfigured || sessionCookie) {
-      return NextResponse.redirect(new URL("/member", request.url));
-    }
-    return NextResponse.next();
-  }
+
 
   // Protect all /admin/* routes
   if (pathname.startsWith("/admin")) {
@@ -39,13 +34,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protect all /member/* routes (except /member/login)
-  if (pathname.startsWith("/member")) {
-    if (isSupabaseConfigured && !sessionCookie) {
-      return NextResponse.redirect(new URL("/member/login", request.url));
-    }
-    return NextResponse.next();
-  }
+
 
   return NextResponse.next();
 }

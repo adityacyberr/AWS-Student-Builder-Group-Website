@@ -98,20 +98,7 @@ export default function ConsoleLayout({
     return <>{children}</>;
   }
 
-  // Guards: If user is logged in but is a "Member", send them to /member portal
-  if (profile && profile.portal_role === "Member") {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-4">
-        <div className="text-center space-y-4">
-          <div className="h-10 w-10 rounded-full border border-orange-500/20 bg-orange-500/10 flex items-center justify-center text-orange-500 mx-auto animate-pulse">
-            <Users className="h-5 w-5" />
-          </div>
-          <h3 className="text-sm font-semibold text-white">Redirecting to Member Portal</h3>
-          <p className="text-xs text-zinc-500">Accessing authorized workspace...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   // Get active section name for Breadcrumbs
   const getBreadcrumbs = () => {
@@ -190,19 +177,6 @@ export default function ConsoleLayout({
             </div>
           ))}
           
-          {/* Quick link to Member Portal view */}
-          {profile && (profile.portal_role === "Super Admin" || profile.portal_role === "Editor") && (
-            <div className="pt-2 border-t border-zinc-900/50">
-              <Link
-                href="/member"
-                className="flex items-center justify-center lg:justify-start gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold text-zinc-500 hover:text-orange-400 hover:bg-orange-500/5 transition-all border border-transparent hover:border-orange-500/10"
-                title="Go to Member view"
-              >
-                <ArrowLeftRight className="h-4.5 w-4.5 text-zinc-550 group-hover:text-orange-400 flex-shrink-0" />
-                <span className="hidden lg:inline">Go to Member view</span>
-              </Link>
-            </div>
-          )}
         </nav>
 
         {/* Footer / Logout */}

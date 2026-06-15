@@ -115,16 +115,7 @@ export default function LoginPage() {
         if (redirectTo) {
           router.push(redirectTo);
         } else {
-          // If no redirect provided, check profile role to determine default dashboard path
-          import("@/lib/auth-helpers").then(({ getCurrentUserProfile }) => {
-            getCurrentUserProfile().then((p) => {
-              if (p && p.portal_role === "Member") {
-                router.push("/member");
-              } else {
-                router.push("/admin");
-              }
-            });
-          });
+          router.push("/admin");
         }
       }, 800);
     } catch (err: any) {

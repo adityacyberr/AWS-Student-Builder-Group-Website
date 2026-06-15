@@ -57,12 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const p = await getCurrentUserProfile();
     setProfile(p);
     
-    // Redirect logic based on role and current path
-    if (p) {
-      if (p.portal_role === "Member" && pathname.startsWith("/admin")) {
-        router.push("/member");
-      }
-    }
+
   };
 
   useEffect(() => {
@@ -107,9 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         syncCookie(null);
         
         // Only redirect to login if we are inside protected pages
-        if (pathname.startsWith("/admin") || pathname.startsWith("/member")) {
-          const loginPath = pathname.startsWith("/admin") ? "/admin/login" : "/member/login";
-          router.push(`${loginPath}?redirectTo=${encodeURIComponent(pathname)}`);
+        if (pathname.startsWith("/admin")) {
+          router.push(`/admin/login?redirectTo=${encodeURIComponent(pathname)}`);
         }
       }
       setLoading(false);
