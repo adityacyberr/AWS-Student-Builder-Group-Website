@@ -29,6 +29,7 @@ interface PlanetMemberProps {
   onSelect: (member: TeamMember) => void;
   reducedMotion: boolean;
   containerCenter: { x: number; y: number };
+  scaleFactor: number;
 }
 
 function PlanetMember({
@@ -40,6 +41,7 @@ function PlanetMember({
   onSelect,
   reducedMotion,
   containerCenter,
+  scaleFactor,
 }: PlanetMemberProps) {
   const planetRef = useRef<HTMLDivElement>(null);
   const angleRef = useRef(orbitConfig.startAngle * (Math.PI / 180));
@@ -49,13 +51,15 @@ function PlanetMember({
   const [pos, setPos] = useState({ x: 0, y: 0 });
 
   const isDimmed = selectedId !== null && selectedId !== member.id;
+  const scaledRadius = orbitConfig.radius * scaleFactor;
+  const avatarSize = Math.round(64 * scaleFactor);
 
   // Animate orbit
   useEffect(() => {
     if (reducedMotion) {
       // Just place at start angle
-      const x = Math.cos(angleRef.current) * orbitConfig.radius;
-      const y = Math.sin(angleRef.current) * orbitConfig.radius * 0.45;
+      const x = Math.cos(angleRef.current) * scaledRadius;
+      const y = Math.sin(angleRef.current) * scaledRadius * 0.45;
       setPos({ x, y });
       return;
     }
@@ -70,8 +74,8 @@ function PlanetMember({
         angleRef.current += (orbitConfig.speed * delta) / 1000;
       }
 
-      const x = Math.cos(angleRef.current) * orbitConfig.radius;
-      const y = Math.sin(angleRef.current) * orbitConfig.radius * 0.45;
+      const x = Math.cos(angleRef.current) * scaledRadius;
+      const y = Math.sin(angleRef.current) * scaledRadius * 0.45;
       setPos({ x, y });
 
       rafRef.current = requestAnimationFrame(animate);
@@ -79,7 +83,7 @@ function PlanetMember({
 
     rafRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [orbitConfig.radius, orbitConfig.speed, reducedMotion]);
+  }, [scaledRadius, orbitConfig.speed, reducedMotion]);
 
   useEffect(() => {
     pausedRef.current = hovered;
@@ -98,10 +102,10 @@ function PlanetMember({
       <div
         className="absolute pointer-events-none transition-opacity duration-500"
         style={{
-          width: orbitConfig.radius * 2,
-          height: orbitConfig.radius * 0.9,
-          left: containerCenter.x - orbitConfig.radius,
-          top: containerCenter.y - orbitConfig.radius * 0.45,
+          width: scaledRadius * 2,
+          height: scaledRadius * 0.9,
+          left: containerCenter.x - scaledRadius,
+          top: containerCenter.y - scaledRadius * 0.45,
           borderRadius: "50%",
           border: `1px solid rgba(255,140,0,${sunHovered ? 0.15 : hovered ? 0.12 : 0.05})`,
           opacity: isDimmed ? 0.2 : 1,
@@ -112,10 +116,10 @@ function PlanetMember({
       {/* Planet */}
       <div
         ref={planetRef}
-        className="absolute cursor-pointer group"
+        className="absolute cursor-pointer group touch-target-expand"
         style={{
-          left: containerCenter.x + pos.x - 32,
-          top: containerCenter.y + pos.y - 32,
+          left: containerCenter.x + pos.x - avatarSize / 2,
+          top: containerCenter.y + pos.y - avatarSize / 2,
           zIndex,
           opacity: isDimmed ? 0.25 : 1,
           transition: "opacity 0.5s ease",
@@ -130,9 +134,9 @@ function PlanetMember({
         <div
           className="absolute rounded-full pointer-events-none transition-all duration-400"
           style={{
-            inset: -8,
+            inset: -8 * scaleFactor,
             background: `radial-gradient(circle, rgba(255,140,0,${hovered ? 0.35 : sunHovered ? 0.15 : 0.08}) 0%, transparent 70%)`,
-            filter: `blur(${hovered ? 10 : 5}px)`,
+            filter: `blur(${hovered ? 10 * scaleFactor : 5 * scaleFactor}px)`,
           }}
         />
 
@@ -140,23 +144,32 @@ function PlanetMember({
         <div
           className="absolute rounded-full pointer-events-none"
           style={{
-            inset: -3,
-            border: `1.5px solid rgba(255,140,0,${hovered ? 0.6 : 0.2})`,
-            boxShadow: `0 0 ${hovered ? 12 : 4}px rgba(255,140,0,${hovered ? 0.4 : 0.1})`,
+            inset: -3 * scaleFactor,
+            border: `${1.5 * scaleFactor}px solid rgba(255,140,0,${hovered ? 0.6 : 0.2})`,
+            boxShadow: `0 0 ${hovered ? 12 * scaleFactor : 4 * scaleFactor}px rgba(255,140,0,${hovered ? 0.4 : 0.1})`,
             animation: reducedMotion ? "none" : `spin ${hovered ? 3 : 8}s linear infinite`,
             transition: "border-color 0.3s, box-shadow 0.3s",
           }}
         >
           <div
             className="absolute rounded-full bg-orange-400"
-            style={{ width: 4, height: 4, top: -2, left: "50%", marginLeft: -2, boxShadow: "0 0 6px rgba(255,140,0,0.6)" }}
+            style={{ 
+              width: 4 * scaleFactor, 
+              height: 4 * scaleFactor, 
+              top: -2 * scaleFactor, 
+              left: "50%", 
+              marginLeft: -2 * scaleFactor, 
+              boxShadow: "0 0 6px rgba(255,140,0,0.6)" 
+            }}
           />
         </div>
 
         {/* Avatar container */}
         <div
-          className="relative w-16 h-16 rounded-full overflow-hidden border-2 transition-all duration-300"
+          className="relative rounded-full overflow-hidden border-2 transition-all duration-300"
           style={{
+            width: avatarSize,
+            height: avatarSize,
             borderColor: hovered ? "rgba(255,140,0,0.6)" : "rgba(255,140,0,0.2)",
             transform: `scale(${hovered ? 1.12 : 1})`,
             boxShadow: hovered
@@ -169,12 +182,14 @@ function PlanetMember({
               src={member.photo}
               alt={member.name}
               fill
-              sizes="64px"
+              sizes={`${avatarSize}px`}
               className="object-cover"
             />
           ) : (
             <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-              <span className="text-sm font-bold text-orange-400">{member.initials}</span>
+              <span className="font-bold text-orange-400" style={{ fontSize: `${12 * scaleFactor}px` }}>
+                {member.initials}
+              </span>
             </div>
           )}
         </div>
@@ -184,8 +199,8 @@ function PlanetMember({
           <svg
             className="absolute pointer-events-none"
             style={{
-              left: 32,
-              top: 32,
+              left: avatarSize / 2,
+              top: avatarSize / 2,
               width: 1,
               height: 1,
               overflow: "visible",
@@ -217,17 +232,17 @@ function PlanetMember({
           const length = Math.sqrt(pos.x * pos.x + pos.y * pos.y) || 1;
           const dx = pos.x / length;
           const dy = pos.y / length;
-          const offset = 42; // 32px avatar radius + 10px base gap
-          const labelX = 32 + dx * offset;
-          const labelY = 32 + dy * offset;
+          const offset = avatarSize / 2 + 10 * scaleFactor; // avatar radius + base gap
+          const labelX = avatarSize / 2 + dx * offset;
+          const labelY = avatarSize / 2 + dy * offset;
           
-          const hoverShift = hovered ? 4 : 0;
+          const hoverShift = hovered ? 4 * scaleFactor : 0;
           const tx = `calc(-50% + ${dx * 50}% + ${dx * hoverShift}px)`;
           const ty = `calc(-50% + ${dy * 50}% + ${dy * hoverShift}px)`;
 
           return (
             <div
-              className="absolute text-center pointer-events-none whitespace-nowrap z-50"
+              className="absolute text-center pointer-events-none whitespace-nowrap z-50 animate-fade-in"
               style={{
                 left: labelX,
                 top: labelY,
@@ -237,16 +252,18 @@ function PlanetMember({
               }}
             >
               <p
-                className="text-[11px] font-bold text-white leading-tight"
+                className="font-bold text-white leading-tight font-sans"
                 style={{
+                  fontSize: `${Math.max(9, Math.round(11 * scaleFactor))}px`,
                   textShadow: "0 2px 8px rgba(0,0,0,0.8)",
                 }}
               >
                 {member.name.split(" ")[0]}
               </p>
               <p
-                className="text-[9px] text-orange-400/80 font-medium mt-0.5"
+                className="text-orange-400/80 font-medium mt-0.5"
                 style={{
+                  fontSize: `${Math.max(7.5, Math.round(9 * scaleFactor))}px`,
                   textShadow: "0 2px 8px rgba(0,0,0,0.8)",
                 }}
               >
@@ -274,6 +291,7 @@ export interface OrbitingPlanetsProps {
   onSelect: (member: TeamMember) => void;
   reducedMotion: boolean;
   containerCenter: { x: number; y: number };
+  scaleFactor?: number;
 }
 
 export function OrbitingPlanets({
@@ -283,6 +301,7 @@ export function OrbitingPlanets({
   onSelect,
   reducedMotion,
   containerCenter,
+  scaleFactor = 1,
 }: OrbitingPlanetsProps) {
   return (
     <>
@@ -297,6 +316,7 @@ export function OrbitingPlanets({
           onSelect={onSelect}
           reducedMotion={reducedMotion}
           containerCenter={containerCenter}
+          scaleFactor={scaleFactor}
         />
       ))}
     </>

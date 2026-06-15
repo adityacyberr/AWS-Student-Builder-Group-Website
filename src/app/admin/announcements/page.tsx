@@ -254,7 +254,8 @@ export default function ConsoleAnnouncements() {
         </div>
       ) : (
         <div className="border border-zinc-900 rounded-xl overflow-hidden bg-zinc-900/5">
-          <table className="w-full text-left border-collapse">
+          {/* Table view (Desktop & Tablet) */}
+          <table className="w-full text-left border-collapse hidden md:table">
             <thead>
               <tr className="border-b border-zinc-900 text-[10px] font-black text-zinc-500 uppercase tracking-wider bg-zinc-950/20">
                 <th className="py-3 px-4 w-40">Date</th>
@@ -303,6 +304,46 @@ export default function ConsoleAnnouncements() {
               ))}
             </tbody>
           </table>
+
+          {/* Card view (Mobile) */}
+          <div className="md:hidden divide-y divide-zinc-900 bg-zinc-950/20">
+            {filteredAnnouncements.map((ann) => (
+              <div key={ann.id} className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] text-zinc-400">{ann.date}</span>
+                  <span
+                    className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                      ann.active
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/10"
+                        : "bg-zinc-800 text-zinc-500 border border-zinc-700/50"
+                    }`}
+                  >
+                    {ann.active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-white text-xs">{ann.title}</h4>
+                  <p className="text-zinc-400 text-xs leading-relaxed">{ann.content}</p>
+                </div>
+                <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900/30">
+                  <button
+                    onClick={() => handleOpenEdit(ann)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded border border-zinc-850 hover:border-zinc-700 text-[10px] font-bold text-zinc-450 hover:text-white transition-all cursor-pointer"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(ann.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 text-[10px] font-bold text-zinc-450 hover:text-rose-400 transition-all cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

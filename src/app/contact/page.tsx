@@ -70,15 +70,15 @@ export default function ContactPage() {
           
           {/* Large heading */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-none">
-            Let&apos;s Build Something<br />
+            Connect with the<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">
-              Extraordinary Together.
+              RIMT AWS Student Builder Group
             </span>
           </h1>
           
           {/* Supporting text */}
           <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
-            Questions, ideas, collaborations, workshops, partnerships, or speaking opportunities — our team is always ready to connect and build.
+            Questions, collaborations, partnerships, or ideas — our community is always ready to connect.
           </p>
 
           {/* Staggered Compact Stat Cards */}
@@ -110,12 +110,12 @@ export default function ContactPage() {
         {/* ================================================= */}
         {/* MAIN SECTION                                      */}
         {/* ================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-10 items-stretch">
           
-          {/* Left Column - Contact Info stacked (5 cols) */}
+          {/* Left Column - Contact Info stacked (5 cols on lg, 6 on md) */}
           <motion.div 
             variants={scrollItemVariants}
-            className="lg:col-span-5 relative flex flex-col gap-0 w-full"
+            className="md:col-span-6 lg:col-span-5 relative flex flex-col gap-0 w-full"
           >
             {/* Vertically stacked cards */}
             <div className="relative flex flex-col gap-5 z-10 w-full pl-0 lg:pl-20">
@@ -231,10 +231,10 @@ export default function ContactPage() {
             </div>
           </motion.div>
 
-          {/* Right Column - Connect With Us Social Hub (7 cols) */}
+          {/* Right Column - Connect With Us Social Hub (7 cols on lg, 6 on md) */}
           <motion.div 
             variants={scrollItemVariants}
-            className="lg:col-span-7 flex w-full"
+            className="md:col-span-6 lg:col-span-7 flex w-full"
           >
             <SocialHub />
           </motion.div>

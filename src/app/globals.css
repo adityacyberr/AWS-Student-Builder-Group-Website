@@ -27,6 +27,38 @@ html, body {
   overflow-x: hidden;
 }
 
+/* Fluid Typography Utilities */
+.text-fluid-hero {
+  font-size: clamp(2.25rem, 6vw, 4.5rem);
+  line-height: 1.1;
+}
+
+.text-fluid-section {
+  font-size: clamp(1.75rem, 4.5vw, 3rem);
+  line-height: 1.2;
+}
+
+.text-fluid-body {
+  font-size: clamp(0.938rem, 1.5vw + 0.5rem, 1.125rem);
+  line-height: 1.6;
+}
+
+/* Touch target expander for accessibility */
+.touch-target-expand {
+  position: relative;
+}
+
+.touch-target-expand::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  min-width: 48px;
+  min-height: 48px;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+
 /* Custom glowing effects */
 .glow-orange {
   box-shadow: 0 0 50px -12px rgba(255, 153, 0, 0.15);

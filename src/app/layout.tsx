@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { headers } from "next/headers";
@@ -75,9 +76,11 @@ export default async function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-orange-500/30 selection:text-orange-300">
-        {!isConsole && <Header />}
-        <main className="flex-grow flex flex-col">{children}</main>
-        {!isConsole && <Footer />}
+        <AuthProvider>
+          {!isConsole && <Header />}
+          <main className="flex-grow flex flex-col">{children}</main>
+          {!isConsole && <Footer />}
+        </AuthProvider>
       </body>
     </html>
   );

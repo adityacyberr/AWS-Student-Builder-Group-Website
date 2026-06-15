@@ -61,10 +61,38 @@ export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [sunHovered, setSunHovered] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [scaleFactor, setScaleFactor] = useState(1);
+  const [solarCenter, setSolarCenter] = useState({ x: 280, y: 220 });
+  const [containerSize, setContainerSize] = useState({ width: 560, height: 440 });
 
   useEffect(() => {
-    setIsMobile(window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768);
+    const handleResize = () => {
+      const w = window.innerWidth;
+      if (w < 380) {
+        setScaleFactor(0.46);
+        setSolarCenter({ x: 140, y: 120 });
+        setContainerSize({ width: 280, height: 240 });
+      } else if (w < 480) {
+        setScaleFactor(0.58);
+        setSolarCenter({ x: 175, y: 140 });
+        setContainerSize({ width: 350, height: 280 });
+      } else if (w < 640) {
+        setScaleFactor(0.72);
+        setSolarCenter({ x: 220, y: 175 });
+        setContainerSize({ width: 440, height: 350 });
+      } else if (w < 768) {
+        setScaleFactor(0.82);
+        setSolarCenter({ x: 250, y: 195 });
+        setContainerSize({ width: 500, height: 395 });
+      } else {
+        setScaleFactor(1);
+        setSolarCenter({ x: 280, y: 220 });
+        setContainerSize({ width: 560, height: 440 });
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -142,9 +170,6 @@ export default function TeamPage() {
     }
   }, [selectedIndex, sortedMembers]);
 
-  // Solar system center coordinates for the hero section
-  const solarCenter = { x: 280, y: 220 };
-
   return (
     <div className="relative min-h-screen bg-[#050816] bg-grid-pattern overflow-hidden text-slate-300">
       {/* Shared living background */}
@@ -165,7 +190,7 @@ export default function TeamPage() {
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center min-h-[600px]">
             {/* Left side - Hero text */}
-            <div className="space-y-6 relative z-20">
+            <div className="space-y-6 relative z-20 text-center lg:text-left flex flex-col items-center lg:items-start">
               {/* Badge */}
               <motion.span
                 variants={scrollItemVariants}
@@ -179,22 +204,14 @@ export default function TeamPage() {
                 variants={scrollItemVariants}
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05]"
               >
-                Meet The Builders<br />
-                Powering Cloud<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_25px_rgba(255,140,0,0.3)]">
-                  Innovation.
-                </span>
+                Meet the Builders<br />
+                of <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_25px_rgba(255,140,0,0.3)]">RIMT</span>
               </motion.h1>
 
               {/* Supporting text */}
               <motion.div variants={scrollItemVariants} className="space-y-1 max-w-md">
                 <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-                  A constellation of passionate builders, connected by one mission:
-                </p>
-                <p className="text-white font-bold text-sm sm:text-base">
-                  Learn.{" "}
-                  <span className="text-orange-400">Build.</span>{" "}
-                  Lead.
+                  The founding team driving cloud learning, hands-on innovation, workshops, and community initiatives across RIMT University.
                 </p>
               </motion.div>
 
@@ -259,13 +276,15 @@ export default function TeamPage() {
               style={{ minHeight: 500 }}
             >
               {/* Solar system container */}
-              <div className="relative" style={{ width: 560, height: 440 }}>
+              <div className="relative" style={{ width: containerSize.width, height: containerSize.height }}>
                 {/* The Sun at the center */}
                 <div
                   className="absolute"
                   style={{
-                    left: solarCenter.x - 170,
-                    top: solarCenter.y - 170,
+                    left: solarCenter.x - 170 * scaleFactor,
+                    top: solarCenter.y - 170 * scaleFactor,
+                    transform: `scale(${scaleFactor})`,
+                    transformOrigin: "center center",
                   }}
                 >
                   <SolarCore
@@ -276,7 +295,7 @@ export default function TeamPage() {
                 </div>
 
                 {/* Orbiting Planet Members */}
-                {sortedMembers.length > 0 && !isMobile && (
+                {sortedMembers.length > 0 && (
                   <OrbitingPlanets
                     members={sortedMembers}
                     sunHovered={sunHovered}
@@ -284,38 +303,8 @@ export default function TeamPage() {
                     onSelect={openMember}
                     reducedMotion={reducedMotion}
                     containerCenter={solarCenter}
+                    scaleFactor={scaleFactor}
                   />
-                )}
-
-                {/* Mobile: Static grid of member avatars */}
-                {isMobile && sortedMembers.length > 0 && (
-                  <div className="absolute inset-0 flex items-end justify-center pb-4">
-                    <div className="flex gap-3 flex-wrap justify-center max-w-[320px]">
-                      {sortedMembers.map((member) => (
-                        <button
-                          key={member.id}
-                          onClick={() => openMember(member)}
-                          className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-orange-500/20 hover:border-orange-500/50 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-                          style={{
-                            boxShadow: "0 0 10px rgba(255,140,0,0.1), 0 4px 12px rgba(0,0,0,0.3)",
-                          }}
-                          aria-label={`View ${member.name}'s profile`}
-                        >
-                          {member.photo ? (
-                            <img
-                              src={member.photo}
-                              alt={member.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                              <span className="text-xs font-bold text-orange-400">{member.initials}</span>
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 )}
               </div>
             </motion.div>

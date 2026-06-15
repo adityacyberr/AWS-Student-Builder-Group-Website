@@ -188,18 +188,14 @@ export default function EventsPage() {
                 variants={itemVariants}
                 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.08]"
               >
-                Bootcamps.<br />
-                Workshops.<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">
-                  Experiences.
-                </span>
+                Events at <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">RIMT AWS Student Builder Group</span>
               </motion.h1>
 
               <motion.p
                 variants={itemVariants}
                 className="text-slate-400 text-sm sm:text-base leading-relaxed max-w-md"
               >
-                Discover upcoming events that power our builder community.
+                Workshops, bootcamps, meetups, hackathons, and hands-on sessions designed for builders at RIMT University.
               </motion.p>
 
               <motion.div variants={itemVariants}>
@@ -304,7 +300,7 @@ export default function EventsPage() {
 
           {/* Grid of event cards */}
           {filteredEvents.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(filter === "all" ? otherUpcoming.concat(events.filter((e) => e.status === "completed")) : filteredEvents)
                 .filter((e) => filter === "all" ? e.id !== featuredEvent?.id : true)
                 .map((event, i) => (
@@ -822,24 +818,24 @@ function EventCard({
         </div>
 
         {/* Meta */}
-        <div className="space-y-1.5 mt-auto">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Calendar className="h-3.5 w-3.5 text-orange-400/50" />
-            {event.date}
+        <div className="space-y-1.5 mt-auto mb-1">
+          <div className="flex items-center gap-2 text-xs text-slate-500 whitespace-nowrap">
+            <Calendar className="h-3.5 w-3.5 text-orange-400/50 flex-shrink-0" />
+            <span className="truncate">{event.date}</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <MapPin className="h-3.5 w-3.5 text-orange-400/50" />
-            {event.location}
+          <div className="flex items-center gap-2 text-xs text-slate-500 whitespace-nowrap">
+            <MapPin className="h-3.5 w-3.5 text-orange-400/50 flex-shrink-0" />
+            <span className="truncate">{event.location}</span>
           </div>
         </div>
 
         {/* CTA */}
         <Link
           href={`/events/${event.slug}`}
-          className="group/link inline-flex items-center gap-1.5 text-xs font-bold text-orange-400 hover:text-orange-300 uppercase tracking-wider transition-colors mt-2"
+          className="w-full text-center py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 border border-orange-500/30 bg-orange-500/10 text-orange-400 hover:bg-orange-500/25 hover:text-white flex items-center justify-center gap-1.5 mt-2 h-11"
         >
-          {isUpcoming ? "Register Now" : "View Details"}
-          <ArrowRight className="h-3.5 w-3.5 group-hover/link:translate-x-1 transition-transform" />
+          <span>{isUpcoming ? "Register Now" : "View Details"}</span>
+          <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
         </Link>
       </div>
 

@@ -108,14 +108,14 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
         {/* Central connection line */}
         <div className="hidden md:block absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/15 to-transparent -translate-y-1/2 pointer-events-none" />
 
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4 relative z-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 md:gap-4 relative z-10">
           {members.map((member, i) => {
             const isActive = i === activeIndex;
             return (
               <button
                 key={member.id}
                 onClick={() => setActiveIndex(i)}
-                className={`group relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
+                className={`group relative flex flex-col items-center gap-2 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
                   isActive
                     ? "bg-orange-500/10 border-orange-500/40 shadow-[0_0_20px_rgba(255,140,0,0.1)]"
                     : "bg-slate-950/60 border-slate-800/60 hover:border-orange-500/20 hover:bg-slate-900/40"

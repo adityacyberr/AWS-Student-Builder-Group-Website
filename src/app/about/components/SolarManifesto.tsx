@@ -62,7 +62,7 @@ export function SolarManifesto({ reducedMotion }: { reducedMotion: boolean }) {
 
         <motion.p 
           variants={itemVariants}
-          className="text-slate-400 text-base md:text-lg leading-relaxed max-w-2xl mx-auto"
+          className="text-slate-400 text-fluid-body leading-relaxed max-w-[65ch] mx-auto"
         >
           We are the AWS Student Builder Group at RIMT University. We believe that true learning 
           begins when you stop reading documentation and start deploying. We are a living 
@@ -89,7 +89,7 @@ export function SolarManifesto({ reducedMotion }: { reducedMotion: boolean }) {
             </div>
             <div>
               <h3 className="text-xl font-bold text-white mb-3 tracking-tight">Our Mission</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
+              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-[65ch]">
                 To bridge the gap between academic theory and modern cloud engineering. We supply the 
                 resources, sandbox workshops, and mentorship needed to build production-grade web 
                 infrastructures, Generative AI pipelines, and secure cloud endpoints.
@@ -115,7 +115,7 @@ export function SolarManifesto({ reducedMotion }: { reducedMotion: boolean }) {
             </div>
             <div>
               <h3 className="text-xl font-bold text-white mb-3 tracking-tight">Our Vision</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
+              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-[65ch]">
                 To establish RIMT University as a central hub of cloud technology excellence in Punjab. 
                 We nurture a collaborative network of certified practitioners, serverless developers, 
                 and ML researchers who leverage cloud architectures to resolve critical real-world challenges.

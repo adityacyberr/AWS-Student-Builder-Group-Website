@@ -18,7 +18,6 @@ import { useReducedMotion } from "@/app/team/hooks/useReducedMotion";
 import { CosmicBackground } from "./CosmicBackground";
 import { SolarCoreSun } from "./SolarCoreSun";
 import { PlanetInfoPanel } from "./PlanetInfoPanel";
-import { ScrollExplorer } from "./ScrollExplorer";
 
 // ─────────────────────────────────────────────
 // PLANET DEFINITIONS
@@ -44,7 +43,7 @@ const PLANETS: PlanetDef[] = [
   {
     id: "about",
     name: "About",
-    tagline: "Who We Are",
+    tagline: "Who We Are at RIMT",
     description:
       "Discover the mission, vision, and core pillars driving our builder community forward.",
     stats: ["Solar Core", "5 Pillars", "Academic Hub"],
@@ -58,7 +57,7 @@ const PLANETS: PlanetDef[] = [
   {
     id: "events",
     name: "Events",
-    tagline: "Upcoming Missions",
+    tagline: "RIMT Workshops & Meetups",
     description:
       "Workshops, bootcamps, hackathons, and meetups designed to level up your cloud skills.",
     stats: ["Workshops", "Bootcamps", "Hackathons"],
@@ -73,7 +72,7 @@ const PLANETS: PlanetDef[] = [
   {
     id: "team",
     name: "Team",
-    tagline: "Meet The Builders",
+    tagline: "Meet the RIMT Builders",
     description:
       "A multidisciplinary leadership team powering cloud innovation at RIMT University.",
     stats: ["6 Builders", "Student Led", "Multi-Track"],
@@ -87,7 +86,7 @@ const PLANETS: PlanetDef[] = [
   {
     id: "gallery",
     name: "Gallery",
-    tagline: "Captured Moments",
+    tagline: "RIMT Memories",
     description:
       "A visual archive of every event, workshop, and builder moment captured across our journey.",
     stats: ["Photos", "Events", "Memories"],
@@ -102,7 +101,7 @@ const PLANETS: PlanetDef[] = [
   {
     id: "achievements",
     name: "Achievements",
-    tagline: "Mission Logs",
+    tagline: "Mission Milestones",
     description:
       "Milestones, accomplishments, and the roadmap of our growing community impact.",
     stats: ["Milestones", "Roadmap", "Impact"],
@@ -116,7 +115,7 @@ const PLANETS: PlanetDef[] = [
   {
     id: "contact",
     name: "Contact",
-    tagline: "Connect With Us",
+    tagline: "Connect with the RIMT Community",
     description:
       "Questions, collaborations, partnerships, or speaker invitations — we are always open.",
     stats: ["Email", "Social", "Partnerships"],
@@ -201,7 +200,7 @@ function OrbitPlanet({
         }}
       >
         <button
-          className="group relative flex flex-col items-center cursor-pointer outline-none"
+          className="group relative flex flex-col items-center cursor-pointer outline-none touch-target-expand"
           style={{ pointerEvents: "auto" }}
           onClick={handleClick}
           onMouseEnter={() => setHovered(true)}
@@ -492,7 +491,7 @@ export function SolarSystemHero() {
 
   return (
     <section
-      className="relative w-full h-screen min-h-[600px] max-h-[1200px] bg-[#050816] bg-grid-pattern overflow-hidden"
+      className="relative w-full h-auto lg:h-screen min-h-[600px] lg:max-h-[1200px] bg-[#050816] bg-grid-pattern overflow-hidden py-12 lg:py-0"
       onMouseMove={handleMouseMove}
     >
       {/* Cosmic Background */}
@@ -501,14 +500,14 @@ export function SolarSystemHero() {
       {/* Main content grid */}
       <div className="relative z-10 h-full flex items-center">
         <div className="mx-auto max-w-[1400px] w-full px-4 sm:px-6 lg:px-8 h-full flex items-center">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 w-full items-center">
 
             {/* ── LEFT: Text & CTAs ─────────────────────────── */}
             <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="lg:col-span-4 xl:col-span-4 space-y-6 z-20 relative"
+              className="lg:col-span-4 xl:col-span-4 space-y-6 z-20 relative text-center lg:text-left flex flex-col items-center lg:items-start"
             >
               <motion.span
                 variants={itemVariants}
@@ -519,7 +518,7 @@ export function SolarSystemHero() {
 
               <motion.h1
                 variants={itemVariants}
-                className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.1]"
+                className="text-fluid-hero font-black text-white tracking-tight"
               >
                 One Community.
                 <br />
@@ -534,12 +533,12 @@ export function SolarSystemHero() {
                 variants={itemVariants}
                 className="text-slate-400 text-sm leading-relaxed max-w-md"
               >
-                Explore a universe of builders, events, memories, achievements,
+                Explore a universe of RIMT Builders, events, memories, milestones,
                 and opportunities designed to inspire the next generation of
                 cloud innovators.
               </motion.p>
 
-              <motion.div variants={itemVariants} className="flex flex-wrap gap-3 pt-2">
+              <motion.div variants={itemVariants} className="flex flex-wrap justify-center lg:justify-start gap-3 pt-2">
                 {/* Primary CTA */}
                 <a
                   href="https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups"
@@ -577,7 +576,7 @@ export function SolarSystemHero() {
                   className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-slate-400 border border-slate-700/60 bg-slate-950/50 backdrop-blur-sm hover:text-orange-300 hover:border-orange-500/30 hover:bg-orange-500/5 hover:shadow-[0_0_16px_rgba(255,140,0,0.08)] transition-all duration-300"
                 >
                   <Compass className="h-4 w-4 transition-transform group-hover:rotate-12" />
-                  Explore Chapters
+                  Discover Our Community
                 </Link>
               </motion.div>
             </motion.div>
@@ -664,8 +663,6 @@ export function SolarSystemHero() {
           </div>
         </div>
       </div>
-
-      <ScrollExplorer />
 
       <style>{`
         @keyframes btn-sweep {

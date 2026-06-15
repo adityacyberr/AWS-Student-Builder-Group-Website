@@ -43,6 +43,7 @@ create table if not exists public.team_members (
   linkedin text not null default '',
   github text not null default '',
   email text,
+  portal_role text not null default 'Member' check (portal_role in ('Super Admin', 'Editor', 'Member')),
   display_order integer not null default 0,
   is_active boolean not null default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -126,6 +127,15 @@ do $$ begin
     where table_schema = 'public' and table_name = 'team_members' and column_name = 'email'
   ) then
     alter table public.team_members add column email text;
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'team_members' and column_name = 'portal_role'
+  ) then
+    alter table public.team_members add column portal_role text not null default 'Member' check (portal_role in ('Super Admin', 'Editor', 'Member'));
   end if;
 end $$;
 
@@ -265,16 +275,18 @@ values (
 ) on conflict (slug) do nothing;
 
 -- Seed team members
-insert into public.team_members (name, role, branch, specialization, bio, quote, focus_areas, initials, theme_color, photo, linkedin, github, display_order, is_active)
+insert into public.team_members (name, role, branch, specialization, bio, quote, focus_areas, initials, theme_color, photo, linkedin, github, email, display_order, is_active, portal_role)
 values 
-('Pranav Bansal', 'Group Leader', 'B.Tech ECE', 'AI & ML', 'Founder and driving force behind the chapter, setting the vision and building the partnerships that bring it to life. Passionate about applying AI/ML and edge computing on the cloud, and about creating a space where every student can become a builder.', 'Building a community where students learn, innovate, and grow through cloud, Generative AI, and AWS.', array['Community Strategy', 'Generative AI', 'Cloud Architecture', 'Leadership'], 'PB', 'orange', '/team/pranav.jpg', 'https://www.linkedin.com/in/pranav-bansal-31ba4a261/', '', 1, true),
-('Aditya', 'Technical Head', 'B.Tech CSE', 'Cybersecurity', 'Leads all technical programming — hands-on workshops, cloud labs, and the club''s own infrastructure. A cybersecurity enthusiast focused on secure cloud practices, IAM, and teaching builders to ship projects safely.', 'Secure by design — building cloud skills the right way.', array['Cloud Security', 'IAM', 'Hands-on Labs', 'Web & Infrastructure'], 'AK', 'orange', '/team/aditya.jpg', 'https://www.linkedin.com/in/adityacyber/', '', 2, true),
-('Amisha', 'Marketing Head', 'B.Tech CSE', 'AI & ML', 'Owns the club''s brand, content, and outreach, turning every event into reach across LinkedIn, Instagram, and WhatsApp. Drives community growth and makes sure the right students hear about us.', 'Telling the story of every builder.', array['Brand & Content', 'Social Growth', 'Outreach', 'Design'], 'AM', 'orange', '/team/amisha.jpg', 'https://www.linkedin.com/in/amisha-amisha-644aa3390/', '', 3, true),
-('Amber Prashar', 'Treasurer', 'B.Tech CSE', 'AI & ML', 'Manages budgets, sponsorships, and resource planning so events run smoothly and sustainably. Keeps the club''s operations financially healthy as it scales.', 'Making sure every resource builds something.', array['Budgeting', 'Sponsorships', 'Operations', 'Resource Planning'], 'AP', 'orange', '/team/amber.jpg', 'https://www.linkedin.com/in/amber-prashar-a57b65395/', '', 4, true),
-('Rohan Verma', 'Director of Photography', 'B.Tech CE', 'AI & ML', 'Documents every workshop and hackathon through photography, video, and visual storytelling — building the credibility archive that shows the world what the community does.', 'Capturing the moments that become our legacy.', array['Photography', 'Videography', 'Visual Storytelling', 'Media'], 'RV', 'orange', '/team/rohan.jpg', 'https://www.linkedin.com/in/rohan-verma-5a768b3b3/', '', 5, true),
-('Rinku Bhalotiya', 'Event Head', 'B.Tech CSE', 'Software Engineering', 'Plans and runs workshops, bootcamps, and hackathons end-to-end, bridging industry mentors and student builders. Turns ideas into well-run events that people remember.', 'From idea to packed room.', array['Event Operations', 'Hackathons', 'Logistics', 'Partnerships'], 'RB', 'orange', '/team/rinku.jpg', 'https://www.linkedin.com/in/rinku-bhalotiya-7507003b3/', '', 6, true)
+('Pranav Bansal', 'Group Leader', 'B.Tech ECE', 'AI & ML', 'Founder and driving force behind the chapter, setting the vision and building the partnerships that bring it to life. Passionate about applying AI/ML and edge computing on the cloud, and about creating a space where every student can become a builder.', 'Building a community where students learn, innovate, and grow through cloud, Generative AI, and AWS.', array['Community Strategy', 'Generative AI', 'Cloud Architecture', 'Leadership'], 'PB', 'orange', '/team/pranav.jpg', 'https://www.linkedin.com/in/pranav-bansal-31ba4a261/', '', 'pranav@sbg-rimt.com', 1, true, 'Super Admin'),
+('Aditya', 'Technical Head', 'B.Tech CSE', 'Cybersecurity', 'Leads all technical programming — hands-on workshops, cloud labs, and the club''s own infrastructure. A cybersecurity enthusiast focused on secure cloud practices, IAM, and teaching builders to ship projects safely.', 'Secure by design — building cloud skills the right way.', array['Cloud Security', 'IAM', 'Hands-on Labs', 'Web & Infrastructure'], 'AK', 'orange', '/team/aditya.jpg', 'https://www.linkedin.com/in/adityacyber/', '', 'adityacybersecurity@gmail.com', 2, true, 'Super Admin'),
+('Amisha', 'Marketing Head', 'B.Tech CSE', 'AI & ML', 'Owns the club''s brand, content, and outreach, turning every event into reach across LinkedIn, Instagram, and WhatsApp. Drives community growth and makes sure the right students hear about us.', 'Telling the story of every builder.', array['Brand & Content', 'Social Growth', 'Outreach', 'Design'], 'AM', 'orange', '/team/amisha.jpg', 'https://www.linkedin.com/in/amisha-amisha-644aa3390/', '', 'amisha@sbg-rimt.com', 3, true, 'Editor'),
+('Amber Prashar', 'Treasurer', 'B.Tech CSE', 'AI & ML', 'Manages budgets, sponsorships, and resource planning so events run smoothly and sustainably. Keeps the club''s operations financially healthy as it scales.', 'Making sure every resource builds something.', array['Budgeting', 'Sponsorships', 'Operations', 'Resource Planning'], 'AP', 'orange', '/team/amber.jpg', 'https://www.linkedin.com/in/amber-prashar-a57b65395/', '', 'amber@sbg-rimt.com', 4, true, 'Member'),
+('Rohan Verma', 'Director of Photography', 'B.Tech CE', 'AI & ML', 'Documents every workshop and hackathon through photography, video, and visual storytelling — building the credibility archive that shows the world what the community does.', 'Capturing the moments that become our legacy.', array['Photography', 'Videography', 'Visual Storytelling', 'Media'], 'RV', 'orange', '/team/rohan.jpg', 'https://www.linkedin.com/in/rohan-verma-5a768b3b3/', '', 'rohan@sbg-rimt.com', 5, true, 'Member'),
+('Rinku Bhalotiya', 'Event Head', 'B.Tech CSE', 'Software Engineering', 'Plans and runs workshops, bootcamps, and hackathons end-to-end, bridging industry mentors and student builders. Turns ideas into well-run events that people remember.', 'From idea to packed room.', array['Event Operations', 'Hackathons', 'Logistics', 'Partnerships'], 'RB', 'orange', '/team/rinku.jpg', 'https://www.linkedin.com/in/rinku-bhalotiya-7507003b3/', '', 'rinku@sbg-rimt.com', 6, true, 'Member')
 on conflict (name, role) do update set
   is_active = coalesce(excluded.is_active, true),
+  portal_role = coalesce(excluded.portal_role, team_members.portal_role),
+  email = coalesce(excluded.email, team_members.email),
   updated_at = timezone('utc'::text, now());
 
 -- Seed gallery

@@ -17,18 +17,32 @@ export function middleware(request: NextRequest) {
   // Retrieve the session cookie
   const sessionCookie = request.cookies.get("sb-session");
 
-  // If already logged in and trying to access /admin/login, redirect to /admin
+  // Redirect authenticated users trying to access login pages
   if (pathname === "/admin/login") {
     if (!isSupabaseConfigured || sessionCookie) {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
     return NextResponse.next();
   }
+  if (pathname === "/member/login") {
+    if (!isSupabaseConfigured || sessionCookie) {
+      return NextResponse.redirect(new URL("/member", request.url));
+    }
+    return NextResponse.next();
+  }
 
-  // Protect all /admin/* routes (except /admin/login handled above)
+  // Protect all /admin/* routes
   if (pathname.startsWith("/admin")) {
     if (isSupabaseConfigured && !sessionCookie) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+    return NextResponse.next();
+  }
+
+  // Protect all /member/* routes (except /member/login)
+  if (pathname.startsWith("/member")) {
+    if (isSupabaseConfigured && !sessionCookie) {
+      return NextResponse.redirect(new URL("/member/login", request.url));
     }
     return NextResponse.next();
   }

@@ -406,14 +406,11 @@ export default function GalleryPage() {
               {"// MOMENTS CAPTURED"}
             </span>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-none">
-              Every Event.<br />
-              Every Memory.<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">
-                Every Builder.
-              </span>
+              Captured Moments<br />
+              at <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">RIMT</span>
             </h1>
             <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
-              A visual journey through our workshops, bootcamps, meetups, celebrations, and community moments.
+              Memories from workshops, meetups, collaborations, and community milestones.
             </p>
           </motion.div>
 

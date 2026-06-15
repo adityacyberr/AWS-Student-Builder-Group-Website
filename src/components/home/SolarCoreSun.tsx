@@ -84,9 +84,10 @@ export function SolarCoreSun({
             "radial-gradient(circle, rgba(255,140,0,0.07) 0%, rgba(255,120,0,0.03) 50%, transparent 72%)",
           filter: "blur(18px)",
           animation: reducedMotion ? "none" : "sun-breathe 7s ease-in-out infinite",
-          transform: isHovered ? "scale(1.18)" : "scale(1)",
-          transition: "transform 0.9s ease-out",
-          willChange: "transform",
+          opacity: isHovered ? 1 : 0.7,
+          transform: "scale(1)",
+          transition: "opacity 0.6s ease-in-out",
+          willChange: "opacity",
         }}
       />
 
@@ -102,9 +103,10 @@ export function SolarCoreSun({
             "radial-gradient(circle, rgba(255,160,0,0.14) 0%, rgba(255,140,0,0.06) 40%, transparent 70%)",
           filter: "blur(10px)",
           animation: reducedMotion ? "none" : "sun-breathe 5s ease-in-out infinite 1.5s",
-          transform: isHovered ? "scale(1.12)" : "scale(1)",
-          transition: "transform 0.7s ease-out",
-          willChange: "transform",
+          opacity: isHovered ? 1 : 0.75,
+          transform: "scale(1)",
+          transition: "opacity 0.5s ease-in-out",
+          willChange: "opacity",
         }}
       />
 
@@ -160,6 +162,40 @@ export function SolarCoreSun({
         />
       )}
 
+      {/* ── Layer 5: Faint slowly rotating orbital inscription ── */}
+      <svg
+        viewBox="0 0 240 240"
+        className="absolute pointer-events-none z-10"
+        style={{
+          width: 240 * s,
+          height: 240 * s,
+          animation: reducedMotion ? "none" : "spin-clockwise 140s linear infinite",
+          opacity: isHovered ? 0.55 : 0.2,
+          transition: "opacity 0.5s ease-in-out",
+        }}
+      >
+        <defs>
+          <path
+            id="rimt-inscription-path"
+            d="M 120 28 a 92 92 0 1 1 0 184 a 92 92 0 1 1 0 -184"
+          />
+        </defs>
+        <text
+          fill="rgba(255, 255, 255, 0.85)"
+          style={{
+            fontSize: "7px",
+            fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif",
+            fontWeight: 500,
+            letterSpacing: "0.22em",
+            textShadow: "0 1px 2px rgba(0, 0, 0, 0.5)",
+          }}
+        >
+          <textPath href="#rimt-inscription-path" startOffset="0%">
+            RIMT UNIVERSITY • AWS STUDENT BUILDER GROUP • LUDHIANA • RIMT UNIVERSITY • AWS STUDENT BUILDER GROUP • LUDHIANA •
+          </textPath>
+        </text>
+      </svg>
+
       {/* ── Layer 1: Bright core body ─────────── */}
       <div
         className="relative z-20 rounded-full flex flex-col items-center justify-center cursor-pointer text-center"
@@ -177,10 +213,9 @@ export function SolarCoreSun({
                0 0 ${Math.round(72*s)}px rgba(255,140,0,0.15),
                0 0 ${Math.round(120*s)}px rgba(255,120,0,0.07),
                inset 0 0 ${Math.round(20*s)}px rgba(255,255,255,0.12)`,
-          transform: isHovered ? "scale(1.06)" : "scale(1)",
-          transition: "box-shadow 0.5s ease, transform 0.5s ease",
+          transform: "scale(1)",
+          transition: "box-shadow 0.5s ease",
           animation: reducedMotion ? "none" : "sun-shimmer 4s ease-in-out infinite",
-          willChange: "transform",
         }}
       >
         {/* Inner shine highlight */}
@@ -211,31 +246,43 @@ export function SolarCoreSun({
 
         {/* Text */}
         <span
-          className="font-black text-white/90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] uppercase leading-none relative z-10"
+          className="font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] uppercase leading-none relative z-10 transition-colors duration-300"
           style={{
-            fontSize: `${Math.max(8, Math.round(11 * s))}px`,
-            letterSpacing: "0.2em",
-          }}
-        >
-          AWS
-        </span>
-        <span
-          className="font-bold text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase mt-0.5 leading-none relative z-10"
-          style={{
-            fontSize: `${Math.max(5, Math.round(7 * s))}px`,
+            fontSize: `${Math.max(10, Math.round(15 * s))}px`,
             letterSpacing: "0.15em",
           }}
         >
-          Student Builder
+          RIMT
+        </span>
+        <span
+          className="font-bold text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase mt-1 leading-none relative z-10"
+          style={{
+            fontSize: `${Math.max(5.5, Math.round(7.5 * s))}px`,
+            letterSpacing: "0.12em",
+          }}
+        >
+          AWS Student
         </span>
         <span
           className="font-bold text-white/75 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] uppercase leading-none mt-0.5 relative z-10"
           style={{
-            fontSize: `${Math.max(5, Math.round(7 * s))}px`,
-            letterSpacing: "0.15em",
+            fontSize: `${Math.max(5.5, Math.round(7.5 * s))}px`,
+            letterSpacing: "0.12em",
           }}
         >
-          Group
+          Builder Group
+        </span>
+
+        {/* Build • Learn • Lead details */}
+        <span
+          className="font-medium text-white/45 uppercase tracking-widest mt-2 relative z-10 transition-all duration-300"
+          style={{
+            fontSize: `${Math.max(4.2, Math.round(5.2 * s))}px`,
+            letterSpacing: "0.22em",
+            opacity: isHovered ? 0.85 : 0.45,
+          }}
+        >
+          Build • Learn • Lead
         </span>
       </div>
 
@@ -261,6 +308,10 @@ export function SolarCoreSun({
         @keyframes sun-flare-ccw {
           from { transform: rotate(360deg); }
           to   { transform: rotate(0deg); }
+        }
+        @keyframes spin-clockwise {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
         }
         @keyframes sun-inner-ring {
           0%, 100% { opacity: 0.15; transform: scale(0.96); }

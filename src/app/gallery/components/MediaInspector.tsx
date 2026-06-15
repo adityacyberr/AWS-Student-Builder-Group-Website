@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
 import { motion, useMotionTemplate } from "framer-motion";
 import { X, ChevronLeft, ChevronRight, Download, Share2, MapPin, Users, Camera, Info, ShieldCheck } from "lucide-react";
@@ -49,6 +49,53 @@ export function MediaInspector({
 
   const reducedMotion = useReducedMotion();
   const isMobile = typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768);
+
+  // Swipe & Pinch Zoom gesture hooks
+  const [zoomScale, setZoomScale] = useState(1);
+  const touchStartRef = useRef<number | null>(null);
+  const touchStartDistanceRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Reset zoom when active item changes
+    setZoomScale(1);
+  }, [item]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartRef.current = e.touches[0].clientX;
+    } else if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchStartDistanceRef.current = dist;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && touchStartDistanceRef.current !== null) {
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const ratio = currentDist / touchStartDistanceRef.current;
+      setZoomScale(Math.max(1, Math.min(3, ratio)));
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartRef.current !== null && e.changedTouches.length === 1 && zoomScale === 1) {
+      const diffX = e.changedTouches[0].clientX - touchStartRef.current;
+      const swipeThreshold = 55;
+      if (diffX > swipeThreshold) {
+        onPrev();
+      } else if (diffX < -swipeThreshold) {
+        onNext();
+      }
+    }
+    touchStartRef.current = null;
+    touchStartDistanceRef.current = null;
+  };
 
   useBodyScrollLock(true);
 
@@ -212,14 +259,23 @@ export function MediaInspector({
         </motion.button>
 
         {/* Left Side: Large Projected Media Image */}
-        <div className="w-full md:w-[60%] h-64 sm:h-80 md:h-auto relative overflow-hidden bg-slate-950 flex items-center justify-center border-b md:border-b-0 md:border-r border-slate-900 group/image">
+        <div 
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="w-full md:w-[60%] h-64 sm:h-80 md:h-auto relative overflow-hidden bg-slate-950 flex items-center justify-center border-b md:border-b-0 md:border-r border-slate-900 group/image"
+        >
           <Image
             src={item.imageUrl}
             alt={item.title}
             fill
             sizes="(max-width: 768px) 100vw, 60vw"
             priority={true}
-            className="object-cover transition-transform duration-500 group-hover/image:scale-[1.01]"
+            className="object-cover"
+            style={{
+              transform: `scale(${zoomScale})`,
+              transition: touchStartDistanceRef.current !== null ? "none" : "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-40" />
 
