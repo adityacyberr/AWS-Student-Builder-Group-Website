@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
 import { TeamMember } from "@/data/team";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,6 +40,22 @@ const MEMBER_ORBITS: Record<string, number> = {
   "amisha": 3,
   "rinku":  3,
   "amber":  4,
+};
+
+// Map each member to their starting orbit and mathematical angle based on global index
+const getMemberOrbitAndAngle = (member: TeamMember, sortedMembers: TeamMember[]) => {
+  const key = getMemberKey(member);
+  const globalIdx = sortedMembers.findIndex((m) => getMemberKey(m) === key);
+  
+  if (globalIdx === -1) {
+    return { orbitId: 1, angle: 0 };
+  }
+
+  // Spreads the 6 members evenly at 60 degree intervals (0, 60, 120, 180, 240, 300) on page load
+  const angle = (globalIdx / sortedMembers.length) * 2 * Math.PI;
+  const orbitId = MEMBER_ORBITS[key] || 1;
+
+  return { orbitId, angle };
 };
 
 export interface OrbitingPlanetsProps {
@@ -209,13 +225,12 @@ export function OrbitingPlanets({
             </svg>
 
             {/* Connection dashed vector inside rotating container */}
-            {orbitMembers.map((member, idx) => {
+            {orbitMembers.map((member) => {
               const isHovered = hoveredMemberId === member.id;
               if (!isHovered || reducedMotion) return null;
 
-              // Calculate spacing angle offset
-              const totalOnOrbit = orbitMembers.length;
-              const angleOffset = (idx / totalOnOrbit) * 2 * Math.PI + (orbitId * (Math.PI / 3));
+              // Calculate spacing angle offset from global index function
+              const { angle: angleOffset } = getMemberOrbitAndAngle(member, members);
 
               const x = r * Math.cos(angleOffset);
               const y = r * Math.sin(angleOffset);
@@ -247,11 +262,9 @@ export function OrbitingPlanets({
             })}
 
             {/* Render Orbit Members */}
-            {orbitMembers.map((member, idx) => {
-              const totalOnOrbit = orbitMembers.length;
-              
-              // Spacing formula: distributed evenly + unique rotation starting angle offsets to keep layout balanced
-              const angleOffset = (idx / totalOnOrbit) * 2 * Math.PI + (orbitId * (Math.PI / 3));
+            {orbitMembers.map((member) => {
+              // Spacing formula: distributed evenly using global index
+              const { angle: angleOffset } = getMemberOrbitAndAngle(member, members);
 
               const isHovered = hoveredMemberId === member.id;
               const isDimmed = selectedId !== null && selectedId !== member.id;
@@ -280,7 +293,8 @@ export function OrbitingPlanets({
                     width: avatarSize,
                     height: avatarSize,
                     transformOrigin: "center center",
-                    animation: reducedMotion ? "translate(-50%, -50%)" : `${counterAnim} ${orbit.speed}s linear infinite`,
+                    transform: "translate(-50%, -50%)",
+                    animation: reducedMotion ? "none" : `${counterAnim} ${orbit.speed}s linear infinite`,
                     animationPlayState: isOrbitPaused ? "paused" : "running",
                     opacity: isDimmed ? 0.2 : 1,
                     zIndex: isHovered ? 50 : 25,
