@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface CosmicBackgroundProps {
   reducedMotion: boolean;
@@ -13,6 +13,12 @@ function seededRand(seed: number): number {
 }
 
 export function CosmicBackground({ reducedMotion }: CosmicBackgroundProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [stars] = useState(() =>
     Array.from({ length: 100 }).map((_, i) => ({
       id: i,
@@ -38,6 +44,34 @@ export function CosmicBackground({ reducedMotion }: CosmicBackgroundProps) {
       opacity: 0.06 + seededRand(i * 13 + 19) * 0.15,
     }))
   );
+
+  if (!mounted) {
+    return (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at 62% 38%, rgba(255,140,0,0.04) 0%, transparent 52%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at 18% 75%, rgba(255,120,0,0.025) 0%, transparent 42%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at 88% 15%, rgba(255,100,0,0.02) 0%, transparent 38%)",
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">

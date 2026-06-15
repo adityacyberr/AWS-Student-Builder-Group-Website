@@ -439,7 +439,7 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
               key={activeMember.id}
               variants={reducedMotion ? undefined : profileVariants}
               initial="initial"
-              animate={hasEntered || !isStickyEnabled ? "animate" : "initial"}
+              animate="animate"
               exit="exit"
               className="relative rounded-3xl border border-slate-800/70 bg-[#0a0f1e]/85 backdrop-blur-xl overflow-hidden"
               style={{
