@@ -6,31 +6,49 @@ interface SolarCoreProps {
   isHovered: boolean;
   onHover: (hovered: boolean) => void;
   reducedMotion: boolean;
+  visible?: boolean;
 }
 
-export function SolarCore({ isHovered, onHover, reducedMotion }: SolarCoreProps) {
+export function SolarCore({ isHovered, onHover, reducedMotion, visible = true }: SolarCoreProps) {
   const [localHover, setLocalHover] = useState(false);
   const active = isHovered || localHover;
 
   return (
     <div
-      className="relative flex items-center justify-center"
+      className="relative flex items-center justify-center transition-all duration-1000"
       onMouseEnter={() => { setLocalHover(true); onHover(true); }}
       onMouseLeave={() => { setLocalHover(false); onHover(false); }}
-      style={{ width: 340, height: 340 }}
+      style={{
+        width: 340,
+        height: 340,
+        opacity: visible ? 1 : 0,
+        transform: visible ? "scale(1)" : "scale(0.8)",
+        transition: "opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+      }}
     >
-      {/* Outermost volumetric glow */}
+      {/* Layer 3: Large blurred halo */}
       <div
         className="absolute rounded-full pointer-events-none transition-all duration-700"
         style={{
-          width: active ? 400 : 360,
-          height: active ? 400 : 360,
-          background: "radial-gradient(circle, rgba(255,140,0,0.12) 0%, rgba(255,140,0,0.04) 40%, transparent 70%)",
-          filter: `blur(${active ? 40 : 30}px)`,
+          width: active ? 360 : 310,
+          height: active ? 360 : 310,
+          background: "radial-gradient(circle, rgba(255,140,0,0.18) 0%, rgba(255,60,0,0.03) 60%, transparent 100%)",
+          filter: `blur(${active ? 36 : 28}px)`,
         }}
       />
 
-      {/* Orbit rings */}
+      {/* Layer 2: Soft glow */}
+      <div
+        className="absolute rounded-full pointer-events-none transition-all duration-500"
+        style={{
+          width: active ? 220 : 190,
+          height: active ? 220 : 190,
+          background: "radial-gradient(circle, rgba(255,140,0,0.38) 0%, rgba(255,100,0,0.1) 60%, transparent 100%)",
+          filter: `blur(${active ? 16 : 10}px)`,
+        }}
+      />
+
+      {/* Orbit rings (inner accent lines around core) */}
       {!reducedMotion && [180, 220, 260, 300].map((size, i) => (
         <div
           key={`orbit-${i}`}
@@ -38,9 +56,9 @@ export function SolarCore({ isHovered, onHover, reducedMotion }: SolarCoreProps)
           style={{
             width: size,
             height: size,
-            borderColor: `rgba(255,140,0,${active ? 0.15 + i * 0.03 : 0.06 + i * 0.02})`,
+            borderColor: `rgba(255,140,0,${active ? 0.18 + i * 0.03 : 0.08 + i * 0.02})`,
             borderWidth: 1,
-            animation: reducedMotion ? "none" : `spin ${30 + i * 15}s linear infinite${i % 2 === 0 ? " reverse" : ""}`,
+            animation: reducedMotion ? "none" : `spin ${25 + i * 12}s linear infinite${i % 2 === 0 ? " reverse" : ""}`,
             transition: "border-color 0.5s ease",
           }}
         >
@@ -48,13 +66,13 @@ export function SolarCore({ isHovered, onHover, reducedMotion }: SolarCoreProps)
           <div
             className="absolute rounded-full"
             style={{
-              width: 3,
-              height: 3,
-              top: -1.5,
+              width: 3.5,
+              height: 3.5,
+              top: -1.75,
               left: "50%",
-              marginLeft: -1.5,
-              backgroundColor: `rgba(255,140,0,${active ? 0.6 : 0.3})`,
-              boxShadow: `0 0 6px rgba(255,140,0,${active ? 0.5 : 0.2})`,
+              marginLeft: -1.75,
+              backgroundColor: `rgba(255,140,0,${active ? 0.7 : 0.4})`,
+              boxShadow: `0 0 6px rgba(255,140,0,${active ? 0.6 : 0.3})`,
             }}
           />
         </div>
@@ -66,15 +84,15 @@ export function SolarCore({ isHovered, onHover, reducedMotion }: SolarCoreProps)
           key={`flare-${i}`}
           className="absolute pointer-events-none"
           style={{
-            width: 2,
-            height: active ? 90 : 60,
-            background: `linear-gradient(to top, rgba(255,140,0,${active ? 0.25 : 0.1}), transparent)`,
+            width: 2.5,
+            height: active ? 95 : 65,
+            background: `linear-gradient(to top, rgba(255,140,0,${active ? 0.28 : 0.12}), transparent)`,
             transform: `rotate(${i * 45}deg)`,
             transformOrigin: "bottom center",
-            left: "calc(50% - 1px)",
+            left: "calc(50% - 1.25px)",
             bottom: "50%",
             transition: "height 0.6s ease, background 0.6s ease",
-            animation: `flare-pulse ${3 + i * 0.5}s ease-in-out infinite`,
+            animation: `flare-pulse ${3.5 + i * 0.5}s ease-in-out infinite`,
             animationDelay: `${i * 0.4}s`,
           }}
         />
@@ -88,42 +106,31 @@ export function SolarCore({ isHovered, onHover, reducedMotion }: SolarCoreProps)
           style={{
             width: 140,
             height: 140,
-            border: `1px solid rgba(255,140,0,${active ? 0.2 : 0.08})`,
+            border: `1px solid rgba(255,140,0,${active ? 0.25 : 0.1})`,
             animation: `energy-wave 4s ease-out infinite`,
             animationDelay: `${i * 1.3}s`,
           }}
         />
       ))}
 
-      {/* Main Sun body - outer glow ring */}
-      <div
-        className="absolute rounded-full transition-all duration-500"
-        style={{
-          width: active ? 160 : 148,
-          height: active ? 160 : 148,
-          background: "radial-gradient(circle, rgba(255,140,0,0.3) 0%, rgba(255,140,0,0.08) 60%, transparent 100%)",
-          boxShadow: `0 0 ${active ? 60 : 35}px rgba(255,140,0,${active ? 0.35 : 0.2}), 0 0 ${active ? 120 : 70}px rgba(255,140,0,${active ? 0.15 : 0.08})`,
-        }}
-      />
-
-      {/* Main Sun body - core */}
+      {/* Main Sun body - core (Layer 1) */}
       <div
         className="relative rounded-full flex items-center justify-center overflow-hidden transition-all duration-500 cursor-pointer"
         style={{
           width: active ? 140 : 130,
           height: active ? 140 : 130,
-          background: "radial-gradient(circle at 40% 35%, rgba(255,180,60,0.3), rgba(255,140,0,0.15) 50%, rgba(200,80,0,0.08) 100%)",
-          border: `1.5px solid rgba(255,140,0,${active ? 0.5 : 0.3})`,
-          boxShadow: `inset 0 0 40px rgba(255,140,0,${active ? 0.2 : 0.1}), 0 0 ${active ? 30 : 15}px rgba(255,140,0,${active ? 0.3 : 0.15})`,
-          animation: reducedMotion ? "none" : "sun-pulse 4s ease-in-out infinite",
+          background: "radial-gradient(circle at 45% 35%, #ffffff 0%, #fff59d 15%, #ffb300 45%, #ff6f00 80%, #d84315 100%)",
+          border: `1.5px solid rgba(255,183,77,${active ? 0.7 : 0.45})`,
+          boxShadow: `inset 0 0 30px rgba(255,110,0,0.55), 0 0 ${active ? 45 : 20}px rgba(255,110,0,0.45)`,
+          animation: reducedMotion ? "none" : "sun-pulse 5s ease-in-out infinite",
         }}
       >
         {/* Inner surface texture gradient */}
         <div
           className="absolute inset-0 rounded-full pointer-events-none"
           style={{
-            background: "conic-gradient(from 0deg, rgba(255,140,0,0.05), rgba(255,200,100,0.08), rgba(255,140,0,0.03), rgba(255,180,60,0.07), rgba(255,140,0,0.05))",
-            animation: reducedMotion ? "none" : "spin 20s linear infinite",
+            background: "conic-gradient(from 0deg, rgba(255,140,0,0.06), rgba(255,224,130,0.1), rgba(255,140,0,0.04), rgba(255,200,80,0.09), rgba(255,140,0,0.06))",
+            animation: reducedMotion ? "none" : "spin 25s linear infinite",
           }}
         />
 
@@ -134,8 +141,8 @@ export function SolarCore({ isHovered, onHover, reducedMotion }: SolarCoreProps)
               key={word}
               className="text-[11px] font-black tracking-[0.35em] leading-[1.8]"
               style={{
-                color: `rgba(255,${word === "INNOVATE" ? "180" : "140"},0,${active ? 0.9 : 0.65})`,
-                textShadow: `0 0 ${active ? 12 : 6}px rgba(255,140,0,${active ? 0.5 : 0.25})`,
+                color: `rgba(255,${word === "INNOVATE" ? "200" : "160"},0,${active ? 0.95 : 0.75})`,
+                textShadow: `0 0 ${active ? 15 : 8}px rgba(255,110,0,${active ? 0.6 : 0.35})`,
                 transition: "color 0.4s, text-shadow 0.4s",
               }}
             >
@@ -152,7 +159,7 @@ export function SolarCore({ isHovered, onHover, reducedMotion }: SolarCoreProps)
           50% { transform: scale(1.03); }
         }
         @keyframes energy-wave {
-          0% { transform: scale(1); opacity: 0.6; }
+          0% { transform: scale(1); opacity: 0.65; }
           100% { transform: scale(2.8); opacity: 0; }
         }
         @keyframes flare-pulse {

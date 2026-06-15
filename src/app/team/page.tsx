@@ -62,6 +62,50 @@ export default function TeamPage() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [sunHovered, setSunHovered] = useState(false);
   const [scaleFactor, setScaleFactor] = useState(1);
+  const [mousePos, setMousePos] = useState({ x: -9999, y: -9999 });
+  const [parallax, setParallax] = useState({
+    core: { x: 0, y: 0 },
+    orbits: { x: 0, y: 0 },
+    avatars: { x: 0, y: 0 },
+  });
+  const [loadStage, setLoadStage] = useState(0);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Normalize coordinates: range -1 to 1 relative to center
+    const normX = (x - rect.width / 2) / (rect.width / 2);
+    const normY = (y - rect.height / 2) / (rect.height / 2);
+    
+    setMousePos({ x, y });
+    setParallax({
+      core: { x: normX * 5, y: normY * 5 },
+      orbits: { x: normX * 10, y: normY * 10 },
+      avatars: { x: normX * 18, y: normY * 18 },
+    });
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setMousePos({ x: -9999, y: -9999 });
+    setParallax({
+      core: { x: 0, y: 0 },
+      orbits: { x: 0, y: 0 },
+      avatars: { x: 0, y: 0 },
+    });
+  }, []);
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setLoadStage(1), 500),  // 0.5s: Solar Core glows in
+      setTimeout(() => setLoadStage(2), 1000), // 1.0s: Orbit rings draw
+      setTimeout(() => setLoadStage(3), 1500), // 1.5s: Orange particles appear
+      setTimeout(() => setLoadStage(4), 2000), // 2.0s: Members fly in
+      setTimeout(() => setLoadStage(5), 2500), // 2.5s: Rotation begins
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -261,15 +305,20 @@ export default function TeamPage() {
               className="relative flex items-center justify-center w-full z-20"
             >
               {/* Solar system container (concentric centered relative container) */}
-              <div className="relative w-full aspect-square max-w-[850px] mx-auto overflow-hidden bg-transparent rounded-full">
+              <div
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                className="relative w-full aspect-square max-w-[850px] mx-auto overflow-hidden bg-transparent rounded-full"
+              >
                 {/* The Sun at the center */}
                 <div
                   className="absolute"
                   style={{
                     left: "50%",
                     top: "50%",
-                    transform: `translate(-50%, -50%) scale(${scaleFactor})`,
+                    transform: `translate(calc(-50% + ${parallax.core.x}px), calc(-50% + ${parallax.core.y}px)) scale(${scaleFactor})`,
                     transformOrigin: "center center",
+                    transition: reducedMotion ? "none" : "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
                     zIndex: 20,
                   }}
                 >
@@ -277,6 +326,7 @@ export default function TeamPage() {
                     isHovered={sunHovered}
                     onHover={setSunHovered}
                     reducedMotion={reducedMotion}
+                    visible={loadStage >= 1}
                   />
                 </div>
 
@@ -289,6 +339,10 @@ export default function TeamPage() {
                     onSelect={openMember}
                     reducedMotion={reducedMotion}
                     scaleFactor={scaleFactor}
+                    mousePos={mousePos}
+                    parallaxOrbits={parallax.orbits}
+                    parallaxAvatars={parallax.avatars}
+                    loadStage={loadStage}
                   />
                 )}
               </div>
