@@ -26,12 +26,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { name: "Dashboard & Settings", href: "/", icon: LayoutDashboard },
-  { name: "Announcements", href: "/announcements", icon: Megaphone },
-  { name: "Events", href: "/events", icon: Calendar },
-  { name: "Team Roster", href: "/team", icon: Users },
-  { name: "Gallery Images", href: "/gallery", icon: ImageIcon },
-  { name: "Achievements", href: "/achievements", icon: Trophy },
+  { name: "Dashboard & Settings", href: "/admin", icon: LayoutDashboard },
+  { name: "Announcements", href: "/admin/announcements", icon: Megaphone },
+  { name: "Events", href: "/admin/events", icon: Calendar },
+  { name: "Team Roster", href: "/admin/team", icon: Users },
+  { name: "Gallery Images", href: "/admin/gallery", icon: ImageIcon },
+  { name: "Achievements", href: "/admin/achievements", icon: Trophy },
 ];
 
 export default function ConsoleLayout({
@@ -45,7 +45,7 @@ export default function ConsoleLayout({
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
 
   // Exclude login page from sidebar layout wrapper
-  const isLogin = pathname === "/login" || pathname === "/console/login";
+  const isLogin = pathname === "/admin/login";
 
   useEffect(() => {
     // Get logged-in user email
@@ -69,7 +69,8 @@ export default function ConsoleLayout({
     // Delete session cookie (in case client SDK didn't clean it up)
     document.cookie = "sb-session=; path=/; max-age=0; SameSite=Lax; Secure";
     router.refresh();
-    router.push("/login");
+    router.push("/admin/login");
+    // Fallback: hard redirect in case router.push doesn't navigate away from admin
   };
 
   // Close mobile menu when navigating
@@ -109,7 +110,7 @@ export default function ConsoleLayout({
         {/* Navigation Items */}
         <nav className="flex-grow px-3 space-y-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.name}
@@ -178,7 +179,7 @@ export default function ConsoleLayout({
 
             <nav className="space-y-2">
               {navItems.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.name}

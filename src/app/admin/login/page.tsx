@@ -21,7 +21,7 @@ export default function ConsoleLoginPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setBackUrl(`${window.location.protocol}//${window.location.host.replace("console.", "")}`);
+      setBackUrl("/");
     }
   }, []);
 
@@ -57,7 +57,7 @@ export default function ConsoleLoginPage() {
         setFailedAttempts(0);
         // Refresh page so middleware cookie check is triggered
         router.refresh();
-        router.push("/");
+        router.push("/admin");
       }
     } catch (err: any) {
       console.error("Login failure:", err);
