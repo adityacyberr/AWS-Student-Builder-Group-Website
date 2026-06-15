@@ -8,26 +8,38 @@ import { motion, AnimatePresence } from "framer-motion";
 // Configuration for orbits and members
 interface OrbitConfig {
   id: number;
-  radiusPct: number; // radius as percentage of container half-width (e.g. 20.0, 28.8, 37.7, 46.6)
+  radiusPct: number; // radius as percentage of container width
   speed: number; // animation duration in seconds
   direction: "cw" | "ccw";
 }
 
 const ORBIT_CONFIGS: Record<number, OrbitConfig> = {
-  1: { id: 1, radiusPct: 20.0, speed: 60, direction: "cw" },
-  2: { id: 2, radiusPct: 28.8, speed: 70, direction: "ccw" },
-  3: { id: 3, radiusPct: 37.7, speed: 80, direction: "cw" },
-  4: { id: 4, radiusPct: 46.6, speed: 90, direction: "ccw" },
+  1: { id: 1, radiusPct: 17.5, speed: 55, direction: "cw" },    // Orbit 1: 160px base (ratio 20% scaled down to 17.5% for safety margin)
+  2: { id: 2, radiusPct: 26.25, speed: 70, direction: "ccw" },   // Orbit 2: 240px base (ratio 30% scaled down to 26.25%)
+  3: { id: 3, radiusPct: 35.0, speed: 90, direction: "cw" },     // Orbit 3: 320px base (ratio 40% scaled down to 35.0%)
+  4: { id: 4, radiusPct: 43.75, speed: 110, direction: "ccw" },  // Orbit 4: 400px base (ratio 50% scaled down to 43.75%)
 };
 
-// Map each member to an Orbit and an Angle Offset (in radians)
-const MEMBER_ORBITS: Record<string, { orbitId: number; angleOffset: number }> = {
-  "pranav-bansal": { orbitId: 1, angleOffset: 0 },
-  "aditya-kumar":  { orbitId: 2, angleOffset: Math.PI * 0.25 }, // 45 deg
-  "amisha":        { orbitId: 2, angleOffset: Math.PI * 1.25 }, // 225 deg (opposite)
-  "amber-prashar": { orbitId: 3, angleOffset: Math.PI * 0.6 },  // 108 deg
-  "rohan-verma":   { orbitId: 3, angleOffset: Math.PI * 1.6 },  // 288 deg (opposite)
-  "rinku-bhalotiya": { orbitId: 4, angleOffset: Math.PI * 0.9 }, // 162 deg
+// Robust slug mapper to identify members independently of UUID databases
+const getMemberKey = (member: TeamMember) => {
+  const nameLower = member.name.toLowerCase();
+  const idLower = member.id.toLowerCase();
+  if (nameLower.includes("pranav") || idLower.includes("pranav")) return "pranav";
+  if (nameLower.includes("aditya") || idLower.includes("aditya")) return "aditya";
+  if (nameLower.includes("rohan") || idLower.includes("rohan")) return "rohan";
+  if (nameLower.includes("amisha") || idLower.includes("amisha")) return "amisha";
+  if (nameLower.includes("rinku") || idLower.includes("rinku")) return "rinku";
+  if (nameLower.includes("amber") || idLower.includes("amber")) return "amber";
+  return idLower;
+};
+
+const MEMBER_ORBITS: Record<string, number> = {
+  "pranav": 1,
+  "aditya": 2,
+  "rohan":  2,
+  "amisha": 3,
+  "rinku":  3,
+  "amber":  4,
 };
 
 export interface OrbitingPlanetsProps {
@@ -51,11 +63,10 @@ export function OrbitingPlanets({
   const [containerWidth, setContainerWidth] = useState(600);
   const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
 
-  // Keep track of parent container sizing dynamically to build pixel-based rendering
+  // Monitor sizing changes dynamically
   useEffect(() => {
     if (!containerRef.current) return;
     
-    // Fallback measurement
     setContainerWidth(containerRef.current.offsetWidth);
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -73,23 +84,13 @@ export function OrbitingPlanets({
   const centerX = containerWidth / 2;
   const centerY = containerWidth / 2;
 
-  // Determine if rotation should be paused globally
-  const isPaused = hoveredMemberId !== null;
-
-  // Helper to get member orbit info
-  const getMemberOrbitInfo = useCallback((member: TeamMember, index: number) => {
-    const config = MEMBER_ORBITS[member.id];
-    if (config) return config;
-
-    // Sane fallback if member details are modified in database
-    const orbitId = (index % 4) + 1;
-    const angleOffset = (index / 6) * Math.PI * 2;
-    return { orbitId, angleOffset };
-  }, []);
+  // Retrieve the currently hovered member to check which orbit to pause
+  const hoveredMember = members.find((m) => m.id === hoveredMemberId);
+  const hoveredOrbitId = hoveredMember ? MEMBER_ORBITS[getMemberKey(hoveredMember)] : null;
 
   return (
     <div ref={containerRef} className="absolute inset-0 w-full h-full select-none z-10">
-      {/* Dynamic inline styles for CW/CCW rotations & counter-rotations */}
+      {/* CW/CCW Rotations & counter-rotations stylesheets */}
       <style jsx global>{`
         @keyframes orbit-spin-cw {
           from { transform: rotate(0deg); }
@@ -107,19 +108,51 @@ export function OrbitingPlanets({
           from { transform: translate(-50%, -50%) rotate(0deg); }
           to { transform: translate(-50%, -50%) rotate(-360deg); }
         }
-        @keyframes card-fade-up {
-          from { opacity: 0; transform: translate(-50%, 6px); }
-          to { opacity: 1; transform: translate(-50%, 0); }
-        }
       `}</style>
+
+      {/* Core Reaction: Small floating dust particles revolving slowly */}
+      {!reducedMotion && [
+        { r: (9.0 / 100) * containerWidth, speed: 22, dir: "cw" },
+        { r: (12.5 / 100) * containerWidth, speed: 30, dir: "ccw" },
+        { r: (15.5 / 100) * containerWidth, speed: 38, dir: "cw" },
+      ].map((p, idx) => (
+        <div
+          key={`particle-${idx}`}
+          className="absolute pointer-events-none"
+          style={{
+            width: p.r * 2,
+            height: p.r * 2,
+            left: centerX - p.r,
+            top: centerY - p.r,
+            transformOrigin: "center center",
+            animation: `orbit-spin-${p.dir} ${p.speed}s linear infinite`,
+            zIndex: 15,
+          }}
+        >
+          <div
+            className="absolute rounded-full bg-orange-400/40"
+            style={{
+              width: 3 * scaleFactor,
+              height: 3 * scaleFactor,
+              left: "50%",
+              top: 0,
+              filter: "blur(0.5px)",
+              boxShadow: "0 0 6px rgba(255,140,0,0.8)",
+            }}
+          />
+        </div>
+      ))}
 
       {/* Render Orbits */}
       {[1, 2, 3, 4].map((orbitId) => {
         const orbit = ORBIT_CONFIGS[orbitId];
         const r = (orbit.radiusPct / 100) * containerWidth;
-        const orbitMembers = members.filter((m, i) => getMemberOrbitInfo(m, i).orbitId === orbitId);
         
-        // Highlight orbit if one of its members is hovered
+        // Filter members that reside on this specific orbit path
+        const orbitMembers = members.filter((m) => MEMBER_ORBITS[getMemberKey(m)] === orbitId);
+        
+        // Pause ONLY this orbit's rotation if a member of this orbit is hovered
+        const isOrbitPaused = hoveredOrbitId === orbitId;
         const isOrbitHighlighted = orbitMembers.some((m) => m.id === hoveredMemberId);
         
         const rotationAnim = orbit.direction === "cw" ? "orbit-spin-cw" : "orbit-spin-ccw";
@@ -135,27 +168,54 @@ export function OrbitingPlanets({
               top: centerY - r,
               transformOrigin: "center center",
               animation: reducedMotion ? "none" : `${rotationAnim} ${orbit.speed}s linear infinite`,
-              animationPlayState: isPaused ? "paused" : "running",
+              animationPlayState: isOrbitPaused ? "paused" : "running",
               zIndex: isOrbitHighlighted ? 30 : 10,
             }}
           >
-            {/* Dashed Orbit Ring */}
-            <div
-              className="absolute inset-0 rounded-full border transition-all duration-500"
-              style={{
-                borderColor: `rgba(255,140,0,${isOrbitHighlighted ? 0.35 : sunHovered ? 0.15 : 0.07})`,
-                borderWidth: isOrbitHighlighted ? "1.5px" : "1px",
-                borderStyle: isOrbitHighlighted ? "solid" : "dashed",
-                boxShadow: isOrbitHighlighted ? "0 0 15px rgba(255,140,0,0.12)" : "none",
-              }}
-            />
+            {/* SVG Base Circle & Glowing Light Trail */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+              <defs>
+                <linearGradient id={`ring-grad-${orbitId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgba(255,140,0,0)" />
+                  <stop offset="35%" stopColor={`rgba(255,140,0,${isOrbitHighlighted ? 0.26 : 0.12})`} />
+                  <stop offset="70%" stopColor={`rgba(255,140,0,${isOrbitHighlighted ? 0.18 : 0.05})`} />
+                  <stop offset="100%" stopColor="rgba(255,140,0,0)" />
+                </linearGradient>
+              </defs>
+              {/* Dashed base orbit line */}
+              <circle
+                cx={r}
+                cy={r}
+                r={r}
+                fill="none"
+                stroke={`rgba(255,140,0,${isOrbitHighlighted ? 0.35 : sunHovered ? 0.18 : 0.08})`}
+                strokeWidth={isOrbitHighlighted ? 1.5 : 1}
+                strokeDasharray={isOrbitHighlighted ? "none" : "3 6"}
+                style={{ transition: "stroke 0.4s ease, stroke-width 0.4s ease" }}
+              />
+              {/* Volumetric trailing sweep overlay */}
+              <circle
+                cx={r}
+                cy={r}
+                r={r}
+                fill="none"
+                stroke={`url(#ring-grad-${orbitId})`}
+                strokeWidth={isOrbitHighlighted ? 3 : 1.5}
+                style={{
+                  filter: isOrbitHighlighted ? "blur(0.5px)" : "none",
+                  transition: "stroke-width 0.4s ease",
+                }}
+              />
+            </svg>
 
-            {/* Connection line vector (rendered inside the rotating container) */}
+            {/* Connection dashed vector inside rotating container */}
             {orbitMembers.map((member, idx) => {
-              const { angleOffset } = getMemberOrbitInfo(member, idx);
               const isHovered = hoveredMemberId === member.id;
-              
               if (!isHovered || reducedMotion) return null;
+
+              // Calculate spacing angle offset
+              const totalOnOrbit = orbitMembers.length;
+              const angleOffset = (idx / totalOnOrbit) * 2 * Math.PI + (orbitId * (Math.PI / 3));
 
               const x = r * Math.cos(angleOffset);
               const y = r * Math.sin(angleOffset);
@@ -166,7 +226,6 @@ export function OrbitingPlanets({
                   className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
                   style={{ zIndex: 0 }}
                 >
-                  {/* Dashed line to center Sun */}
                   <line
                     x1={r + x}
                     y1={r + y}
@@ -176,7 +235,6 @@ export function OrbitingPlanets({
                     strokeWidth="1.2"
                     strokeDasharray="4 4"
                   />
-                  {/* Animated energy travel particle */}
                   <circle r="3.5" fill="#ff9900">
                     <animateMotion
                       dur="1.2s"
@@ -188,27 +246,27 @@ export function OrbitingPlanets({
               );
             })}
 
-            {/* Render Members inside this Orbit */}
+            {/* Render Orbit Members */}
             {orbitMembers.map((member, idx) => {
-              const { angleOffset } = getMemberOrbitInfo(member, idx);
+              const totalOnOrbit = orbitMembers.length;
               
+              // Spacing formula: distributed evenly + unique rotation starting angle offsets to keep layout balanced
+              const angleOffset = (idx / totalOnOrbit) * 2 * Math.PI + (orbitId * (Math.PI / 3));
+
               const isHovered = hoveredMemberId === member.id;
               const isDimmed = selectedId !== null && selectedId !== member.id;
               
               const x = r * Math.cos(angleOffset);
               const y = r * Math.sin(angleOffset);
               
-              // Member positioning relative to Orbit container center (r, r)
               const leftPx = r + x;
               const topPx = r + y;
 
-              // Size adjustments
               const avatarSize = Math.max(34, Math.round(58 * scaleFactor));
               
-              // Dynamic upright counter rotation
+              // Counter-rotation style setup to cancel container rotation
               const counterAnim = orbit.direction === "cw" ? "member-spin-ccw" : "member-spin-cw";
 
-              // Check card placement quadrant to prevent bounds overflow
               const isTopHalf = topPx / (r * 2) < 0.5;
               const isLeftHalf = leftPx / (r * 2) < 0.5;
 
@@ -223,7 +281,7 @@ export function OrbitingPlanets({
                     height: avatarSize,
                     transformOrigin: "center center",
                     animation: reducedMotion ? "translate(-50%, -50%)" : `${counterAnim} ${orbit.speed}s linear infinite`,
-                    animationPlayState: isPaused ? "paused" : "running",
+                    animationPlayState: isOrbitPaused ? "paused" : "running",
                     opacity: isDimmed ? 0.2 : 1,
                     zIndex: isHovered ? 50 : 25,
                   }}
@@ -244,7 +302,7 @@ export function OrbitingPlanets({
                       }}
                     />
 
-                    {/* Outer Border ring */}
+                    {/* Outer Border Ring */}
                     <div
                       className="absolute rounded-full pointer-events-none transition-all duration-300"
                       style={{
@@ -254,9 +312,9 @@ export function OrbitingPlanets({
                       }}
                     />
 
-                    {/* Avatar Image container */}
+                    {/* Avatar Frame */}
                     <div
-                      className="relative w-full h-full rounded-full overflow-hidden border transition-all duration-300 bg-slate-950"
+                      className="relative w-full h-full rounded-full overflow-hidden border transition-all duration-300 bg-slate-950 shadow-md"
                       style={{
                         borderColor: isHovered ? "rgba(255,140,0,0.7)" : "rgba(255,140,0,0.25)",
                         transform: `scale(${isHovered ? 1.15 : 1.0})`,
@@ -316,13 +374,13 @@ export function OrbitingPlanets({
                           className="absolute z-50 pointer-events-none select-none text-left"
                           style={{
                             width: "220px",
-                            // Dynamic alignment depending on quadrant to avoid edge clipping
+                            // Inward alignment quadrant-checks to prevent cutting off
                             ...(isTopHalf ? { top: "125%" } : { bottom: "125%" }),
                             ...(isLeftHalf ? { left: "0%" } : { right: "0%" }),
                           }}
                         >
                           <div className="rounded-2xl border border-orange-500/35 bg-[#080c16]/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.85)] p-4 relative">
-                            {/* Accent highlight line */}
+                            {/* Inner upper line flare */}
                             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent rounded-t-2xl" />
                             
                             <h4 className="text-xs font-black text-white">{member.name}</h4>
