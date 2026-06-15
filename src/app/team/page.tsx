@@ -62,32 +62,18 @@ export default function TeamPage() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [sunHovered, setSunHovered] = useState(false);
   const [scaleFactor, setScaleFactor] = useState(1);
-  const [solarCenter, setSolarCenter] = useState({ x: 280, y: 220 });
-  const [containerSize, setContainerSize] = useState({ width: 560, height: 440 });
 
   useEffect(() => {
     const handleResize = () => {
       const w = window.innerWidth;
-      if (w < 380) {
-        setScaleFactor(0.46);
-        setSolarCenter({ x: 140, y: 120 });
-        setContainerSize({ width: 280, height: 240 });
-      } else if (w < 480) {
-        setScaleFactor(0.58);
-        setSolarCenter({ x: 175, y: 140 });
-        setContainerSize({ width: 350, height: 280 });
-      } else if (w < 640) {
-        setScaleFactor(0.72);
-        setSolarCenter({ x: 220, y: 175 });
-        setContainerSize({ width: 440, height: 350 });
+      if (w < 480) {
+        setScaleFactor(0.42);
       } else if (w < 768) {
-        setScaleFactor(0.82);
-        setSolarCenter({ x: 250, y: 195 });
-        setContainerSize({ width: 500, height: 395 });
+        setScaleFactor(0.65);
+      } else if (w < 1280) {
+        setScaleFactor(0.8);
       } else {
-        setScaleFactor(1);
-        setSolarCenter({ x: 280, y: 220 });
-        setContainerSize({ width: 560, height: 440 });
+        setScaleFactor(1.0);
       }
     };
     handleResize();
@@ -272,19 +258,19 @@ export default function TeamPage() {
             {/* Right side - Solar System Visualization */}
             <motion.div
               variants={scrollItemVariants}
-              className="relative flex items-center justify-center"
-              style={{ minHeight: 500 }}
+              className="relative flex items-center justify-center w-full z-20"
             >
-              {/* Solar system container */}
-              <div className="relative" style={{ width: containerSize.width, height: containerSize.height }}>
+              {/* Solar system container (concentric centered relative container) */}
+              <div className="relative w-full aspect-square max-w-[850px] mx-auto overflow-hidden bg-transparent rounded-full">
                 {/* The Sun at the center */}
                 <div
                   className="absolute"
                   style={{
-                    left: solarCenter.x - 170 * scaleFactor,
-                    top: solarCenter.y - 170 * scaleFactor,
-                    transform: `scale(${scaleFactor})`,
+                    left: "50%",
+                    top: "50%",
+                    transform: `translate(-50%, -50%) scale(${scaleFactor})`,
                     transformOrigin: "center center",
+                    zIndex: 20,
                   }}
                 >
                   <SolarCore
@@ -302,7 +288,6 @@ export default function TeamPage() {
                     selectedId={selectedMember?.id ?? null}
                     onSelect={openMember}
                     reducedMotion={reducedMotion}
-                    containerCenter={solarCenter}
                     scaleFactor={scaleFactor}
                   />
                 )}

@@ -235,7 +235,7 @@ export default function LoginPage() {
               </h1>
               <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed select-none">
                 {view === "login"
-                  ? "Access the chapter management dashboard and administer events, teams, galleries, announcements, and site content."
+                  ? "Authorized administrators and team members only."
                   : "Submit your authorized email address below to receive a validation key link."}
               </p>
             </div>
@@ -346,17 +346,20 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading || lockoutTimeLeft > 0}
-                  className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#ff9900] to-[#ffb347] hover:from-[#ffa624] hover:to-[#ffbd66] text-slate-950 text-sm font-extrabold shadow-md shadow-orange-500/10 hover:shadow-orange-500/25 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed select-none flex items-center justify-center gap-2 hover:-translate-y-0.5 transition-all duration-200"
+                  className="group w-full h-14 rounded-2xl border border-orange-500/20 bg-slate-900/50 hover:bg-slate-900/90 text-orange-400 hover:text-white text-sm font-bold tracking-wide shadow-md shadow-orange-500/5 hover:shadow-orange-500/15 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed select-none flex items-center justify-center gap-2 transition-all duration-200"
                 >
                   {loading ? (
                     <>
-                      <Loader className="h-4 w-4 animate-spin text-slate-950" />
-                      <span>Signing In...</span>
+                      <Loader className="h-4 w-4 animate-spin text-orange-400" />
+                      <span>Authenticating...</span>
                     </>
                   ) : lockoutTimeLeft > 0 ? (
                     <span>Locked ({lockoutTimeLeft}s)</span>
                   ) : (
-                    <span>Sign In</span>
+                    <>
+                      <Lock className="h-4 w-4 text-orange-400 group-hover:text-white transition-colors" />
+                      <span>Verify Administrative Access</span>
+                    </>
                   )}
                 </button>
               </div>

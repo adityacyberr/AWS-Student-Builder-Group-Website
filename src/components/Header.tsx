@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { Menu, X, ArrowRight, LogOut, Settings, User as UserIcon, Layout, ChevronDown } from "lucide-react";
+import { Menu, X, ArrowRight, LogOut, Settings, User as UserIcon, Layout, ChevronDown, Lock } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -59,7 +59,7 @@ export default function Header() {
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2.5 select-none group py-1">
+            <Link href="/" className="flex items-center gap-3.5 select-none group py-1">
               <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden group-hover:border-orange-500/40 transition-colors duration-300">
                 {/* Subtle orange accent line */}
                 <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-500 to-amber-500 opacity-90" />
@@ -76,7 +76,7 @@ export default function Header() {
                 <span className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors duration-300">
                   AWS Student Builder Group
                 </span>
-                <span className="text-[9px] font-medium text-slate-400 mt-0.5">
+                <span className="text-[9.5px] font-semibold text-slate-305 mt-1">
                   RIMT University, Punjab
                 </span>
               </div>
@@ -179,9 +179,11 @@ export default function Header() {
               /* Unauthenticated Login Link */
               <Link
                 href="/login"
-                className="text-xs font-bold text-slate-300 hover:text-orange-400 px-3 py-2 transition-colors select-none"
+                title="Administrator Access"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-orange-400 px-3 py-2 rounded-lg border border-transparent hover:border-orange-500/20 hover:bg-orange-500/5 hover:shadow-[0_0_12px_rgba(255,153,0,0.12)] transition-all select-none"
               >
-                Sign In
+                <Lock className="h-3.5 w-3.5 text-orange-500/80" />
+                <span>Admin</span>
               </Link>
             )}
 
@@ -296,9 +298,11 @@ export default function Header() {
                     <Link
                       href="/login"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-350 hover:text-orange-400 hover:bg-slate-900/40 cursor-pointer"
+                      title="Administrator Access"
+                      className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-slate-350 hover:text-orange-400 hover:bg-slate-900/40 cursor-pointer"
                     >
-                      Sign In
+                      <Lock className="h-4 w-4 text-orange-500/80" />
+                      <span>Admin Portal</span>
                     </Link>
                   )}
                 </nav>

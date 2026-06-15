@@ -34,15 +34,18 @@ export function SolarCoreSun({
 
   const parallaxX = reducedMotion ? 0 : mouseX * 7;
   const parallaxY = reducedMotion ? 0 : mouseY * 7;
+  const rotateX = reducedMotion ? 0 : -mouseY * 12;
+  const rotateY = reducedMotion ? 0 : mouseX * 12;
 
-  // Scaled sizes
+  // Scaled sizes (increased core by 15%, halos/glows by 25%)
   const s = Math.max(scaleFactor, 0.35);
-  const sunSize   = Math.round(148 * s);
-  const flare1    = Math.round(200 * s);
-  const flare2    = Math.round(238 * s);
-  const halo1     = Math.round(310 * s);
-  const halo2     = Math.round(420 * s);
-  const atmos     = Math.round(560 * s);
+  const sunSize   = Math.round(170 * s);
+  const flare1    = Math.round(250 * s);
+  const flare2    = Math.round(298 * s);
+  const halo1     = Math.round(388 * s);
+  const halo2     = Math.round(525 * s);
+  const atmos     = Math.round(700 * s);
+  const solarWind = Math.round(820 * s);
 
   return (
     <div
@@ -50,13 +53,30 @@ export function SolarCoreSun({
       style={{
         top: "50%",
         left: "50%",
-        transform: `translate3d(calc(-50% + ${parallaxX}px), calc(-50% + ${parallaxY}px), 0)`,
+        transform: `translate3d(calc(-50% + ${parallaxX}px), calc(-50% + ${parallaxY}px), 0) scale(${isHovered ? 1.05 : 1}) perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
         transition: "transform 0.35s ease-out",
         zIndex: 10,
       }}
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
     >
+      {/* ── Layer 4.5: Outermost solar winds volumetric glow ─── */}
+      <div
+        className="absolute rounded-full pointer-events-none transition-all duration-700"
+        style={{
+          width: solarWind,
+          height: solarWind,
+          top: -solarWind / 2,
+          left: -solarWind / 2,
+          background:
+            "radial-gradient(circle, rgba(255,140,0,0.02) 0%, rgba(255,100,0,0.005) 50%, transparent 80%)",
+          filter: "blur(40px)",
+          animation: reducedMotion ? "none" : "sun-atmos 12s ease-in-out infinite",
+          opacity: isHovered ? 0.9 : 0.65,
+          willChange: "transform, opacity",
+        }}
+      />
+
       {/* ── Layer 4: Atmospheric outer glow ─── */}
       <div
         className="absolute rounded-full pointer-events-none"

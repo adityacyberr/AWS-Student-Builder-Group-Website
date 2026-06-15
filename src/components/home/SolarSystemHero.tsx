@@ -131,7 +131,7 @@ const PLANETS: PlanetDef[] = [
 // ─────────────────────────────────────────────
 // ORBIT RADII (base values, scaled per viewport)
 // ─────────────────────────────────────────────
-const ORBIT_RADII = { inner: 155, mid: 230, outer: 310 };
+const ORBIT_RADII = { inner: 175, mid: 260, outer: 350 };
 
 // ─────────────────────────────────────────────
 // SINGLE PLANET COMPONENT
@@ -163,8 +163,8 @@ function OrbitPlanet({
 
   const planetSize = Math.round((scaleFactor < 0.6 ? 32 : 42) * Math.max(scaleFactor, 0.7));
   const iconSize = Math.round((scaleFactor < 0.6 ? 13 : 18) * Math.max(scaleFactor, 0.7));
-  const fontSize = Math.max(7, Math.round(9 * scaleFactor));
-  const subFontSize = Math.max(6, Math.round(7.5 * scaleFactor));
+  const fontSize = Math.max(9, Math.round(11 * scaleFactor));
+  const subFontSize = Math.max(8, Math.round(9 * scaleFactor));
 
   // The animation name is unique per planet so each can have its own start angle
   const animName = `orbit-planet-${planet.id}`;
@@ -180,7 +180,6 @@ function OrbitPlanet({
 
   return (
     <>
-      {/* Planet node — absolutely centered, then offset by radius via animation */}
       <div
         className="absolute"
         style={{
@@ -199,14 +198,24 @@ function OrbitPlanet({
           willChange: "transform",
         }}
       >
-        <button
-          className="group relative flex flex-col items-center cursor-pointer outline-none touch-target-expand"
-          style={{ pointerEvents: "auto" }}
-          onClick={handleClick}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-          aria-label={`Explore ${planet.name}`}
+        <motion.div
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{
+            type: "spring",
+            stiffness: 100,
+            damping: 15,
+            delay: reducedMotion ? 0 : 1.2 + (planet.angleDeg / 360) * 0.4,
+          }}
+          className="w-full h-full flex flex-col items-center justify-center pointer-events-auto"
         >
+          <button
+            className="group relative flex flex-col items-center cursor-pointer outline-none touch-target-expand"
+            onClick={handleClick}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            aria-label={`Explore ${planet.name}`}
+          >
           {/* Planet glow trail (pseudo-orbital afterimage) */}
           {!reducedMotion && (hovered || isSelected) && (
             <div
@@ -236,14 +245,14 @@ function OrbitPlanet({
                   : clicked
                   ? "rgba(255,140,0,0.25)"
                   : "radial-gradient(circle at 35% 35%, rgba(255,140,0,0.1) 0%, rgba(10,15,30,0.9) 100%)",
-              border: `1px solid rgba(255,140,0,${hovered || isSelected ? 0.6 : sunHovered ? 0.25 : 0.18})`,
+              border: `1.5px solid rgba(255,140,0,${hovered || isSelected ? 0.8 : sunHovered ? 0.3 : 0.18})`,
               boxShadow:
                 hovered || isSelected
-                  ? `0 0 22px rgba(255,140,0,0.35), 0 0 44px rgba(255,140,0,0.12), inset 0 0 14px rgba(255,140,0,0.1)`
+                  ? `0 0 28px rgba(255,140,0,0.55), 0 0 56px rgba(255,140,0,0.25), inset 0 0 16px rgba(255,140,0,0.2)`
                   : clicked
-                  ? "0 0 30px rgba(255,140,0,0.5)"
-                  : `0 0 8px rgba(255,140,0,0.1)`,
-              transform: `scale(${hovered ? 1.12 : sunHovered ? 1.04 : clicked ? 1.18 : 1})`,
+                  ? "0 0 35px rgba(255,140,0,0.6)"
+                  : `0 0 10px rgba(255,140,0,0.12)`,
+              transform: `scale(${hovered ? 1.18 : sunHovered ? 1.04 : clicked ? 1.18 : 1}) translateY(${hovered ? -3 : 0}px)`,
               transition: "all 0.35s cubic-bezier(0.34,1.56,0.64,1)",
             }}
           >
@@ -277,7 +286,7 @@ function OrbitPlanet({
 
           {/* Label */}
           <div
-            className="mt-1.5 text-center whitespace-nowrap select-none"
+            className="mt-2.5 text-center whitespace-nowrap select-none"
             style={{
               transform: hovered ? "translateY(-2px)" : "translateY(0)",
               transition: "transform 0.3s ease",
@@ -291,7 +300,7 @@ function OrbitPlanet({
                 color:
                   hovered || isSelected
                     ? "#FF8C00"
-                    : "rgba(255,255,255,0.75)",
+                    : "rgba(255,255,255,0.85)",
                 textShadow:
                   hovered || isSelected
                     ? "0 0 8px rgba(255,140,0,0.4)"
@@ -301,10 +310,10 @@ function OrbitPlanet({
               {planet.name}
             </span>
             <span
-              className="block text-slate-500 font-medium tracking-wide mt-0.5 transition-all duration-300"
+              className="block text-slate-400 font-medium tracking-wide mt-0.5 transition-all duration-300"
               style={{
                 fontSize: subFontSize,
-                opacity: hovered || isSelected ? 1 : 0.6,
+                opacity: hovered || isSelected ? 1 : 0.75,
               }}
             >
               {planet.tagline}
@@ -336,7 +345,8 @@ function OrbitPlanet({
               </div>
             </div>
           )}
-        </button>
+          </button>
+        </motion.div>
       </div>
 
       {/* Per-planet keyframe injected as a style tag */}
@@ -392,30 +402,36 @@ function OrbitRing({
         <defs>
           <linearGradient id={`ring-grad-${r}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="rgba(255,140,0,0)" />
-            <stop offset="40%" stopColor={`rgba(255,140,0,${isActive ? 0.18 : sunHovered ? 0.1 : 0.06})`} />
-            <stop offset="70%" stopColor={`rgba(255,140,0,${isActive ? 0.12 : 0.04})`} />
+            <stop offset="40%" stopColor={`rgba(255,140,0,${isActive ? 0.35 : sunHovered ? 0.22 : 0.15})`} />
+            <stop offset="70%" stopColor={`rgba(255,140,0,${isActive ? 0.25 : 0.12})`} />
             <stop offset="100%" stopColor="rgba(255,140,0,0)" />
           </linearGradient>
         </defs>
         {/* Dashed base ring */}
-        <circle
+        <motion.circle
           cx={cx}
           cy={cx}
           r={r}
           fill="none"
-          stroke={`rgba(255,140,0,${isActive ? 0.15 : sunHovered ? 0.08 : 0.05})`}
-          strokeWidth={isActive ? 1.2 : 0.8}
+          stroke={`rgba(255,140,0,${isActive ? 0.35 : sunHovered ? 0.22 : 0.12})`}
+          strokeWidth={isActive ? 1.5 : 1}
           strokeDasharray={isActive ? "none" : "4 6"}
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut", delay: 0.4 }}
           style={{ transition: "stroke 0.5s ease, stroke-width 0.5s ease" }}
         />
         {/* Gradient glow ring overlay */}
-        <circle
+        <motion.circle
           cx={cx}
           cy={cx}
           r={r}
           fill="none"
           stroke={`url(#ring-grad-${r})`}
           strokeWidth={isActive ? 3 : 1.5}
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 1.8, ease: "easeOut", delay: 0.6 }}
           style={{
             filter: isActive ? "blur(1px)" : "none",
             transition: "stroke-width 0.5s ease",
@@ -491,14 +507,14 @@ export function SolarSystemHero() {
 
   return (
     <section
-      className="relative w-full h-auto lg:h-screen min-h-[600px] lg:max-h-[1200px] bg-[#050816] bg-grid-pattern overflow-hidden py-12 lg:py-0"
+      className="relative w-full h-auto lg:h-screen min-h-[600px] lg:max-h-[1200px] bg-[#050816] bg-grid-pattern overflow-hidden pt-10 pb-12 lg:py-0"
       onMouseMove={handleMouseMove}
     >
       {/* Cosmic Background */}
       <CosmicBackground reducedMotion={reducedMotion} />
 
       {/* Main content grid */}
-      <div className="relative z-10 h-full flex items-center">
+      <div className="relative z-10 h-full flex items-center lg:-mt-10">
         <div className="mx-auto max-w-[1400px] w-full px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 w-full items-center">
 
@@ -507,7 +523,7 @@ export function SolarSystemHero() {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="lg:col-span-4 xl:col-span-4 space-y-6 z-20 relative text-center lg:text-left flex flex-col items-center lg:items-start"
+              className="lg:col-span-6 xl:col-span-6 space-y-6 z-20 relative text-center lg:text-left flex flex-col items-center lg:items-start"
             >
               <motion.span
                 variants={itemVariants}
@@ -518,11 +534,9 @@ export function SolarSystemHero() {
 
               <motion.h1
                 variants={itemVariants}
-                className="text-fluid-hero font-black text-white tracking-tight"
+                className="text-fluid-hero font-black text-white tracking-tight leading-[1.1]"
               >
-                One Community.
-                <br />
-                Six Worlds.
+                One Community. Six Worlds.
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">
                   Infinite Possibilities.
@@ -538,6 +552,27 @@ export function SolarSystemHero() {
                 cloud innovators.
               </motion.p>
 
+              {/* Community Metrics */}
+              <motion.div
+                variants={itemVariants}
+                className="flex items-center gap-8 pt-2 select-none"
+              >
+                {[
+                  { value: "150+", label: "Members" },
+                  { value: "3+", label: "Bootcamps" },
+                  { value: "100%", label: "Student-Led" },
+                ].map((stat, idx) => (
+                  <div key={idx} className="flex flex-col text-left">
+                    <span className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">
+                      {stat.value}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+                      {stat.label}
+                    </span>
+                  </div>
+                ))}
+              </motion.div>
+
               <motion.div variants={itemVariants} className="flex flex-wrap justify-center lg:justify-start gap-3 pt-2">
                 {/* Primary CTA */}
                 <a
@@ -547,10 +582,10 @@ export function SolarSystemHero() {
                   className="group relative inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold overflow-hidden transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
                   style={{
                     background:
-                      "linear-gradient(135deg, rgba(255,140,0,0.28) 0%, rgba(220,110,0,0.18) 100%)",
-                    border: "1px solid rgba(255,140,0,0.5)",
+                      "linear-gradient(135deg, #ff8c00 0%, #ff5500 100%)",
+                    border: "1px solid #ff9900",
                     boxShadow:
-                      "0 0 24px rgba(255,140,0,0.18), 0 4px 16px rgba(0,0,0,0.3), inset 0 0 24px rgba(255,140,0,0.06)",
+                      "0 0 25px rgba(255,140,0,0.25), 0 4px 16px rgba(0,0,0,0.35)",
                   }}
                 >
                   {/* Light sweep */}
@@ -564,16 +599,16 @@ export function SolarSystemHero() {
                         : "btn-sweep 4s ease-in-out infinite",
                     }}
                   />
-                  <span className="relative z-10 text-orange-300 group-hover:text-white transition-colors font-black">
+                  <span className="relative z-10 text-white font-extrabold transition-colors">
                     Join Our Club
                   </span>
-                  <ArrowRight className="relative z-10 h-4 w-4 text-orange-300 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                  <ArrowRight className="relative z-10 h-4 w-4 text-white group-hover:translate-x-1 transition-all" />
                 </a>
 
                 {/* Secondary CTA */}
                 <Link
                   href="/events"
-                  className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-slate-400 border border-slate-700/60 bg-slate-950/50 backdrop-blur-sm hover:text-orange-300 hover:border-orange-500/30 hover:bg-orange-500/5 hover:shadow-[0_0_16px_rgba(255,140,0,0.08)] transition-all duration-300"
+                  className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-slate-400 border border-slate-800/80 bg-slate-950/20 hover:text-white hover:border-slate-700 transition-all duration-300"
                 >
                   <Compass className="h-4 w-4 transition-transform group-hover:rotate-12" />
                   Discover Our Community
@@ -583,7 +618,7 @@ export function SolarSystemHero() {
 
             {/* ── RIGHT: Solar System ───────────────────────── */}
             <div
-              className="lg:col-span-8 xl:col-span-8 relative h-[300px] sm:h-[420px] md:h-[520px] lg:h-full flex items-center justify-center"
+              className="lg:col-span-6 xl:col-span-6 relative h-[300px] sm:h-[420px] md:h-[520px] lg:h-full flex items-center justify-center"
             >
               {/* Parallax wrapper */}
               <div
@@ -659,6 +694,13 @@ export function SolarSystemHero() {
                 onClose={handleClosePanel}
                 reducedMotion={reducedMotion}
               />
+
+              {/* Discovery Hint */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center select-none pointer-events-none z-20">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-orange-400/35">
+                  Click any orbit to explore
+                </p>
+              </div>
             </div>
           </div>
         </div>
