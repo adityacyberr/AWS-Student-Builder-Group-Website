@@ -248,7 +248,7 @@ export default function GalleryPage() {
               date: d.date,
               description: d.description,
               category: d.category,
-              imageUrl: d.image_url || "/gallery/cloud-101.png",
+              imageUrl: d.image_url || "/gallery/welcome-team.jpg",
               participants: d.participants || 80,
               location: d.location || "RIMT University",
               photoCount: d.photo_count || 15,
