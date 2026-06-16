@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Camera, Image as ImageIcon, Calendar, Heart, Trophy } from "lucide-react";
 
 interface CardData {
@@ -9,9 +9,12 @@ interface CardData {
   imageSrc: string;
   title: string;
   subtitle: string;
-  rotation: string;
-  // Position style classes for tablet/desktop layout
-  className: string;
+  initialRotation: number;
+  // Position style values for desktop layout
+  top?: string;
+  bottom?: string;
+  left?: string;
+  right?: string;
   floatDelay: number;
   isCenter?: boolean;
 }
@@ -23,8 +26,7 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/welcome-team.jpg",
     title: "AWS Community Day",
     subtitle: "RIMT University",
-    rotation: "rotate(1.5deg)",
-    className: "w-[240px] h-[170px] sm:w-[280px] sm:h-[190px] md:w-[320px] md:h-[220px] z-30",
+    initialRotation: 1.5,
     floatDelay: 0,
     isCenter: true,
   },
@@ -34,8 +36,9 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/launch-agenda.jpg",
     title: "Workshop",
     subtitle: "Hands-on Learning",
-    rotation: "rotate(-6deg)",
-    className: "top-[4%] left-[2%] sm:top-[8%] sm:left-[5%] md:top-[10%] md:left-[8%] w-[160px] h-[120px] sm:w-[190px] sm:h-[135px] md:w-[220px] md:h-[150px] z-20",
+    initialRotation: -8,
+    top: "6%",
+    left: "2%",
     floatDelay: 0.8,
   },
   // TOP RIGHT
@@ -44,8 +47,9 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/welcome-team.jpg",
     title: "Meetup",
     subtitle: "Growing Together",
-    rotation: "rotate(5deg)",
-    className: "top-[2%] right-[2%] sm:top-[6%] sm:right-[5%] md:top-[8%] md:right-[8%] w-[160px] h-[120px] sm:w-[190px] sm:h-[135px] md:w-[220px] md:h-[150px] z-20",
+    initialRotation: 7,
+    top: "3%",
+    right: "2%",
     floatDelay: 1.4,
   },
   // BOTTOM LEFT
@@ -54,8 +58,9 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/launch-agenda.jpg",
     title: "Tech Talk",
     subtitle: "Expert Sessions",
-    rotation: "rotate(4deg)",
-    className: "bottom-[4%] left-[4%] sm:bottom-[8%] sm:left-[7%] md:bottom-[10%] md:left-[10%] w-[160px] h-[120px] sm:w-[190px] sm:h-[135px] md:w-[220px] md:h-[150px] z-20",
+    initialRotation: -10,
+    bottom: "6%",
+    left: "4%",
     floatDelay: 2.2,
   },
   // BOTTOM RIGHT
@@ -64,8 +69,9 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/welcome-team.jpg",
     title: "Achievements",
     subtitle: "Milestones Earned",
-    rotation: "rotate(-5deg)",
-    className: "bottom-[2%] right-[4%] sm:bottom-[6%] sm:right-[7%] md:bottom-[8%] md:right-[10%] w-[160px] h-[120px] sm:w-[190px] sm:h-[135px] md:w-[220px] md:h-[150px] z-20",
+    initialRotation: 8,
+    bottom: "3%",
+    right: "4%",
     floatDelay: 2.8,
   },
 ];
@@ -74,7 +80,7 @@ export function MemoriesOrbitShowcase() {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
 
   return (
-    <div className="relative w-full h-[400px] sm:h-[480px] md:h-[550px] lg:h-[620px] max-w-[650px] flex items-center justify-center overflow-hidden z-10 select-none">
+    <div className="relative w-full h-[420px] sm:h-[480px] md:h-[550px] lg:h-[600px] max-w-[650px] flex items-center justify-center overflow-hidden z-10 select-none">
       
       {/* 1. Ambient Background Particles */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
@@ -112,148 +118,160 @@ export function MemoriesOrbitShowcase() {
       </div>
 
       {/* 2. Soft radial orange glow behind the constellation */}
-      <div className="absolute w-[250px] h-[250px] sm:w-[380px] sm:h-[380px] rounded-full bg-orange-600/10 blur-[80px] sm:blur-[130px] pointer-events-none z-0" />
+      <div
+        className="absolute w-[350px] h-[350px] sm:w-[480px] sm:h-[480px] rounded-full pointer-events-none z-0"
+        style={{
+          background: "radial-gradient(circle, rgba(255,140,0,0.28), rgba(255,140,0,0.12), transparent 70%)"
+        }}
+      />
 
       {/* ================================================= */}
       {/* DESKTOP / TABLET: CONSTELLATION ORBIT VIEW        */}
       {/* ================================================= */}
       <div className="hidden sm:flex relative w-full h-full items-center justify-center pointer-events-none">
         
-        {/* Orbital Paths (Curved orange dashed SVG paths) */}
-        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-          <svg className="w-full h-full max-w-[620px] max-h-[620px] overflow-visible opacity-30" viewBox="0 0 600 600">
-            <defs>
-              <radialGradient id="orbit-glow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="rgba(249,115,22,0.15)" />
-                <stop offset="100%" stopColor="rgba(249,115,22,0)" />
-              </radialGradient>
-            </defs>
-            {/* Center glow area */}
-            <circle cx="300" cy="300" r="280" fill="url(#orbit-glow)" />
-            
-            {/* Orbit Circle 1 */}
+        {/* Tilted elliptical space for orbit paths and icons */}
+        <div 
+          className="absolute w-[600px] h-[600px] flex items-center justify-center pointer-events-none z-10"
+          style={{ transform: "rotate(-12deg) scaleY(0.48)" }}
+        >
+          {/* Concentric dashed SVG Orbit paths */}
+          <svg className="absolute w-full h-full overflow-visible opacity-30" viewBox="0 0 600 600">
+            {/* Orbit Circle 1 (Inner - R=140px) */}
             <circle
               cx="300"
               cy="300"
-              r="130"
+              r="140"
               fill="none"
-              stroke="rgba(249, 115, 22, 0.45)"
+              stroke="rgba(249, 115, 22, 0.55)"
               strokeWidth="1.2"
               strokeDasharray="4 8"
-              className="animate-[spin_40s_linear_infinite]"
-              style={{ transformOrigin: "300px 300px" }}
             />
-            {/* Orbit Circle 2 */}
+            {/* Orbit Circle 2 (Mid - R=210px) */}
             <circle
               cx="300"
               cy="300"
-              r="200"
+              r="210"
               fill="none"
-              stroke="rgba(249, 115, 22, 0.3)"
+              stroke="rgba(249, 115, 22, 0.35)"
               strokeWidth="1"
               strokeDasharray="6 12"
-              className="animate-[spin_70s_linear_infinite_reverse]"
-              style={{ transformOrigin: "300px 300px" }}
             />
-            {/* Orbit Circle 3 */}
+            {/* Orbit Circle 3 (Outer - R=270px) */}
             <circle
               cx="300"
               cy="300"
-              r="260"
+              r="270"
               fill="none"
-              stroke="rgba(249, 115, 22, 0.2)"
+              stroke="rgba(249, 115, 22, 0.22)"
               strokeWidth="0.8"
               strokeDasharray="8 16"
-              className="animate-[spin_110s_linear_infinite]"
-              style={{ transformOrigin: "300px 300px" }}
             />
           </svg>
-        </div>
 
-        {/* 3. Floating Icons Traveling along Orbits */}
-        {/* Camera Icon - Inner path */}
-        <div
-          className="absolute z-20 pointer-events-auto animate-[orbit-inner-1_24s_linear_infinite]"
-          style={{ width: "36px", height: "36px" }}
-        >
-          <div className="w-full h-full rounded-full border border-orange-500/30 bg-slate-950/90 shadow-[0_0_12px_rgba(249,115,22,0.3)] flex items-center justify-center animate-pulse">
-            <Camera className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+          {/* 3. Orbiting Icons travelling along paths (using CSS keyframes) */}
+          
+          {/* Inner Orbit (60s speed) - Camera */}
+          <div className="absolute w-[280px] h-[280px] rounded-full flex items-center justify-center animate-[spin_60s_linear_infinite]">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/30 bg-slate-950/95 shadow-[0_0_12px_rgba(249,115,22,0.35)] flex items-center justify-center animate-pulse pointer-events-auto">
+              <div className="animate-[spin-reverse_60s_linear_infinite] flex items-center justify-center">
+                <Camera className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Heart Icon - Inner path (offset starting position) */}
-        <div
-          className="absolute z-20 pointer-events-auto animate-[orbit-inner-2_28s_linear_infinite]"
-          style={{ width: "36px", height: "36px" }}
-        >
-          <div className="w-full h-full rounded-full border border-orange-500/30 bg-slate-950/90 shadow-[0_0_12px_rgba(249,115,22,0.3)] flex items-center justify-center animate-pulse" style={{ animationDelay: "1s" }}>
-            <Heart className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+          {/* Inner Orbit (60s speed) - Heart (180deg offset position) */}
+          <div className="absolute w-[280px] h-[280px] rounded-full flex items-center justify-center animate-[spin_60s_linear_infinite]" style={{ transform: "rotate(180deg)" }}>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/30 bg-slate-950/95 shadow-[0_0_12px_rgba(249,115,22,0.35)] flex items-center justify-center animate-pulse pointer-events-auto" style={{ animationDelay: "1s" }}>
+              <div className="animate-[spin-reverse_60s_linear_infinite] flex items-center justify-center">
+                <Heart className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Gallery Icon - Mid path */}
-        <div
-          className="absolute z-20 pointer-events-auto animate-[orbit-mid-1_42s_linear_infinite]"
-          style={{ width: "36px", height: "36px" }}
-        >
-          <div className="w-full h-full rounded-full border border-orange-500/25 bg-slate-950/90 shadow-[0_0_10px_rgba(249,115,22,0.25)] flex items-center justify-center animate-pulse" style={{ animationDelay: "0.5s" }}>
-            <ImageIcon className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+          {/* Mid Orbit (90s speed) - ImageIcon */}
+          <div className="absolute w-[420px] h-[420px] rounded-full flex items-center justify-center animate-[spin_90s_linear_infinite]">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/25 bg-slate-950/95 shadow-[0_0_10px_rgba(249,115,22,0.3)] flex items-center justify-center animate-pulse pointer-events-auto" style={{ animationDelay: "0.5s" }}>
+              <div className="animate-[spin-reverse_90s_linear_infinite] flex items-center justify-center">
+                <ImageIcon className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Calendar Icon - Mid path (offset starting position) */}
-        <div
-          className="absolute z-20 pointer-events-auto animate-[orbit-mid-2_48s_linear_infinite]"
-          style={{ width: "36px", height: "36px" }}
-        >
-          <div className="w-full h-full rounded-full border border-orange-500/25 bg-slate-950/90 shadow-[0_0_10px_rgba(249,115,22,0.25)] flex items-center justify-center animate-pulse" style={{ animationDelay: "1.5s" }}>
-            <Calendar className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+          {/* Mid Orbit (90s speed) - Calendar (180deg offset position) */}
+          <div className="absolute w-[420px] h-[420px] rounded-full flex items-center justify-center animate-[spin_90s_linear_infinite]" style={{ transform: "rotate(180deg)" }}>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/25 bg-slate-950/95 shadow-[0_0_10px_rgba(249,115,22,0.3)] flex items-center justify-center animate-pulse pointer-events-auto" style={{ animationDelay: "1.5s" }}>
+              <div className="animate-[spin-reverse_90s_linear_infinite] flex items-center justify-center">
+                <Calendar className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Trophy Icon - Outer path */}
-        <div
-          className="absolute z-20 pointer-events-auto animate-[orbit-outer_64s_linear_infinite]"
-          style={{ width: "36px", height: "36px" }}
-        >
-          <div className="w-full h-full rounded-full border border-orange-500/20 bg-slate-950/90 shadow-[0_0_8px_rgba(249,115,22,0.2)] flex items-center justify-center animate-pulse" style={{ animationDelay: "2s" }}>
-            <Trophy className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+          {/* Outer Orbit (120s speed) - Trophy */}
+          <div className="absolute w-[540px] h-[540px] rounded-full flex items-center justify-center animate-[spin_120s_linear_infinite]">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/20 bg-slate-950/95 shadow-[0_0_8px_rgba(249,115,22,0.25)] flex items-center justify-center animate-pulse pointer-events-auto" style={{ animationDelay: "2s" }}>
+              <div className="animate-[spin-reverse_120s_linear_infinite] flex items-center justify-center">
+                <Trophy className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+              </div>
+            </div>
           </div>
+
         </div>
 
-        {/* 4. Interactive Floating Photo Cards */}
+        {/* 4. Floating Photo Cards Layer */}
         {CARDS_DATA.map((card) => {
           const isHovered = hoveredCardId === card.id;
           const cardZIndex = isHovered ? 50 : card.isCenter ? 30 : 20;
 
+          // Position style properties
+          const positionStyle = card.isCenter
+            ? {
+                top: "calc(50% - 120px)",
+                left: "calc(50% - 180px)",
+              }
+            : {
+                top: card.top,
+                bottom: card.bottom,
+                left: card.left,
+                right: card.right,
+              };
+
           return (
             <motion.div
               key={card.id}
-              className={`absolute select-none pointer-events-auto group cursor-pointer overflow-hidden border border-orange-500/20 bg-slate-950/80 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-all duration-300 ${card.className}`}
+              className={`absolute select-none pointer-events-auto group cursor-pointer overflow-hidden border border-orange-500/20 bg-slate-950/80 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-all duration-300 ${
+                card.isCenter
+                  ? "w-[360px] h-[240px] rounded-[24px]"
+                  : "w-[230px] h-[155px] rounded-[20px]"
+              }`}
               style={{
-                transform: card.rotation,
+                ...positionStyle,
                 zIndex: cardZIndex,
               }}
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: card.isCenter ? 0.95 : 0.85 }}
               animate={{
                 opacity: 1,
-                scale: isHovered ? 1.05 : 1,
-                y: isHovered ? -5 : [0, -10, 0],
+                scale: isHovered ? 1.05 : card.isCenter ? 1.0 : 0.86,
+                y: isHovered ? -6 : [0, -10, 0],
+                rotate: isHovered
+                  ? card.initialRotation
+                  : [card.initialRotation, card.initialRotation + 1.5, card.initialRotation],
                 borderColor: isHovered ? "rgba(249, 115, 22, 0.65)" : "rgba(249, 115, 22, 0.2)",
                 boxShadow: isHovered
-                  ? "0 0 30px rgba(249, 115, 22, 0.4), 0 12px 48px rgba(0,0,0,0.6)"
+                  ? "0 0 35px rgba(249, 115, 22, 0.45), 0 16px 48px rgba(0,0,0,0.65)"
                   : card.isCenter
                   ? "0 0 25px rgba(249, 115, 22, 0.15), 0 8px 32px rgba(0,0,0,0.5)"
-                  : "0 0 15px rgba(249, 115, 22, 0.05), 0 8px 32px rgba(0,0,0,0.5)",
+                  : "0 0 12px rgba(249, 115, 22, 0.05), 0 8px 32px rgba(0,0,0,0.5)",
               }}
               transition={{
                 scale: { duration: 0.3, ease: "easeOut" },
+                rotate: isHovered ? { duration: 0.3 } : { duration: 5, repeat: Infinity, ease: "easeInOut" },
                 borderColor: { duration: 0.3 },
                 boxShadow: { duration: 0.3 },
                 y: isHovered
                   ? { duration: 0.3 }
                   : {
-                      duration: 4.5,
+                      duration: card.isCenter ? 6.0 : 4.5,
                       repeat: Infinity,
                       ease: "easeInOut",
                       delay: card.floatDelay,
@@ -273,16 +291,16 @@ export function MemoriesOrbitShowcase() {
                   className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-104"
                   loading="lazy"
                 />
-                {/* Shadow Overlay Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent opacity-90 group-hover:opacity-95 transition-opacity duration-300" />
+                {/* Frosted dark overlay at bottom for labels */}
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950 via-slate-950/45 to-transparent opacity-95 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 
-              {/* Card Title/Subtitle */}
-              <div className="absolute bottom-0 inset-x-0 p-3 sm:p-4.5 z-20 text-left">
-                <h4 className={`font-black text-white leading-tight ${card.isCenter ? 'text-sm sm:text-base md:text-lg' : 'text-xs sm:text-sm'}`}>
+              {/* Card Title/Subtitle Overlay */}
+              <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 z-20 text-left">
+                <h4 className={`font-black text-white leading-tight ${card.isCenter ? 'text-base sm:text-lg md:text-xl' : 'text-sm'}`}>
                   {card.title}
                 </h4>
-                <p className={`font-bold text-orange-400 mt-0.5 tracking-wide ${card.isCenter ? 'text-xs sm:text-sm' : 'text-[10px] sm:text-xs'}`}>
+                <p className={`font-bold text-orange-400 mt-0.5 tracking-wide ${card.isCenter ? 'text-sm' : 'text-xs'}`}>
                   {card.subtitle}
                 </p>
               </div>
@@ -298,7 +316,7 @@ export function MemoriesOrbitShowcase() {
         {CARDS_DATA.map((card) => (
           <div
             key={card.id}
-            className="flex-shrink-0 w-[240px] h-[175px] snap-center rounded-2xl overflow-hidden border border-orange-500/25 bg-slate-950 shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative"
+            className="flex-shrink-0 w-[260px] h-[185px] snap-center rounded-2xl overflow-hidden border border-orange-500/25 bg-slate-950 shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative"
           >
             {/* Card Image */}
             <div className="w-full h-full relative overflow-hidden bg-slate-900">
@@ -324,27 +342,15 @@ export function MemoriesOrbitShowcase() {
         ))}
       </div>
 
-      {/* CSS KEYFRAME ANIMATIONS FOR THE ORBITING ICONS */}
+      {/* CSS KEYFRAME SPIN ANIMATIONS */}
       <style>{`
-        @keyframes orbit-inner-1 {
-          from { transform: rotate(0deg) translate(130px) rotate(0deg); }
-          to { transform: rotate(360deg) translate(130px) rotate(-360deg); }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
-        @keyframes orbit-inner-2 {
-          from { transform: rotate(180deg) translate(130px) rotate(-180deg); }
-          to { transform: rotate(540deg) translate(130px) rotate(-540deg); }
-        }
-        @keyframes orbit-mid-1 {
-          from { transform: rotate(45deg) translate(200px) rotate(-45deg); }
-          to { transform: rotate(405deg) translate(200px) rotate(-405deg); }
-        }
-        @keyframes orbit-mid-2 {
-          from { transform: rotate(225deg) translate(200px) rotate(-225deg); }
-          to { transform: rotate(585deg) translate(200px) rotate(-585deg); }
-        }
-        @keyframes orbit-outer {
-          from { transform: rotate(270deg) translate(260px) rotate(-270deg); }
-          to { transform: rotate(630deg) translate(260px) rotate(-630deg); }
+        @keyframes spin-reverse {
+          from { transform: rotate(360deg) scaleY(2.08) rotate(12deg); }
+          to { transform: rotate(0deg) scaleY(2.08) rotate(12deg); }
         }
       `}</style>
     </div>
