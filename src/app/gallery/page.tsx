@@ -116,12 +116,14 @@ const CardContainer = ({
       <div className="space-y-4 relative z-10 flex-grow flex flex-col justify-between">
         {/* Cover Media container */}
         <div className="h-48 rounded-xl relative overflow-hidden border border-slate-900/60 flex items-center justify-center bg-slate-950 flex-shrink-0">
-          <Image
+          <img
             src={item.imageUrl}
             alt={item.title}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-106"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-106"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = "/gallery/welcome-team.jpg";
+            }}
           />
           {/* Dark grid mask */}
           <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/35 transition-colors duration-300" />
