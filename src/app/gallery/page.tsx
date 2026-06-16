@@ -91,7 +91,7 @@ const CardContainer = ({
   }, []);
 
   const handleClick = () => {
-    const instagramUrl = item.instagramUrl || "https://www.instagram.com/aws_sbg_rimt";
+    const instagramUrl = item.instagramUrl || "https://www.instagram.com/aws.rimt/";
     window.open(instagramUrl, "_blank");
   };
 
@@ -159,12 +159,18 @@ const CardContainer = ({
         </div>
       </div>
 
-      {/* View on Social Media Button */}
+      {/* View on Instagram Button */}
       <div className="relative z-10 pt-3.5 mt-3 border-t border-slate-900/60 flex justify-center">
-        <button className="w-full text-center py-2 px-4 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all duration-300 border border-orange-500/30 bg-orange-500/10 text-orange-400 group-hover:bg-orange-500 group-hover:text-white flex items-center justify-center gap-1.5 h-9">
-          <span>View on Social Media</span>
+        <a 
+          href={item.instagramUrl || "https://www.instagram.com/aws.rimt/"}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="w-full text-center py-2 px-4 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all duration-300 border border-orange-500/30 bg-orange-500/10 text-orange-400 group-hover:bg-orange-500 group-hover:text-white flex items-center justify-center gap-1.5 h-9"
+        >
+          <span>View on Instagram</span>
           <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-        </button>
+        </a>
       </div>
     </div>
   );
