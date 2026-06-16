@@ -35,10 +35,10 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/launch-agenda.jpg",
     title: "Workshop",
     subtitle: "Hands-on Learning",
-    initialRotation: -12,
+    initialRotation: -10,
     top: "12%",
     left: "5%",
-    floatDelay: 0.8,
+    floatDelay: 1.0,
   },
   // TOP RIGHT
   {
@@ -46,10 +46,10 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/welcome-team.jpg",
     title: "Meetup",
     subtitle: "Growing Together",
-    initialRotation: 10,
+    initialRotation: 8,
     top: "8%",
     right: "5%",
-    floatDelay: 1.4,
+    floatDelay: 2.0,
   },
   // BOTTOM LEFT
   {
@@ -60,7 +60,7 @@ const CARDS_DATA: CardData[] = [
     initialRotation: -8,
     bottom: "12%",
     left: "8%",
-    floatDelay: 2.2,
+    floatDelay: 3.0,
   },
   // BOTTOM RIGHT
   {
@@ -68,11 +68,35 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/welcome-team.jpg",
     title: "Achievements",
     subtitle: "Milestones Earned",
-    initialRotation: 14,
+    initialRotation: 10,
     bottom: "8%",
     right: "8%",
-    floatDelay: 2.8,
+    floatDelay: 4.0,
   },
+];
+
+const DRIFTING_PARTICLES = [
+  // Higher density near center
+  { top: "44%", left: "48%", size: 2.2, duration: 4.5, delay: 0.2 },
+  { top: "52%", left: "38%", size: 1.8, duration: 5.2, delay: 0.5 },
+  { top: "48%", left: "55%", size: 2.5, duration: 3.8, delay: 0.8 },
+  { top: "38%", left: "46%", size: 1.5, duration: 4.9, delay: 0.1 },
+  { top: "58%", left: "52%", size: 2.0, duration: 4.2, delay: 1.2 },
+  { top: "42%", left: "35%", size: 1.9, duration: 5.5, delay: 0.6 },
+  { top: "56%", left: "62%", size: 2.4, duration: 3.9, delay: 1.5 },
+  { top: "35%", left: "58%", size: 1.7, duration: 4.7, delay: 0.9 },
+  // Medium distance
+  { top: "28%", left: "28%", size: 2.1, duration: 5.8, delay: 0.3 },
+  { top: "72%", left: "72%", size: 1.6, duration: 6.2, delay: 1.1 },
+  { top: "30%", left: "70%", size: 2.3, duration: 5.0, delay: 0.7 },
+  { top: "70%", left: "30%", size: 1.9, duration: 5.4, delay: 1.3 },
+  { top: "25%", left: "50%", size: 2.6, duration: 4.8, delay: 0.4 },
+  { top: "75%", left: "50%", size: 1.5, duration: 6.0, delay: 1.0 },
+  // Far outside (lower density)
+  { top: "12%", left: "85%", size: 1.2, duration: 7.2, delay: 0.1 },
+  { top: "88%", left: "15%", size: 1.0, duration: 8.0, delay: 0.5 },
+  { top: "5%",  left: "30%", size: 1.4, duration: 6.8, delay: 0.3 },
+  { top: "95%", left: "70%", size: 1.3, duration: 7.5, delay: 1.4 }
 ];
 
 export function MemoriesOrbitShowcase() {
@@ -81,30 +105,23 @@ export function MemoriesOrbitShowcase() {
   return (
     <div className="relative w-full h-[400px] sm:h-[640px] md:h-[720px] lg:h-[800px] max-w-[800px] flex items-center justify-center overflow-hidden z-10 select-none">
       
-      {/* 1. Ambient Background Particles */}
+      {/* 1. Ambient Twinkling & Drifting Background Particles */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {[
-          { top: "12%", left: "85%", delay: 0.1, duration: 2.5 },
-          { top: "25%", left: "15%", delay: 0.4, duration: 3.2 },
-          { top: "45%", left: "78%", delay: 0.7, duration: 2.8 },
-          { top: "68%", left: "22%", delay: 1.1, duration: 4.1 },
-          { top: "85%", left: "60%", delay: 0.2, duration: 3.5 },
-          { top: "18%", left: "40%", delay: 0.9, duration: 2.2 },
-          { top: "55%", left: "88%", delay: 1.5, duration: 3.8 },
-          { top: "72%", left: "9%",  delay: 0.5, duration: 2.9 },
-          { top: "32%", left: "65%", delay: 1.2, duration: 3.3 },
-          { top: "89%", left: "30%", delay: 0.8, duration: 4.5 }
-        ].map((pt, i) => (
+        {DRIFTING_PARTICLES.map((pt, i) => (
           <motion.div
             key={i}
-            className="absolute h-1.5 w-1.5 bg-[#FF9900]/30 rounded-full animate-pulse"
+            className="absolute bg-[#FF9900]/40 rounded-full"
             style={{
               top: pt.top,
               left: pt.left,
+              width: pt.size,
+              height: pt.size,
+              boxShadow: "0 0 8px rgba(255, 153, 0, 0.6)",
             }}
             animate={{
-              opacity: [0.15, 0.75, 0.15],
-              scale: [1, 1.4, 1],
+              opacity: [0.2, 0.85, 0.2],
+              scale: [1, 1.35, 1],
+              y: [0, -6, 0],
             }}
             transition={{
               duration: pt.duration,
@@ -116,11 +133,12 @@ export function MemoriesOrbitShowcase() {
         ))}
       </div>
 
-      {/* 2. Soft radial orange glow behind the constellation */}
+      {/* 2. Focused Radial Orange Glow Behind center card */}
       <div
-        className="absolute w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] rounded-full pointer-events-none z-0"
+        className="absolute w-[350px] h-[350px] sm:w-[500px] sm:h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: "radial-gradient(circle at center, rgba(255,153,0,0.18), rgba(255,153,0,0.08), transparent 72%)"
+          background: "radial-gradient(circle, rgba(255,140,0,0.35) 0%, rgba(255,140,0,0.15) 35%, transparent 75%)",
+          filter: "blur(70px)"
         }}
       />
 
@@ -145,112 +163,7 @@ export function MemoriesOrbitShowcase() {
           </defs>
 
           {/* ------------------------------------------------- */}
-          {/* ORBIT 1: OUTER (rx: 360, ry: 230, tilt: -18deg)   */}
-          {/* ------------------------------------------------- */}
-          <g transform="rotate(-18 400 400)">
-            <path
-              id="orbit-path-outer"
-              d="M 40,400 A 360,230 0 1,0 760,400 A 360,230 0 1,0 40,400"
-              fill="none"
-              stroke="rgba(255,153,0,0.42)"
-              strokeWidth="1.5"
-              strokeDasharray="4 10"
-              filter="url(#orbit-glow-filter)"
-            />
-
-            {/* Glowing moving particles (6 staggered particles) */}
-            {[0, -20, -40, -60, -80, -100].map((delay, idx) => (
-              <circle key={`p-out-${idx}`} r="3" fill="#FF9900" filter="url(#orbit-glow-filter)">
-                <animateMotion dur="140s" repeatCount="indefinite" begin={`${delay}s`}>
-                  <mpath href="#orbit-path-outer" />
-                </animateMotion>
-              </circle>
-            ))}
-
-            {/* Icons: Camera (top center ≈ 25% of path), Gallery (right center ≈ 50%), Calendar (bottom-left ≈ 80%) */}
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <Camera className="h-5 w-5 text-[#FF9900]" />
-                </div>
-              </div>
-              <animateMotion dur="140s" repeatCount="indefinite" begin="-35s">
-                <mpath href="#orbit-path-outer" />
-              </animateMotion>
-            </foreignObject>
-
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <ImageIcon className="h-5 w-5 text-[#FF9900]" />
-                </div>
-              </div>
-              <animateMotion dur="140s" repeatCount="indefinite" begin="-70s">
-                <mpath href="#orbit-path-outer" />
-              </animateMotion>
-            </foreignObject>
-
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <Calendar className="h-5 w-5 text-[#FF9900]" />
-                </div>
-              </div>
-              <animateMotion dur="140s" repeatCount="indefinite" begin="-112s">
-                <mpath href="#orbit-path-outer" />
-              </animateMotion>
-            </foreignObject>
-          </g>
-
-          {/* ------------------------------------------------- */}
-          {/* ORBIT 2: MIDDLE (rx: 270, ry: 170, tilt: 18deg)    */}
-          {/* ------------------------------------------------- */}
-          <g transform="rotate(18 400 400)">
-            <path
-              id="orbit-path-middle"
-              d="M 130,400 A 270,170 0 1,0 670,400 A 270,170 0 1,0 130,400"
-              fill="none"
-              stroke="rgba(255,153,0,0.42)"
-              strokeWidth="1.5"
-              strokeDasharray="4 10"
-              filter="url(#orbit-glow-filter)"
-            />
-
-            {/* Glowing moving particles (6 staggered particles) */}
-            {[0, -16, -33, -50, -66, -83].map((delay, idx) => (
-              <circle key={`p-mid-${idx}`} r="3" fill="#FF9900" filter="url(#orbit-glow-filter)">
-                <animateMotion dur="100s" repeatCount="indefinite" begin={`${delay}s`}>
-                  <mpath href="#orbit-path-middle" />
-                </animateMotion>
-              </circle>
-            ))}
-
-            {/* Icons: People (left center ≈ 0%), Heart (bottom center ≈ 75%) */}
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <Users className="h-5 w-5 text-[#FF9900]" />
-                </div>
-              </div>
-              <animateMotion dur="100s" repeatCount="indefinite" begin="0s">
-                <mpath href="#orbit-path-middle" />
-              </animateMotion>
-            </foreignObject>
-
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <Heart className="h-5 w-5 text-[#FF9900]" />
-                </div>
-              </div>
-              <animateMotion dur="100s" repeatCount="indefinite" begin="-75s">
-                <mpath href="#orbit-path-middle" />
-              </animateMotion>
-            </foreignObject>
-          </g>
-
-          {/* ------------------------------------------------- */}
-          {/* ORBIT 3: INNER (rx: 190, ry: 120, tilt: -35deg)   */}
+          {/* ORBIT 1 (INNER): rx: 190, ry: 120, tilt: -35deg, duration: 40s */}
           {/* ------------------------------------------------- */}
           <g transform="rotate(-35 400 400)">
             <path
@@ -263,30 +176,126 @@ export function MemoriesOrbitShowcase() {
               filter="url(#orbit-glow-filter)"
             />
 
-            {/* Glowing moving particles (6 staggered particles) */}
-            {[0, -11, -23, -35, -46, -58].map((delay, idx) => (
+            {/* Glowing moving particles */}
+            {[0, -10, -20, -30, -40, -50].map((delay, idx) => (
               <circle key={`p-inn-${idx}`} r="3" fill="#FF9900" filter="url(#orbit-glow-filter)">
-                <animateMotion dur="70s" repeatCount="indefinite" begin={`${delay}s`}>
+                <animateMotion dur="40s" repeatCount="indefinite" begin={`${delay}s`}>
                   <mpath href="#orbit-path-inner" />
                 </animateMotion>
               </circle>
             ))}
 
-            {/* Icons: Trophy (top-right ≈ 35%) */}
+            {/* Camera Icon -> top-center (≈ 25% of path, begin="-10s") */}
+            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
+                  <Camera className="h-5 w-5 text-[#FF9900]" />
+                </div>
+              </div>
+              <animateMotion dur="40s" repeatCount="indefinite" begin="-10s">
+                <mpath href="#orbit-path-inner" />
+              </animateMotion>
+            </foreignObject>
+
+            {/* Heart Icon -> bottom-center (≈ 75% of path, begin="-30s") */}
+            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
+                  <Heart className="h-5 w-5 text-[#FF9900]" />
+                </div>
+              </div>
+              <animateMotion dur="40s" repeatCount="indefinite" begin="-30s">
+                <mpath href="#orbit-path-inner" />
+              </animateMotion>
+            </foreignObject>
+          </g>
+
+          {/* ------------------------------------------------- */}
+          {/* ORBIT 2 (MIDDLE): rx: 270, ry: 170, tilt: 18deg, duration: 60s */}
+          {/* ------------------------------------------------- */}
+          <g transform="rotate(18 400 400)">
+            <path
+              id="orbit-path-middle"
+              d="M 130,400 A 270,170 0 1,0 670,400 A 270,170 0 1,0 130,400"
+              fill="none"
+              stroke="rgba(255,153,0,0.42)"
+              strokeWidth="1.5"
+              strokeDasharray="4 10"
+              filter="url(#orbit-glow-filter)"
+            />
+
+            {/* Glowing moving particles */}
+            {[0, -12, -24, -36, -48, -60].map((delay, idx) => (
+              <circle key={`p-mid-${idx}`} r="3" fill="#FF9900" filter="url(#orbit-glow-filter)">
+                <animateMotion dur="60s" repeatCount="indefinite" begin={`${delay}s`}>
+                  <mpath href="#orbit-path-middle" />
+                </animateMotion>
+              </circle>
+            ))}
+
+            {/* Community/Users Icon -> left side (≈ 0% of path, begin="0s") */}
+            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
+                  <Users className="h-5 w-5 text-[#FF9900]" />
+                </div>
+              </div>
+              <animateMotion dur="60s" repeatCount="indefinite" begin="0s">
+                <mpath href="#orbit-path-middle" />
+              </animateMotion>
+            </foreignObject>
+
+            {/* Trophy Icon -> right side (≈ 35% of path, begin="-21s") */}
             <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
               <div className="w-full h-full flex items-center justify-center">
                 <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
                   <Trophy className="h-5 w-5 text-[#FF9900]" />
                 </div>
               </div>
-              <animateMotion dur="70s" repeatCount="indefinite" begin="-25s">
-                <mpath href="#orbit-path-inner" />
+              <animateMotion dur="60s" repeatCount="indefinite" begin="-21s">
+                <mpath href="#orbit-path-middle" />
+              </animateMotion>
+            </foreignObject>
+          </g>
+
+          {/* ------------------------------------------------- */}
+          {/* ORBIT 3 (OUTER): rx: 360, ry: 230, tilt: -18deg, duration: 80s */}
+          {/* ------------------------------------------------- */}
+          <g transform="rotate(-18 400 400)">
+            <path
+              id="orbit-path-outer"
+              d="M 40,400 A 360,230 0 1,0 760,400 A 360,230 0 1,0 40,400"
+              fill="none"
+              stroke="rgba(255,153,0,0.42)"
+              strokeWidth="1.5"
+              strokeDasharray="4 10"
+              filter="url(#orbit-glow-filter)"
+            />
+
+            {/* Glowing moving particles */}
+            {[0, -15, -30, -45, -60, -75].map((delay, idx) => (
+              <circle key={`p-out-${idx}`} r="3" fill="#FF9900" filter="url(#orbit-glow-filter)">
+                <animateMotion dur="80s" repeatCount="indefinite" begin={`${delay}s`}>
+                  <mpath href="#orbit-path-outer" />
+                </animateMotion>
+              </circle>
+            ))}
+
+            {/* Gallery Icon -> right-lower side (≈ 60% of path, begin="-48s") */}
+            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
+                  <ImageIcon className="h-5 w-5 text-[#FF9900]" />
+                </div>
+              </div>
+              <animateMotion dur="80s" repeatCount="indefinite" begin="-48s">
+                <mpath href="#orbit-path-outer" />
               </animateMotion>
             </foreignObject>
           </g>
         </svg>
 
-        {/* 4. Interactive Floating Photo Cards */}
+        {/* 4. Interactive Floating Photo Cards Layer */}
         {CARDS_DATA.map((card) => {
           const isHovered = hoveredCardId === card.id;
           const cardZIndex = isHovered ? 50 : card.isCenter ? 30 : 25;
@@ -306,10 +315,10 @@ export function MemoriesOrbitShowcase() {
           return (
             <motion.div
               key={card.id}
-              className={`absolute select-none pointer-events-auto group cursor-pointer overflow-hidden border border-orange-500/20 bg-[#0f0f19]/85 shadow-[0_10px_40px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-all duration-300 ${
+              className={`absolute select-none pointer-events-auto group cursor-pointer overflow-hidden border bg-[#0f0f19]/85 backdrop-blur-sm transition-all duration-300 ${
                 card.isCenter
-                  ? "w-[360px] h-[240px] rounded-[20px]"
-                  : "w-[230px] h-[155px] rounded-[20px]"
+                  ? "w-[360px] h-[240px] rounded-[20px] border-[#FF9900]/30"
+                  : "w-[230px] h-[155px] rounded-[20px] border-[#FF9900]/20"
               }`}
               style={{
                 ...positionStyle,
@@ -338,7 +347,7 @@ export function MemoriesOrbitShowcase() {
                 y: isHovered
                   ? { duration: 0.3 }
                   : {
-                      duration: card.isCenter ? 8.0 : 6.5,
+                      duration: 6.0,
                       repeat: Infinity,
                       ease: "easeInOut",
                       delay: card.floatDelay,
