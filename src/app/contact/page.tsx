@@ -161,8 +161,8 @@ export default function ContactPage() {
                   icon={<Mail className="h-6 w-6" />}
                   title="Email Us"
                   subtitle="Drop us a message anytime."
-                  value="awsbuild@rimt.ac.in"
-                  href="mailto:awsbuild@rimt.ac.in"
+                  value="sbg.rimt@gmail.com"
+                  href="mailto:sbg.rimt@gmail.com"
                 />
               </div>
 
@@ -212,7 +212,7 @@ export default function ContactPage() {
                   title="Open to Collaborations"
                   subtitle="We welcome all partnership opportunities."
                   value="Let's build together"
-                  href="mailto:awsbuild@rimt.ac.in?subject=Collaboration%20Inquiry"
+                  href="mailto:sbg.rimt@gmail.com?subject=Collaboration%20Inquiry"
                   items={["Workshops", "Partnerships", "Speaker Invitations", "Community Initiatives"]}
                 />
               </div>
@@ -262,21 +262,21 @@ export default function ContactPage() {
               title="Partnerships"
               description="Interested in building together? Connect with our team to co-host events or develop academic cloud tracks."
               ctaText="Let's Talk"
-              href="mailto:awsbuild@rimt.ac.in?subject=Partnership%20Inquiry"
+              href="mailto:sbg.rimt@gmail.com?subject=Partnership%20Inquiry"
             />
             <CollabCard
               icon={<Calendar className="h-5 w-5" />}
               title="Events & Workshops"
               description="Want us at your event? Invite our core technical leads or members to hold hands-on cloud learning sessions."
               ctaText="Invite Us"
-              href="mailto:awsbuild@rimt.ac.in?subject=Event%20Invitation"
+              href="mailto:sbg.rimt@gmail.com?subject=Event%20Invitation"
             />
             <CollabCard
               icon={<HelpCircle className="h-5 w-5" />}
               title="General Inquiries"
               description="Have questions? Access general resources, get chapter clarifications, or ask about general student registration rules."
               ctaText="Reach Out"
-              href="mailto:awsbuild@rimt.ac.in?subject=General%20Inquiry"
+              href="mailto:sbg.rimt@gmail.com?subject=General%20Inquiry"
             />
           </div>
         </motion.div>

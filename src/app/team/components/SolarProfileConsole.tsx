@@ -399,7 +399,7 @@ export function SolarProfileConsole({
               </a>
             )}
             <a
-              href={`mailto:awsbuild@rimt.ac.in?subject=Reaching%20out%20to%20${encodeURIComponent(member.name)}`}
+              href={`mailto:sbg.rimt@gmail.com?subject=Reaching%20out%20to%20${encodeURIComponent(member.name)}`}
               className="group/link inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white hover:border-orange-500/35 transition-all"
               title="Email"
             >

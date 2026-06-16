@@ -29,17 +29,17 @@ html, body {
 
 /* Fluid Typography Utilities */
 .text-fluid-hero {
-  font-size: clamp(2.25rem, 6vw, 4.5rem);
+  font-size: clamp(2.5rem, 7.5vw, 5rem);
   line-height: 1.1;
 }
 
 .text-fluid-section {
-  font-size: clamp(1.75rem, 4.5vw, 3rem);
+  font-size: clamp(1.95rem, 5vw, 3.4rem);
   line-height: 1.2;
 }
 
 .text-fluid-body {
-  font-size: clamp(0.938rem, 1.5vw + 0.5rem, 1.125rem);
+  font-size: clamp(1.05rem, 1.7vw + 0.5rem, 1.25rem);
   line-height: 1.6;
 }
 

@@ -93,20 +93,46 @@ export default function Header() {
             </Link>
 
             {/* Vertical Divider */}
-            <div className="h-6 w-px bg-slate-800 flex-shrink-0" />
+            <div className="h-6 w-px bg-slate-850 flex-shrink-0" />
 
             {/* Institutional Logos Container */}
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-              <img
-                src="/brand/rimt-university.jpg"
-                alt="RIMT University"
-                className="h-6.5 sm:h-7 w-auto object-contain bg-white px-1 sm:px-1.5 py-0.5 rounded shadow-sm border border-slate-800/10"
-              />
-              <img
-                src="/brand/dri-lab.png"
-                alt="DRI Lab"
-                className="h-6.5 sm:h-7 w-auto object-contain bg-[#0e1726]/80 border border-slate-800 p-0.5 rounded shadow-sm"
-              />
+            <div className="flex items-center gap-2 select-none flex-shrink-0">
+              {/* DRI Logo & Label */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center h-8.5 w-11 bg-white p-1 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
+                  <img
+                    src="/brand/dri-lab.png"
+                    alt="DRI – Department of Research, Innovation and Incubation"
+                    className="max-h-full max-w-full object-contain"
+                    title="DRI – Department of Research, Innovation and Incubation"
+                  />
+                </div>
+                <div className="hidden 2xl:flex flex-col leading-none text-left">
+                  <span className="text-[9.5px] font-black text-white uppercase tracking-wider">DRI</span>
+                  <span className="text-[7.5px] font-semibold text-slate-400 mt-0.5 max-w-[130px] leading-tight">
+                    Dept. of Research, Innovation & Incubation
+                  </span>
+                </div>
+              </div>
+
+              {/* Vertical line between logos */}
+              <div className="h-5 w-px bg-slate-800" />
+
+              {/* RIMT University Logo & Label */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center h-8.5 w-11 bg-white p-1 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
+                  <img
+                    src="/brand/rimt-university.jpg"
+                    alt="RIMT University"
+                    className="max-h-full max-w-full object-contain"
+                    title="RIMT University"
+                  />
+                </div>
+                <div className="hidden 2xl:flex flex-col leading-none text-left">
+                  <span className="text-[9.5px] font-black text-white uppercase tracking-wider">RIMT University</span>
+                  <span className="text-[7.5px] font-semibold text-slate-400 mt-0.5">Academic Partner</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -269,17 +295,24 @@ export default function Header() {
 
                   <div className="h-6 w-px bg-slate-800 flex-shrink-0" />
 
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <img
-                      src="/brand/rimt-university.jpg"
-                      alt="RIMT University"
-                      className="h-6 w-auto object-contain bg-white px-1.5 py-0.5 rounded"
-                    />
-                    <img
-                      src="/brand/dri-lab.png"
-                      alt="DRI Lab"
-                      className="h-6 w-auto object-contain bg-[#0e1726]/80 border border-slate-800 p-0.5 rounded"
-                    />
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center justify-center h-8.5 w-11 bg-white p-1 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
+                      <img
+                        src="/brand/dri-lab.png"
+                        alt="DRI – Department of Research, Innovation and Incubation"
+                        className="max-h-full max-w-full object-contain"
+                        title="DRI – Department of Research, Innovation and Incubation"
+                      />
+                    </div>
+                    <div className="h-5 w-px bg-slate-850" />
+                    <div className="flex items-center justify-center h-8.5 w-11 bg-white p-1 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
+                      <img
+                        src="/brand/rimt-university.jpg"
+                        alt="RIMT University"
+                        className="max-h-full max-w-full object-contain"
+                        title="RIMT University"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -298,8 +331,8 @@ export default function Header() {
                 <span className="text-sm font-bold text-white tracking-wide">
                   RIMT AWS Student Builder Group
                 </span>
-                <span className="text-[10px] font-semibold text-slate-400 mt-1">
-                  An initiative under RIMT University & DRI Lab
+                <span className="text-[10px] font-semibold text-slate-400 mt-1 leading-relaxed">
+                  An initiative under RIMT University & DRI – Department of Research, Innovation and Incubation
                 </span>
               </div>
             </div>

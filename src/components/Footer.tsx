@@ -182,21 +182,45 @@ export default function Footer() {
           {/* Institutional Partners */}
           <div className="md:col-span-3 space-y-4">
             <h4 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Institutional Partners</h4>
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              <img
-                src="/brand/rimt-university.jpg"
-                alt="RIMT University Logo"
-                className="h-10 w-auto object-contain bg-white px-2 py-1 rounded filter grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300 shadow-sm border border-slate-800/10"
-              />
-              <img
-                src="/brand/dri-lab.png"
-                alt="DRI Lab Logo"
-                className="h-10 w-auto object-contain bg-[#0e1726]/85 border border-slate-850 p-1 rounded filter grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300 shadow-sm"
-              />
+            <div className="flex flex-col gap-3.5 pt-1">
+              {/* RIMT University */}
+              <div className="flex items-center gap-3 group">
+                <div className="flex items-center justify-center h-10 w-14 bg-white p-1 rounded-md border border-slate-200 shadow-sm transition-all duration-300 group-hover:scale-105 flex-shrink-0">
+                  <img
+                    src="/brand/rimt-university.jpg"
+                    alt="RIMT University Logo"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+                <div className="flex flex-col text-left leading-tight">
+                  <span className="text-xs font-bold text-slate-200 group-hover:text-orange-400 transition-colors">
+                    RIMT University
+                  </span>
+                  <span className="text-[10px] text-slate-300 font-medium mt-0.5">
+                    Academic Partner
+                  </span>
+                </div>
+              </div>
+
+              {/* DRI */}
+              <div className="flex items-center gap-3 group">
+                <div className="flex items-center justify-center h-10 w-14 bg-white p-1 rounded-md border border-slate-200 shadow-sm transition-all duration-300 group-hover:scale-105 flex-shrink-0">
+                  <img
+                    src="/brand/dri-lab.png"
+                    alt="DRI – Department of Research, Innovation and Incubation"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+                <div className="flex flex-col text-left leading-tight">
+                  <span className="text-xs font-bold text-slate-200 group-hover:text-orange-400 transition-colors">
+                    DRI
+                  </span>
+                  <span className="text-[10px] text-slate-300 font-medium mt-0.5 leading-snug">
+                    Department of Research, Innovation and Incubation
+                  </span>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed font-medium">
-              Proudly supported by RIMT University and the Department of Research & Innovation (DRI) Lab.
-            </p>
           </div>
         </div>
 

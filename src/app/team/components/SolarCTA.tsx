@@ -52,8 +52,10 @@ export function SolarCTA({ reducedMotion }: { reducedMotion: boolean }) {
           Join a constellation of passionate builders who are learning, creating, and leading cloud innovation together.
         </p>
 
-        <Link
-          href="/contact"
+        <a
+          href="https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups"
+          target="_blank"
+          rel="noopener noreferrer"
           className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-sm font-bold uppercase tracking-wider overflow-hidden transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           style={{
             background: "linear-gradient(135deg, rgba(255,140,0,0.15), rgba(255,140,0,0.08))",
@@ -71,10 +73,10 @@ export function SolarCTA({ reducedMotion }: { reducedMotion: boolean }) {
           />
 
           <span className="relative z-10 text-orange-400 group-hover:text-white transition-colors">
-            Join The Builders
+            Join the Club
           </span>
           <ArrowRight className="relative z-10 h-4 w-4 text-orange-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
-        </Link>
+        </a>
       </div>
 
       {/* Bottom stats bar */}

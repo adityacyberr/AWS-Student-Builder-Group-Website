@@ -25,7 +25,21 @@ export default function HomePage() {
             .eq("active", true)
             .order("created_at", { ascending: false });
           if (!error && data) {
-            setAnnouncements(data);
+            const valid = (data as AnnouncementItem[]).filter((ann) => {
+              const titleLower = (ann.title || "").toLowerCase().trim();
+              const contentLower = (ann.content || "").toLowerCase().trim();
+              return (
+                titleLower !== "" &&
+                contentLower !== "" &&
+                titleLower !== "test" &&
+                contentLower !== "test" &&
+                titleLower !== "testing" &&
+                contentLower !== "testing" &&
+                !titleLower.includes("test") &&
+                !contentLower.includes("test")
+              );
+            });
+            setAnnouncements(valid);
           }
         } catch (err) {
           console.error("Error loading announcements from Supabase:", err);

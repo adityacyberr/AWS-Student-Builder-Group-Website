@@ -535,13 +535,14 @@ export function SolarSystemHero() {
   useEffect(() => {
     const handleResize = () => {
       const w = window.innerWidth;
-      if (w < 380)       setScaleFactor(0.38);
-      else if (w < 480)  setScaleFactor(0.5);
-      else if (w < 640)  setScaleFactor(0.62);
-      else if (w < 768)  setScaleFactor(0.72);
-      else if (w < 1024) setScaleFactor(0.82);
-      else if (w < 1280) setScaleFactor(0.92);
-      else               setScaleFactor(1);
+      if (w < 380)       setScaleFactor(0.42);
+      else if (w < 480)  setScaleFactor(0.55);
+      else if (w < 640)  setScaleFactor(0.68);
+      else if (w < 768)  setScaleFactor(0.78);
+      else if (w < 1024) setScaleFactor(0.88);
+      else if (w < 1280) setScaleFactor(0.95);
+      else if (w < 1600) setScaleFactor(1.05);
+      else               setScaleFactor(1.15);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -586,14 +587,14 @@ export function SolarSystemHero() {
 
   return (
     <section
-      className="relative w-full h-auto lg:h-screen min-h-[600px] lg:max-h-[1200px] bg-[#050816] bg-grid-pattern overflow-hidden pt-10 pb-12 lg:py-0"
+      className="relative w-full h-auto lg:h-[calc(100vh-5rem)] min-h-[650px] lg:max-h-[1000px] bg-[#050816] bg-grid-pattern overflow-hidden pt-6 pb-8 lg:py-0"
       onMouseMove={handleMouseMove}
     >
       {/* Cosmic Background */}
       <CosmicBackground reducedMotion={reducedMotion} />
 
       {/* Main content grid */}
-      <div className="relative z-10 h-full flex items-center lg:-mt-10">
+      <div className="relative z-10 h-full flex items-center">
         <div className="mx-auto max-w-[1400px] w-full px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 w-full items-center">
 
@@ -653,21 +654,25 @@ export function SolarSystemHero() {
                 cloud innovators.
               </motion.p>
 
-              {/* Community Metrics */}
+              {/* Community Metrics Cards */}
               <motion.div
                 variants={itemVariants}
-                className="flex items-center gap-8 pt-2 select-none"
+                className="grid grid-cols-3 gap-3.5 w-full max-w-md pt-2 select-none"
               >
                 {[
                   { value: "150+", label: "Members" },
-                  { value: upcomingEventsCount, label: "Upcoming Events" },
+                  { value: upcomingEventsCount, label: upcomingEventsCount === "1" ? "Upcoming Event" : "Upcoming Events" },
                   { value: "100%", label: "Student-Led" },
                 ].map((stat, idx) => (
-                  <div key={idx} className="flex flex-col text-left">
-                    <span className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none">
+                  <div
+                    key={idx}
+                    className="flex flex-col items-center justify-center text-center p-3 sm:p-4 rounded-xl bg-[#090e1a]/80 border border-slate-900 hover:border-orange-500/25 transition-all duration-300 shadow-sm relative overflow-hidden group"
+                  >
+                    <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-orange-500/0 via-orange-500/40 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text">
                       {stat.value}
                     </span>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-2.5 line-clamp-2 max-w-[90px] leading-tight">
                       {stat.label}
                     </span>
                   </div>
@@ -797,8 +802,15 @@ export function SolarSystemHero() {
               />
 
               {/* Discovery Hint */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-center select-none pointer-events-none z-20">
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-orange-400/35">
+              <div
+                className="absolute left-1/2 -translate-x-1/2 text-center select-none pointer-events-none z-20"
+                style={{
+                  top: scaleFactor < 0.6 
+                    ? `calc(50% + ${outerR + 12}px)` 
+                    : `calc(50% + ${outerR + 24}px)`
+                }}
+              >
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-orange-400/40">
                   Click any orbit to explore
                 </p>
               </div>
