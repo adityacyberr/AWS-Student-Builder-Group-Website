@@ -163,12 +163,12 @@ export function MemoriesOrbitShowcase() {
           </defs>
 
           {/* ------------------------------------------------- */}
-          {/* ORBIT 1 (INNER): rx: 190, ry: 120, tilt: -35deg, duration: 40s */}
+          {/* ORBIT 1 (INNER): rx: 220, ry: 140, tilt: -35deg, duration: 40s */}
           {/* ------------------------------------------------- */}
           <g transform="rotate(-35 400 400)">
             <path
               id="orbit-path-inner"
-              d="M 210,400 A 190,120 0 1,0 590,400 A 190,120 0 1,0 210,400"
+              d="M 180,400 A 220,140 0 1,0 620,400 A 220,140 0 1,0 180,400"
               fill="none"
               stroke="rgba(255,153,0,0.42)"
               strokeWidth="1.5"
@@ -251,12 +251,12 @@ export function MemoriesOrbitShowcase() {
           </g>
 
           {/* ------------------------------------------------- */}
-          {/* ORBIT 2 (MIDDLE): rx: 270, ry: 170, tilt: 18deg, duration: 60s */}
+          {/* ORBIT 2 (MIDDLE): rx: 300, ry: 190, tilt: 18deg, duration: 60s */}
           {/* ------------------------------------------------- */}
           <g transform="rotate(18 400 400)">
             <path
               id="orbit-path-middle"
-              d="M 130,400 A 270,170 0 1,0 670,400 A 270,170 0 1,0 130,400"
+              d="M 100,400 A 300,190 0 1,0 700,400 A 300,190 0 1,0 100,400"
               fill="none"
               stroke="rgba(255,153,0,0.42)"
               strokeWidth="1.5"
@@ -339,12 +339,12 @@ export function MemoriesOrbitShowcase() {
           </g>
 
           {/* ------------------------------------------------- */}
-          {/* ORBIT 3 (OUTER): rx: 360, ry: 230, tilt: -18deg, duration: 80s */}
+          {/* ORBIT 3 (OUTER): rx: 380, ry: 240, tilt: -18deg, duration: 80s */}
           {/* ------------------------------------------------- */}
           <g transform="rotate(-18 400 400)">
             <path
               id="orbit-path-outer"
-              d="M 40,400 A 360,230 0 1,0 760,400 A 360,230 0 1,0 40,400"
+              d="M 20,400 A 380,240 0 1,0 780,400 A 380,240 0 1,0 20,400"
               fill="none"
               stroke="rgba(255,153,0,0.42)"
               strokeWidth="1.5"
