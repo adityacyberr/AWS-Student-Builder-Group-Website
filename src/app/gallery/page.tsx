@@ -12,7 +12,7 @@ import { useReducedMotion } from "@/app/team/hooks/useReducedMotion";
 import { FloatingBackground } from "@/app/achievements/components/FloatingBackground";
 import { WireframeCube } from "@/app/achievements/components/WireframeCube";
 import { WireframeGlobe } from "@/app/achievements/components/WireframeGlobe";
-import { HolographicMediaCube } from "./components/HolographicMediaCube";
+import { MemoriesOrbitShowcase } from "./components/MemoriesOrbitShowcase";
 import { QuickStats } from "./components/QuickStats";
 import { MediaInspector } from "./components/MediaInspector";
 
@@ -410,12 +410,12 @@ export default function GalleryPage() {
             </p>
           </motion.div>
 
-          {/* Right Column: Holographic Media Vault Cube */}
+          {/* Right Column: Memories Orbit Showcase */}
           <motion.div 
             variants={scrollItemVariants}
             className="lg:col-span-5 flex justify-center w-full"
           >
-            <HolographicMediaCube />
+            <MemoriesOrbitShowcase />
           </motion.div>
         </div>
 
