@@ -185,26 +185,62 @@ export function MemoriesOrbitShowcase() {
               </circle>
             ))}
 
-            {/* Camera Icon -> top-center (≈ 25% of path, begin="-10s") */}
+            {/* Camera Icon -> top-left orbit */}
             <g className="pointer-events-auto">
               <foreignObject width="60" height="60" x="-30" y="-30">
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                    <Camera className="h-5 w-5 text-[#FF9900]" />
+                  <div 
+                    className="rounded-full flex items-center justify-center animate-[floatIcon_4s_ease-in-out_infinite]"
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      background: "rgba(255, 140, 0, 0.08)",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255, 140, 0, 0.25)",
+                      boxShadow: "0 0 15px rgba(255, 140, 0, 0.4), 0 0 35px rgba(255, 140, 0, 0.2)",
+                      animationDelay: "0s"
+                    }}
+                  >
+                    <Camera 
+                      className="text-[#ff9d1f]" 
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        filter: "drop-shadow(0 0 6px rgba(255, 140, 0, 0.7))"
+                      }}
+                    />
                   </div>
                 </div>
               </foreignObject>
-              <animateMotion dur="40s" repeatCount="indefinite" begin="-10s">
+              <animateMotion dur="40s" repeatCount="indefinite" begin="-6s">
                 <mpath href="#orbit-path-inner" />
               </animateMotion>
             </g>
 
-            {/* Heart Icon -> bottom-center (≈ 75% of path, begin="-30s") */}
+            {/* Heart Icon -> bottom orbit */}
             <g className="pointer-events-auto">
               <foreignObject width="60" height="60" x="-30" y="-30">
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                    <Heart className="h-5 w-5 text-[#FF9900]" />
+                  <div 
+                    className="rounded-full flex items-center justify-center animate-[floatIcon_4s_ease-in-out_infinite]"
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      background: "rgba(255, 140, 0, 0.08)",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255, 140, 0, 0.25)",
+                      boxShadow: "0 0 15px rgba(255, 140, 0, 0.4), 0 0 35px rgba(255, 140, 0, 0.2)",
+                      animationDelay: "-1.6s"
+                    }}
+                  >
+                    <Heart 
+                      className="text-[#ff9d1f]" 
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        filter: "drop-shadow(0 0 6px rgba(255, 140, 0, 0.7))"
+                      }}
+                    />
                   </div>
                 </div>
               </foreignObject>
@@ -237,30 +273,66 @@ export function MemoriesOrbitShowcase() {
               </circle>
             ))}
 
-            {/* Community/Users Icon -> left side (≈ 0% of path, begin="0s") */}
+            {/* Community Icon -> lower-right orbit */}
             <g className="pointer-events-auto">
               <foreignObject width="60" height="60" x="-30" y="-30">
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                    <Users className="h-5 w-5 text-[#FF9900]" />
+                  <div 
+                    className="rounded-full flex items-center justify-center animate-[floatIcon_4s_ease-in-out_infinite]"
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      background: "rgba(255, 140, 0, 0.08)",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255, 140, 0, 0.25)",
+                      boxShadow: "0 0 15px rgba(255, 140, 0, 0.4), 0 0 35px rgba(255, 140, 0, 0.2)",
+                      animationDelay: "-2.4s"
+                    }}
+                  >
+                    <Users 
+                      className="text-[#ff9d1f]" 
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        filter: "drop-shadow(0 0 6px rgba(255, 140, 0, 0.7))"
+                      }}
+                    />
                   </div>
                 </div>
               </foreignObject>
-              <animateMotion dur="60s" repeatCount="indefinite" begin="0s">
+              <animateMotion dur="60s" repeatCount="indefinite" begin="-38s">
                 <mpath href="#orbit-path-middle" />
               </animateMotion>
             </g>
 
-            {/* Trophy Icon -> right side (≈ 35% of path, begin="-21s") */}
+            {/* Trophy Icon -> right orbit */}
             <g className="pointer-events-auto">
               <foreignObject width="60" height="60" x="-30" y="-30">
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                    <Trophy className="h-5 w-5 text-[#FF9900]" />
+                  <div 
+                    className="rounded-full flex items-center justify-center animate-[floatIcon_4s_ease-in-out_infinite]"
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      background: "rgba(255, 140, 0, 0.08)",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255, 140, 0, 0.25)",
+                      boxShadow: "0 0 15px rgba(255, 140, 0, 0.4), 0 0 35px rgba(255, 140, 0, 0.2)",
+                      animationDelay: "-3.2s"
+                    }}
+                  >
+                    <Trophy 
+                      className="text-[#ff9d1f]" 
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        filter: "drop-shadow(0 0 6px rgba(255, 140, 0, 0.7))"
+                      }}
+                    />
                   </div>
                 </div>
               </foreignObject>
-              <animateMotion dur="60s" repeatCount="indefinite" begin="-21s">
+              <animateMotion dur="60s" repeatCount="indefinite" begin="-30s">
                 <mpath href="#orbit-path-middle" />
               </animateMotion>
             </g>
@@ -289,16 +361,34 @@ export function MemoriesOrbitShowcase() {
               </circle>
             ))}
 
-            {/* Gallery Icon -> right-lower side (≈ 60% of path, begin="-48s") */}
+            {/* Gallery Icon -> top orbit */}
             <g className="pointer-events-auto">
               <foreignObject width="60" height="60" x="-30" y="-30">
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                    <ImageIcon className="h-5 w-5 text-[#FF9900]" />
+                  <div 
+                    className="rounded-full flex items-center justify-center animate-[floatIcon_4s_ease-in-out_infinite]"
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      background: "rgba(255, 140, 0, 0.08)",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(255, 140, 0, 0.25)",
+                      boxShadow: "0 0 15px rgba(255, 140, 0, 0.4), 0 0 35px rgba(255, 140, 0, 0.2)",
+                      animationDelay: "-0.8s"
+                    }}
+                  >
+                    <ImageIcon 
+                      className="text-[#ff9d1f]" 
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        filter: "drop-shadow(0 0 6px rgba(255, 140, 0, 0.7))"
+                      }}
+                    />
                   </div>
                 </div>
               </foreignObject>
-              <animateMotion dur="80s" repeatCount="indefinite" begin="-48s">
+              <animateMotion dur="80s" repeatCount="indefinite" begin="-20s">
                 <mpath href="#orbit-path-outer" />
               </animateMotion>
             </g>
@@ -428,11 +518,15 @@ export function MemoriesOrbitShowcase() {
         ))}
       </div>
 
-      {/* CSS KEYFRAME PULSE ANIMATION FOR BADGES */}
+      {/* CSS KEYFRAME FLOATING ANIMATION FOR ORB BADGES */}
       <style>{`
-        @keyframes pulse-icon {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.08); }
+        @keyframes floatIcon {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
         }
       `}</style>
     </div>
