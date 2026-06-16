@@ -91,23 +91,39 @@ export function MemoriesOrbitShowcase() {
 
       {/* 2. Floating Orange Star Particles */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {[...Array(15)].map((_, i) => (
+        {[
+          { top: "12%", left: "85%", delay: 0.1, duration: 2.5 },
+          { top: "25%", left: "15%", delay: 0.4, duration: 3.2 },
+          { top: "45%", left: "78%", delay: 0.7, duration: 2.8 },
+          { top: "68%", left: "22%", delay: 1.1, duration: 4.1 },
+          { top: "85%", left: "60%", delay: 0.2, duration: 3.5 },
+          { top: "18%", left: "40%", delay: 0.9, duration: 2.2 },
+          { top: "55%", left: "88%", delay: 1.5, duration: 3.8 },
+          { top: "72%", left: "9%",  delay: 0.5, duration: 2.9 },
+          { top: "32%", left: "65%", delay: 1.2, duration: 3.3 },
+          { top: "89%", left: "30%", delay: 0.8, duration: 4.5 },
+          { top: "5%",  left: "50%", delay: 0.3, duration: 2.7 },
+          { top: "94%", left: "80%", delay: 1.4, duration: 3.1 },
+          { top: "40%", left: "5%",  delay: 0.6, duration: 2.4 },
+          { top: "60%", left: "50%", delay: 1.0, duration: 3.6 },
+          { top: "78%", left: "70%", delay: 1.3, duration: 3.9 }
+        ].map((pt, i) => (
           <motion.div
             key={i}
             className="absolute h-1 w-1 bg-orange-500/40 rounded-full"
             style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
+              top: pt.top,
+              left: pt.left,
             }}
             animate={{
               opacity: [0.2, 0.8, 0.2],
               scale: [1, 1.5, 1],
             }}
             transition={{
-              duration: 2 + Math.random() * 3,
+              duration: pt.duration,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: Math.random() * 2,
+              delay: pt.delay,
             }}
           />
         ))}
