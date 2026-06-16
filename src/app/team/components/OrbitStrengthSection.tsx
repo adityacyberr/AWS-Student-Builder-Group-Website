@@ -239,9 +239,9 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
       const elementHeight = rect.height;
       const viewportHeight = window.innerHeight;
 
-      // The sticky container has top-20 (80px) offset
-      const scrollableDistance = elementHeight - viewportHeight + 80;
-      const scrolled = -rect.top + 80;
+      // The sticky container has top-16 (64px) offset
+      const scrollableDistance = elementHeight - viewportHeight + 64;
+      const scrolled = -rect.top + 64;
 
       const progress = Math.max(0, Math.min(1, scrolled / scrollableDistance));
 
@@ -270,9 +270,19 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
     };
   }, [isStickyEnabled, members]);
 
+  const isScrollingRef = useRef(false);
+  const scrollTweenRef = useRef<number | null>(null);
+
   // ─── Scroll page to bring a specific member into view ───
   const scrollToMember = useCallback((index: number) => {
     if (!containerRef.current) return;
+    
+    // Restore html scrollBehavior if a tween was already running
+    if (scrollTweenRef.current) {
+      cancelAnimationFrame(scrollTweenRef.current);
+      document.documentElement.style.scrollBehavior = "";
+    }
+
     const rect = containerRef.current.getBoundingClientRect();
     const absoluteTop = rect.top + window.scrollY;
     const totalHeight = rect.height;
@@ -280,11 +290,37 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
     const scrollable = totalHeight - viewportHeight;
 
     const progress = (index + 0.5) / members.length;
+    const targetScrollY = absoluteTop + progress * scrollable;
 
-    window.scrollTo({
-      top: absoluteTop + progress * scrollable,
-      behavior: "smooth",
-    });
+    const startY = window.scrollY;
+    const difference = targetScrollY - startY;
+    const startTime = performance.now();
+    const duration = 650; // smooth transition duration
+
+    isScrollingRef.current = true;
+
+    // Temporarily set html scroll-behavior to auto to bypass CSS scroll-behavior: smooth conflict
+    const htmlEl = document.documentElement;
+    htmlEl.style.scrollBehavior = "auto";
+
+    const step = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      
+      // cubic easing out
+      const ease = 1 - Math.pow(1 - t, 3);
+      window.scrollTo(0, startY + difference * ease);
+
+      if (t < 1) {
+        scrollTweenRef.current = requestAnimationFrame(step);
+      } else {
+        isScrollingRef.current = false;
+        scrollTweenRef.current = null;
+        htmlEl.style.scrollBehavior = "";
+      }
+    };
+
+    scrollTweenRef.current = requestAnimationFrame(step);
   }, [members.length]);
 
   // ─── Keynote Intercept: wheel/touch scroll intercepts when pinned ───
@@ -293,15 +329,6 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
 
     const container = containerRef.current;
     let startY = 0;
-    let isTransitioning = false;
-    let cooldownTimer: NodeJS.Timeout | null = null;
-
-    const startCooldown = () => {
-      isTransitioning = true;
-      cooldownTimer = setTimeout(() => {
-        isTransitioning = false;
-      }, 850); // 850ms cooldown prevents rapid skipping during smooth scroll
-    };
 
     const handleWheel = (e: WheelEvent) => {
       const rect = container.getBoundingClientRect();
@@ -316,15 +343,13 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
 
       if (scrollDown && activeMemberIndex < members.length - 1) {
         e.preventDefault();
-        if (!isTransitioning) {
+        if (!isScrollingRef.current) {
           scrollToMember(activeMemberIndex + 1);
-          startCooldown();
         }
       } else if (scrollUp && activeMemberIndex > 0) {
         e.preventDefault();
-        if (!isTransitioning) {
+        if (!isScrollingRef.current) {
           scrollToMember(activeMemberIndex - 1);
-          startCooldown();
         }
       }
     };
@@ -345,15 +370,13 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
 
       if (diffY > 40 && activeMemberIndex < members.length - 1) {
         e.preventDefault();
-        if (!isTransitioning) {
+        if (!isScrollingRef.current) {
           scrollToMember(activeMemberIndex + 1);
-          startCooldown();
         }
       } else if (diffY < -40 && activeMemberIndex > 0) {
         e.preventDefault();
-        if (!isTransitioning) {
+        if (!isScrollingRef.current) {
           scrollToMember(activeMemberIndex - 1);
-          startCooldown();
         }
       }
     };
@@ -366,7 +389,9 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
       container.removeEventListener("wheel", handleWheel);
       container.removeEventListener("touchstart", handleTouchStart);
       container.removeEventListener("touchmove", handleTouchMove);
-      if (cooldownTimer) clearTimeout(cooldownTimer);
+      if (scrollTweenRef.current) {
+        cancelAnimationFrame(scrollTweenRef.current);
+      }
     };
   }, [isStickyEnabled, activeMemberIndex, members.length, scrollToMember]);
 
@@ -426,18 +451,18 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
       <div
         className={
           isStickyEnabled
-            ? "sticky top-20 min-h-[calc(100vh-80px)] flex flex-col justify-center py-6 overflow-hidden"
+            ? "sticky top-16 min-h-[calc(100vh-64px)] flex flex-col justify-center py-4 overflow-hidden"
             : "relative py-12 md:py-24"
         }
         style={{ willChange: "transform" }}
       >
         {/* ─── Section Header ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-16 mb-8 items-end">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-12 mb-4 items-end">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block mb-4">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block mb-2">
               {"// OUR ORBIT. OUR STRENGTH"}
             </span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight">
               Different Orbits.<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_15px_rgba(255,140,0,0.2)]">
                 One Solar Core.
@@ -445,14 +470,14 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
             </h2>
           </div>
           <div>
-            <p className="text-slate-400 text-sm sm:text-base leading-relaxed max-w-lg">
+            <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-lg">
               Each member brings unique strengths, ideas, and energy to fuel our mission and community.
             </p>
           </div>
         </div>
 
         {/* ─── Role Orbit Selector ─── */}
-        <div className="relative mb-10">
+        <div className="relative mb-5">
           {/* Central connection line */}
           <div className="hidden md:block absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/15 to-transparent -translate-y-1/2 pointer-events-none" />
 
@@ -464,7 +489,7 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
                   key={member.id}
                   ref={(el) => { buttonRefs.current[i] = el; }}
                   onClick={() => handleCardClick(i)}
-                  className={`group relative flex flex-col items-center gap-2 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 shrink-0 w-[140px] md:w-auto snap-center ${
+                  className={`group relative flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl sm:rounded-2xl border transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 shrink-0 w-[140px] md:w-auto snap-center ${
                     isActive
                       ? "bg-orange-500/10 border-orange-500 -translate-y-1 scale-[1.02] orbit-card-active"
                       : "bg-slate-950/60 border-slate-800/60 hover:border-orange-500/20 hover:bg-slate-900/40 hover:-translate-y-0.5"
@@ -480,26 +505,29 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
                 >
                   {/* Icon */}
                   <div
-                    className={`p-3 rounded-xl transition-all duration-300 ${
+                    className={`p-2.5 rounded-xl transition-all duration-300 ${
                       isActive
                         ? "bg-orange-500/15 text-orange-400 shadow-[0_0_12px_rgba(255,140,0,0.15)]"
                         : "bg-slate-900/60 text-slate-500 group-hover:text-orange-400/60"
                     }`}
                   >
-                    {getRoleIcon(member.role)}
+                    {getRoleIcon(member.role, "h-4.5 w-4.5")}
                   </div>
 
                   {/* Label */}
                   <span
                     className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight transition-colors ${
-                      isActive ? "text-orange-400" : "text-slate-500 group-hover:text-slate-300"
+                      isActive ? "text-orange-400" : "text-slate-500 group-hover:text-slate-350"
                     }`}
                   >
+                    <span className="font-mono text-[9px] block opacity-85 mb-0.5">
+                      {String(i + 1).padStart(2, "0")} / {String(members.length).padStart(2, "0")}
+                    </span>
                     {getRoleShortName(member.role)}
                   </span>
                   <span
                     className={`text-[8px] sm:text-[9px] text-center leading-tight transition-colors ${
-                      isActive ? "text-slate-400" : "text-slate-600"
+                      isActive ? "text-slate-400" : "text-slate-650"
                     }`}
                   >
                     {getRoleSubtitle(member.role)}
@@ -519,147 +547,247 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
           </div>
         </div>
 
-        {/* ─── Profile Console ─── */}
-        <div className="relative">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={activeMember.id}
-              variants={reducedMotion ? undefined : profileVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="relative rounded-3xl border border-slate-800/70 bg-[#0a0f1e]/85 backdrop-blur-xl overflow-hidden"
-              style={{
-                boxShadow:
-                  "0 0 0 1px rgba(255,140,0,0.06), 0 20px 60px rgba(0,0,0,0.4)",
-                willChange: "transform, opacity, filter",
-              }}
-            >
-              {/* Top highlight */}
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent pointer-events-none z-10" />
+        {/* ─── Main Content Grid: Scroll Runway + Spotlight Console ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 lg:gap-8 relative items-start">
+          {/* Scroll Runway (Left side) */}
+          <div className="hidden lg:flex flex-col items-start w-[260px] pr-4 shrink-0 relative py-2">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                SCROLL RUNWAY
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+            </div>
 
-              {/* Background orbits */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                {[150, 250, 350].map((size, i) => (
-                  <div
-                    key={i}
-                    className="absolute rounded-full border border-orange-500/[0.03]"
-                    style={{
-                      width: size,
-                      height: size,
-                      right: -size / 3,
-                      top: "50%",
-                      marginTop: -size / 2,
-                      animation: reducedMotion
-                        ? "none"
-                        : `orbit-bg ${25 + i * 12}s linear infinite`,
-                    }}
-                  />
-                ))}
+            <div className="relative pl-6 py-2 w-full">
+              {/* Vertical track line */}
+              <div className="absolute left-2.5 top-0 bottom-0 w-[2px] bg-slate-800/80 rounded-full overflow-hidden">
+                {/* Active progress fill */}
+                <motion.div
+                  className="absolute top-0 left-0 w-full bg-gradient-to-b from-orange-500 to-amber-500 origin-top shadow-[0_0_8px_rgba(249,115,22,0.5)]"
+                  style={{
+                    height: `${(activeMemberIndex / (members.length - 1)) * 100}%`,
+                  }}
+                  transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                />
               </div>
 
+              <div className="space-y-5">
+                {members.map((member, i) => {
+                  const isActive = i === activeMemberIndex;
+                  return (
+                    <button
+                      key={member.id}
+                      onClick={() => handleCardClick(i)}
+                      className="group relative flex items-center gap-4 text-left focus:outline-none transition-all duration-300 w-full"
+                    >
+                      {/* Avatar circle */}
+                      <div
+                        className={`relative z-10 w-9 h-9 rounded-full overflow-hidden border-2 transition-all duration-300 ${
+                          isActive
+                            ? "border-orange-500 scale-110 shadow-[0_0_12px_rgba(255,140,0,0.5)]"
+                            : "border-slate-800 bg-slate-950 group-hover:border-orange-500/40"
+                        }`}
+                      >
+                        {member.photo ? (
+                          <Image
+                            src={member.photo}
+                            alt={member.name}
+                            fill
+                            className={`object-cover transition-opacity duration-300 ${
+                              isActive ? "opacity-100" : "opacity-40 group-hover:opacity-80"
+                            }`}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-500">
+                            {member.initials}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Label */}
+                      <div className="flex flex-col">
+                        <span
+                          className={`text-xs font-mono transition-colors ${
+                            isActive ? "text-orange-400 font-bold" : "text-slate-500 group-hover:text-slate-400"
+                          }`}
+                        >
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span
+                          className={`text-sm font-semibold tracking-tight transition-all ${
+                            isActive
+                              ? "text-white translate-x-1"
+                              : "text-slate-400 group-hover:text-slate-300"
+                          }`}
+                        >
+                          {member.name}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Console (Right side) */}
+          <div className="relative w-full">
+            <AnimatePresence mode="wait" initial={false}>
               <motion.div
-                className="relative z-10 grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-8 p-5 sm:p-8 lg:p-10"
-                variants={reducedMotion ? undefined : staggerContainer}
+                key={activeMember.id}
+                variants={reducedMotion ? undefined : profileVariants}
                 initial="initial"
                 animate="animate"
+                exit="exit"
+                className="relative rounded-3xl border border-slate-800/70 bg-[#0a0f1e]/85 backdrop-blur-xl overflow-hidden"
+                style={{
+                  boxShadow:
+                    "0 0 0 1px rgba(255,140,0,0.06), 0 20px 60px rgba(0,0,0,0.4)",
+                  willChange: "transform, opacity, filter",
+                }}
               >
-                {/* ─── Left: Avatar with orbit ring & particles ─── */}
-                <motion.div
-                  className="flex flex-col items-center gap-4"
-                  variants={fadeIn}
-                >
-                  <div className="relative" style={{ willChange: "transform" }}>
-                    {/* Rotating orbit ring with pulse effect */}
+                {/* Top highlight */}
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent pointer-events-none z-10" />
+
+                {/* Cinematic Background Glow Core */}
+                <div 
+                  key={`bg-core-${activeMember.id}`}
+                  className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 rounded-full bg-orange-500/[0.02] blur-3xl pointer-events-none z-0 animate-pulse"
+                  style={{ animationDuration: "4s" }}
+                />
+
+                {/* Background orbits */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                  {[150, 250, 350].map((size, i) => (
                     <div
-                      key={`orbit-pulse-${activeMember.id}`}
-                      className="absolute -inset-4 rounded-full pointer-events-none"
+                      key={i}
+                      className="absolute rounded-full border border-orange-500/[0.03]"
                       style={{
+                        width: size,
+                        height: size,
+                        right: -size / 3,
+                        top: "50%",
+                        marginTop: -size / 2,
                         animation: reducedMotion
                           ? "none"
-                          : "orbit-pulse-once 0.8s ease-out forwards",
-                      }}
-                    >
-                      {!reducedMotion && (
-                        <div
-                          className="w-full h-full rounded-full border border-orange-500/15"
-                          style={{ animation: "orbit-bg 10s linear infinite" }}
-                        >
-                          <div
-                            className="absolute rounded-full bg-orange-400"
-                            style={{
-                              width: 5,
-                              height: 5,
-                              top: -2.5,
-                              left: "50%",
-                              marginLeft: -2.5,
-                              boxShadow: "0 0 8px rgba(255,140,0,0.5)",
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Soft orange halo */}
-                    <div
-                      className="absolute inset-[-10px] rounded-full pointer-events-none"
-                      style={{
-                        background: "radial-gradient(circle, rgba(255,140,0,0.12) 0%, transparent 70%)",
-                        animation: reducedMotion ? "none" : "halo-pulse 2.5s ease-in-out infinite",
+                          : `orbit-bg ${25 + i * 12}s linear infinite`,
                       }}
                     />
+                  ))}
+                </div>
 
-                    {/* Glowing particles orbiting the member image */}
-                    {!reducedMotion &&
-                      [1, 2, 3, 4].map((id) => (
-                        <div
-                          key={`particle-${activeMember.id}-${id}`}
-                          className="absolute w-1.5 h-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 pointer-events-none"
-                          style={{
-                            left: "50%",
-                            top: "50%",
-                            boxShadow: "0 0 8px rgba(255, 140, 0, 0.8)",
-                            animation: `particle-orbit-${id} ${4 + id * 1.5}s linear infinite`,
-                            animationDelay: `${id * -0.7}s`,
+                <motion.div
+                  className="relative z-10 grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6 p-4 sm:p-6 lg:p-6"
+                  variants={reducedMotion ? undefined : staggerContainer}
+                  initial="initial"
+                  animate="animate"
+                >
+                  {/* ─── Left: Avatar with orbit ring & particles ─── */}
+                  <motion.div
+                    className="flex flex-col items-center gap-4"
+                    variants={fadeIn}
+                  >
+                    <div className="relative" style={{ willChange: "transform" }}>
+                      {/* Pulsing solar core background behind avatar */}
+                      <div
+                        key={`solar-core-${activeMember.id}`}
+                        className="absolute inset-2 rounded-full bg-gradient-to-r from-orange-500/20 to-amber-500/20 blur-md pointer-events-none animate-pulse"
+                        style={{ animationDuration: "3s" }}
+                      />
+
+                      {/* Rotating orbit ring with pulse effect */}
+                      <div
+                        key={`orbit-pulse-${activeMember.id}`}
+                        className="absolute -inset-4 rounded-full pointer-events-none"
+                        style={{
+                          animation: reducedMotion
+                            ? "none"
+                            : "orbit-pulse-once 0.8s ease-out forwards",
+                        }}
+                      >
+                        {!reducedMotion && (
+                          <div
+                            className="w-full h-full rounded-full border border-orange-500/15"
+                            style={{ animation: "orbit-bg 10s linear infinite" }}
+                          >
+                            <div
+                              className="absolute rounded-full bg-orange-400"
+                              style={{
+                                width: 5,
+                                height: 5,
+                                top: -2.5,
+                                left: "50%",
+                                marginLeft: -2.5,
+                                boxShadow: "0 0 8px rgba(255,140,0,0.5)",
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Soft orange halo */}
+                      <div
+                        className="absolute inset-[-10px] rounded-full pointer-events-none"
+                        style={{
+                          background: "radial-gradient(circle, rgba(255,140,0,0.12) 0%, transparent 70%)",
+                          animation: reducedMotion ? "none" : "halo-pulse 2.5s ease-in-out infinite",
+                        }}
+                      />
+
+                      {/* Glowing particles orbiting the member image */}
+                      {!reducedMotion &&
+                        [1, 2, 3, 4].map((id) => (
+                          <div
+                            key={`particle-${activeMember.id}-${id}`}
+                            className="absolute w-1.5 h-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 pointer-events-none"
+                            style={{
+                              left: "50%",
+                              top: "50%",
+                              boxShadow: "0 0 8px rgba(255, 140, 0, 0.8)",
+                              animation: `particle-orbit-${id} ${4 + id * 1.5}s linear infinite`,
+                              animationDelay: `${id * -0.7}s`,
+                            }}
+                          />
+                        ))}
+
+                      {/* Glow */}
+                      <div className="absolute inset-0 rounded-full bg-orange-500/8 blur-xl pointer-events-none" />
+
+                      {/* Parent wrapper for breathing animation */}
+                      <div className="relative img-breathing">
+                        <motion.div
+                          className="relative w-28 h-28 sm:w-40 sm:h-40 rounded-full overflow-hidden border-2 border-orange-500/25"
+                          initial={{ scale: 1, boxShadow: "0 0 0px rgba(255,140,0,0)" }}
+                          animate={{
+                            scale: [1, 1.08, 1.05],
+                            boxShadow: [
+                              "0 0 0px rgba(255,140,0,0)",
+                              "0 0 35px rgba(255,140,0,0.45)",
+                              "0 0 30px rgba(255,140,0,0.18)",
+                            ],
                           }}
-                        />
-                      ))}
-
-                    {/* Glow */}
-                    <div className="absolute inset-0 rounded-full bg-orange-500/8 blur-xl pointer-events-none" />
-
-                    <motion.div
-                      className="relative w-28 h-28 sm:w-40 sm:h-40 rounded-full overflow-hidden border-2 border-orange-500/25"
-                      initial={{ scale: 1, boxShadow: "0 0 0px rgba(255,140,0,0)" }}
-                      animate={{
-                        scale: [1, 1.08, 1.05],
-                        boxShadow: [
-                          "0 0 0px rgba(255,140,0,0)",
-                          "0 0 35px rgba(255,140,0,0.45)",
-                          "0 0 30px rgba(255,140,0,0.18)",
-                        ],
-                      }}
-                      transition={{ duration: 0.7, ease: "easeOut" }}
-                      style={{ willChange: "transform" }}
-                    >
-                      {activeMember.photo ? (
-                        <Image
-                          src={activeMember.photo}
-                          alt={activeMember.name}
-                          fill
-                          sizes="(max-width: 640px) 112px, 160px"
-                          priority
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                          <span className="text-3xl font-black text-orange-400/80">
-                            {activeMember.initials}
-                          </span>
-                        </div>
-                      )}
-                    </motion.div>
-                  </div>
+                          transition={{ duration: 0.7, ease: "easeOut" }}
+                          style={{ willChange: "transform" }}
+                        >
+                          {activeMember.photo ? (
+                            <Image
+                              src={activeMember.photo}
+                              alt={activeMember.name}
+                              fill
+                              sizes="(max-width: 640px) 112px, 160px"
+                              priority
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                              <span className="text-3xl font-black text-orange-400/80">
+                                {activeMember.initials}
+                              </span>
+                            </div>
+                          )}
+                        </motion.div>
+                      </div>
+                    </div>
 
                   {/* Navigation controls */}
                   <div className="flex flex-col items-center gap-2 z-10">
@@ -884,10 +1012,24 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
               </p>
             </motion.div>
           </AnimatePresence>
+          </div>
         </div>
       </div>
 
       <style jsx>{`
+        @keyframes img-breathe {
+          0%, 100% {
+            transform: scale(1);
+            filter: drop-shadow(0 0 15px rgba(255,140,0,0.1));
+          }
+          50% {
+            transform: scale(1.03);
+            filter: drop-shadow(0 0 25px rgba(255,140,0,0.25));
+          }
+        }
+        .img-breathing {
+          animation: img-breathe 4s ease-in-out infinite;
+        }
         @keyframes orbit-bg {
           from {
             transform: rotate(0deg);

@@ -8,8 +8,6 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { useReducedMotion } from "./hooks/useReducedMotion";
 import { SolarBackground } from "./components/SolarBackground";
-import { SolarCore } from "./components/SolarCore";
-import { OrbitingPlanets } from "./components/OrbitingPlanets";
 import { SolarProfileConsole } from "./components/SolarProfileConsole";
 import { BottomSheet } from "./components/BottomSheet";
 import { OrbitStrengthSection } from "./components/OrbitStrengthSection";
@@ -53,6 +51,17 @@ const scrollItemVariants = {
     transition: {
       duration: 0.6,
       ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
+
+const opacityOnlyVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.6,
+      ease: "easeOut" as const,
     },
   },
 };
@@ -219,150 +228,10 @@ export default function TeamPage() {
         className="relative z-10"
       >
         {/* ====================================================== */}
-        {/* HERO SECTION                                            */}
-        {/* ====================================================== */}
-        <motion.section
-          variants={scrollItemVariants}
-          className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-20 pb-16 md:pt-28 md:pb-24"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center min-h-[600px]">
-            {/* Left side - Hero text */}
-            <div className="space-y-6 relative z-20 text-center lg:text-left flex flex-col items-center lg:items-start">
-              {/* Badge */}
-              <motion.span
-                variants={scrollItemVariants}
-                className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block"
-              >
-                {"// CORE LEADERSHIP"}
-              </motion.span>
-
-              {/* Heading */}
-              <motion.h1
-                variants={scrollItemVariants}
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05]"
-              >
-                Meet the Builders<br />
-                of <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_25px_rgba(255,140,0,0.3)]">RIMT</span>
-              </motion.h1>
-
-              {/* Supporting text */}
-              <motion.div variants={scrollItemVariants} className="space-y-1 max-w-md">
-                <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-                  The founding team driving cloud learning, hands-on innovation, workshops, and community initiatives across RIMT University.
-                </p>
-              </motion.div>
-
-              {/* CTA Button */}
-              <motion.div variants={scrollItemVariants}>
-                <button
-                  onClick={() => {
-                    document.getElementById("orbit-strength")?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="group relative inline-flex items-center gap-3 px-7 py-3.5 rounded-2xl text-sm font-bold uppercase tracking-wider overflow-hidden transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(255,140,0,0.12), rgba(255,140,0,0.06))",
-                    border: "1px solid rgba(255,140,0,0.3)",
-                    boxShadow: "0 0 15px rgba(255,140,0,0.08), inset 0 0 15px rgba(255,140,0,0.04)",
-                  }}
-                >
-                  {/* Light sweep */}
-                  {!reducedMotion && (
-                    <span
-                      className="absolute inset-0 pointer-events-none"
-                      style={{
-                        background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%)",
-                        animation: "hero-sweep 4s ease-in-out infinite",
-                      }}
-                    />
-                  )}
-                  <span className="relative z-10 text-orange-400 group-hover:text-white transition-colors">
-                    Explore The Solar System
-                  </span>
-                  <ArrowRight className="relative z-10 h-4 w-4 text-orange-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                </button>
-              </motion.div>
-
-              {/* Compact stats */}
-              <motion.div
-                variants={scrollItemVariants}
-                className="grid grid-cols-3 gap-4 max-w-sm pt-4"
-              >
-                {[
-                  { value: "06", label: "Founding Members", icon: <Sparkles className="h-3.5 w-3.5" /> },
-                  { value: "01", label: "Builder Community", icon: <Heart className="h-3.5 w-3.5" /> },
-                  { value: "100%", label: "Student Led", icon: <Target className="h-3.5 w-3.5" /> },
-                ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-slate-800/60 bg-slate-950/50 backdrop-blur-sm"
-                  >
-                    <div className="text-orange-400/60">{stat.icon}</div>
-                    <div>
-                      <span className="text-lg font-black text-white block leading-tight">{stat.value}</span>
-                      <span className="text-[9px] text-slate-500 block leading-tight">{stat.label}</span>
-                    </div>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-
-            {/* Right side - Solar System Visualization */}
-            <motion.div
-              variants={scrollItemVariants}
-              className="relative flex items-center justify-center w-full z-20"
-            >
-              {/* Solar system container (concentric centered relative container) */}
-              <div
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                className="relative w-full aspect-square max-w-[850px] mx-auto bg-transparent"
-              >
-                {/* The Sun at the center */}
-                <div
-                  className="absolute"
-                  style={{
-                    left: "50%",
-                    top: "50%",
-                    transform: `translate(calc(-50% + ${parallax.core.x}px), calc(-50% + ${parallax.core.y}px)) scale(${scaleFactor})`,
-                    transformOrigin: "center center",
-                    transition: reducedMotion ? "none" : "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)",
-                    zIndex: 20,
-                  }}
-                >
-                  <SolarCore
-                    isHovered={sunHovered || hoveredMember !== null}
-                    onHover={setSunHovered}
-                    reducedMotion={reducedMotion}
-                    visible={loadStage >= 1}
-                  />
-                </div>
-
-                {/* Orbiting Planet Members */}
-                {sortedMembers.length > 0 && (
-                  <OrbitingPlanets
-                    members={sortedMembers}
-                    sunHovered={sunHovered}
-                    selectedId={selectedMember?.id ?? null}
-                    onSelect={openMember}
-                    reducedMotion={reducedMotion}
-                    scaleFactor={scaleFactor}
-                    mousePos={mousePos}
-                    parallaxOrbits={parallax.orbits}
-                    parallaxAvatars={parallax.avatars}
-                    loadStage={loadStage}
-                    onHoverMember={setHoveredMember}
-                  />
-                )}
-              </div>
-            </motion.div>
-          </div>
-        </motion.section>
-
-        {/* ====================================================== */}
         {/* OUR ORBIT. OUR STRENGTH.                                */}
         {/* ====================================================== */}
         <motion.div
-          variants={scrollItemVariants}
+          variants={opacityOnlyVariants}
           id="orbit-strength"
           className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8"
         >
