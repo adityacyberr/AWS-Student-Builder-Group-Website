@@ -596,14 +596,14 @@ export function SolarSystemHero() {
       {/* Main content grid */}
       <div className="relative z-10 h-full flex items-center">
         <div className="mx-auto max-w-[1400px] w-full px-4 sm:px-6 lg:px-8 h-full flex items-center">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 w-full items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-center">
 
             {/* ── LEFT: Text & CTAs ─────────────────────────── */}
             <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="lg:col-span-6 xl:col-span-6 space-y-6 z-20 relative text-center lg:text-left flex flex-col items-center lg:items-start"
+              className="lg:col-span-7 xl:col-span-7 space-y-6 z-20 relative text-center lg:text-left flex flex-col items-center lg:items-start"
             >
               <motion.span
                 variants={itemVariants}
@@ -657,22 +657,22 @@ export function SolarSystemHero() {
               {/* Community Metrics Cards */}
               <motion.div
                 variants={itemVariants}
-                className="grid grid-cols-3 gap-3.5 w-full max-w-md pt-2 select-none"
+                className="grid grid-cols-3 gap-3.5 w-full max-w-md pt-2 select-none items-stretch"
               >
                 {[
                   { value: "150+", label: "Members" },
-                  { value: upcomingEventsCount, label: upcomingEventsCount === "1" ? "Upcoming Event" : "Upcoming Events" },
-                  { value: "100%", label: "Student-Led" },
+                  { value: String(upcomingEventsCount).padStart(2, "0"), label: "Upcoming Event" },
+                  { value: "100%", label: "Student Led" },
                 ].map((stat, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col items-center justify-center text-center p-3 sm:p-4 rounded-xl bg-[#090e1a]/80 border border-slate-900 hover:border-orange-500/25 transition-all duration-300 shadow-sm relative overflow-hidden group"
+                    className="flex flex-col items-center justify-center text-center p-3.5 sm:p-4 rounded-xl bg-[#090e1a]/80 border border-slate-900 hover:border-orange-500/25 transition-all duration-300 shadow-sm relative overflow-hidden group w-full min-h-[95px] h-full"
                   >
                     <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-orange-500/0 via-orange-500/40 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <span className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text">
                       {stat.value}
                     </span>
-                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-2.5 line-clamp-2 max-w-[90px] leading-tight">
+                    <span className="text-[10px] sm:text-[10.5px] text-slate-400 font-semibold uppercase tracking-wider mt-2.5 line-clamp-2 max-w-[92px] leading-snug whitespace-normal">
                       {stat.label}
                     </span>
                   </div>
@@ -724,7 +724,7 @@ export function SolarSystemHero() {
 
             {/* ── RIGHT: Solar System ───────────────────────── */}
             <div
-              className="lg:col-span-6 xl:col-span-6 relative h-[300px] sm:h-[420px] md:h-[520px] lg:h-full flex items-center justify-center"
+              className="lg:col-span-5 xl:col-span-5 relative h-[300px] sm:h-[420px] md:h-[520px] lg:h-full flex items-center justify-center"
             >
               {/* Parallax wrapper */}
               <div

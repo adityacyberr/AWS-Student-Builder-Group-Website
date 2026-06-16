@@ -67,8 +67,9 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-900 bg-slate-950/85 backdrop-blur-md transition-all">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-[74px] items-center justify-between">
-          {/* Logo and Partner Logos */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Left Side Group: Brand + Partners + Nav */}
+          <div className="flex items-center flex-shrink-0">
+            {/* Logo link */}
             <Link href="/" className="flex items-center gap-3 select-none group py-1 flex-shrink-0">
               <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden group-hover:border-orange-500/40 transition-colors duration-300 flex-shrink-0">
                 {/* Subtle orange accent line */}
@@ -92,68 +93,60 @@ export default function Header() {
               </div>
             </Link>
 
-            {/* Vertical Divider */}
-            <div className="h-6 w-px bg-slate-850 flex-shrink-0" />
+            {/* Compact Institutional Partners Section (Exactly 24px spacing via ml-6) */}
+            <div className="hidden lg:flex items-center gap-2 select-none flex-shrink-0 ml-6">
+              {/* Subtle gray text */}
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                Supported by
+              </span>
 
-            {/* Compact Institutional Partners Section (Max ~220px) */}
-            <div className="hidden md:flex items-center gap-2 select-none flex-shrink-0 max-w-[220px]">
-              {/* RIMT Badging */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-11 bg-white p-1 rounded-[8px] border border-slate-200 shadow-sm flex-shrink-0">
-                  <img
-                    src="/brand/rimt-university.jpg"
-                    alt="RIMT"
-                    className="max-h-full max-w-full object-contain"
-                    title="RIMT University"
-                  />
-                </div>
-                <span className="hidden 2xl:inline text-[11px] font-semibold text-slate-300 uppercase tracking-wider whitespace-nowrap">
-                  RIMT
-                </span>
+              {/* Tiny inline logos without separate containers (max height 28px, using h-[18px]) */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <img
+                  src="/brand/rimt-university.jpg"
+                  alt="RIMT"
+                  className="h-[18px] w-auto object-contain rounded bg-white px-0.5"
+                  title="RIMT University"
+                />
+                <img
+                  src="/brand/dri-lab.png"
+                  alt="DRI"
+                  className="h-[18px] w-auto object-contain rounded bg-white px-0.5"
+                  title="DRI – Department of Research, Innovation and Incubation"
+                />
               </div>
 
-              {/* Minimal Divider */}
-              <div className="h-4 w-px bg-slate-800 flex-shrink-0" />
-
-              {/* DRI Badging */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-11 bg-white p-1 rounded-[8px] border border-slate-200 shadow-sm flex-shrink-0">
-                  <img
-                    src="/brand/dri-lab.png"
-                    alt="DRI"
-                    className="max-h-full max-w-full object-contain"
-                    title="DRI – Department of Research, Innovation and Incubation"
-                  />
-                </div>
-                <span className="hidden 2xl:inline text-[11px] font-semibold text-slate-300 uppercase tracking-wider whitespace-nowrap">
-                  DRI
-                </span>
-              </div>
+              {/* Supported Text Line with Orange Dot Separator */}
+              <span className="text-[10.5px] font-semibold text-slate-400 whitespace-nowrap flex items-center gap-1.5">
+                RIMT University
+                <span className="h-1 w-1 rounded-full bg-orange-500 inline-block" />
+                DRI
+              </span>
             </div>
+
+            {/* Desktop Nav (Exactly 40px spacing via ml-10, Gap 24px via gap-6) */}
+            <nav className="hidden lg:flex items-center gap-6 flex-shrink-0 ml-10">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                      isActive
+                        ? "text-orange-500 bg-slate-900/60 font-semibold"
+                        : "text-slate-300 hover:text-orange-400 hover:bg-slate-900/40"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-5 xl:gap-6 flex-shrink-0">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                    isActive
-                      ? "text-orange-500 bg-slate-900/60 font-semibold"
-                      : "text-slate-300 hover:text-orange-400 hover:bg-slate-900/40"
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-
           {/* Right Menu CTA / User Profile Widget */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
             {profile ? (
               /* Authenticated User Dropdown */
               <div className="relative" ref={dropdownRef}>
@@ -237,7 +230,7 @@ export default function Header() {
           </div>
 
           {/* Mobile Menu Hamburger Button */}
-          <div className="flex md:hidden items-center gap-3">
+          <div className="flex lg:hidden items-center gap-3">
             {profile && (
               <Link
                 href="/admin"
