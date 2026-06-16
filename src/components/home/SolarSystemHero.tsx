@@ -479,7 +479,7 @@ export function SolarSystemHero() {
             }).length;
           }
         } catch (err) {
-          console.error("Error fetching events from Supabase:", err);
+          console.warn("Error fetching events from Supabase:", err);
         }
       } else {
         // Fallback to local storage
@@ -595,7 +595,7 @@ export function SolarSystemHero() {
 
       {/* Main content grid */}
       <div className="relative z-10 h-full flex items-center">
-        <div className="mx-auto max-w-[1400px] w-full px-4 sm:px-6 lg:px-8 h-full flex items-center">
+        <div className="mx-auto max-w-[1600px] w-full px-4 sm:px-6 lg:px-6 h-full flex items-center">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full items-center">
 
             {/* ── LEFT: Text & CTAs ─────────────────────────── */}
@@ -603,7 +603,7 @@ export function SolarSystemHero() {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="lg:col-span-7 xl:col-span-7 space-y-6 z-20 relative text-center lg:text-left flex flex-col items-center lg:items-start"
+              className="lg:col-span-5 xl:col-span-5 space-y-6 z-20 relative text-center lg:text-left flex flex-col items-center lg:items-start"
             >
               <motion.span
                 variants={itemVariants}
@@ -616,57 +616,61 @@ export function SolarSystemHero() {
                 variants={itemVariants}
                 className="text-fluid-hero font-black text-white tracking-tight leading-[1.1]"
               >
-                One Community. Six Worlds.
+                AWS Student Builder Group
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">
-                  Infinite Possibilities.
+                <span className="text-[0.75em] block mt-2 select-none">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">
+                    at{" "}
+                  </span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-rose-500 filter drop-shadow-[0_0_20px_rgba(239,68,68,0.35)] font-black">
+                    RIMT
+                  </span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">
+                    {" "}University
+                  </span>
                 </span>
               </motion.h1>
 
-              {/* Institutional Collaboration Notice */}
+              {/* Signature Tagline */}
               <motion.div
                 variants={itemVariants}
-                className="flex items-center justify-center lg:justify-start gap-2.5 pt-0.5 select-none"
+                className="text-orange-400 font-bold tracking-widest text-xs sm:text-sm uppercase filter drop-shadow-[0_0_8px_rgba(249,115,22,0.3)] mt-2"
               >
-                <div className="flex items-center gap-1.5 opacity-40 hover:opacity-70 transition-opacity duration-300 flex-shrink-0">
-                  <img
-                    src="/brand/rimt-university.jpg"
-                    alt="RIMT University"
-                    className="h-4.5 w-auto object-contain brightness-0 invert"
-                  />
-                  <img
-                    src="/brand/dri-lab.png"
-                    alt="DRI Lab"
-                    className="h-4.5 w-auto object-contain brightness-0 invert"
-                  />
-                </div>
-                <span className="text-[11px] sm:text-xs font-semibold text-slate-400 tracking-wide text-left leading-normal">
+                Build • Learn • Innovate on AWS
+              </motion.div>
+
+              {/* Institutional Collaboration Notice (MT exactly 32px via mt-8) */}
+              <motion.div
+                variants={itemVariants}
+                className="flex items-center gap-3 mt-8 select-none max-w-[600px] text-left"
+              >
+                <span className="h-2 w-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)] flex-shrink-0" />
+                <span className="text-sm md:text-[18px] font-medium text-white/72 leading-[1.5]">
                   An initiative under RIMT University in collaboration with the DRI Lab.
                 </span>
               </motion.div>
 
+              {/* Description Paragraph (MT exactly 28px via mt-7, max-width 620px, line-height 1.75) */}
               <motion.p
                 variants={itemVariants}
-                className="text-slate-400 text-sm leading-relaxed max-w-md"
+                className="text-white/70 text-sm md:text-base leading-[1.75] max-w-[620px] mt-7"
               >
-                Explore a universe of RIMT Builders, events, memories, milestones,
-                and opportunities designed to inspire the next generation of
-                cloud innovators.
+                A student-led community driving cloud learning, hands-on projects, workshops, and innovation at RIMT University.
               </motion.p>
 
               {/* Community Metrics Cards */}
               <motion.div
                 variants={itemVariants}
-                className="grid grid-cols-3 gap-3.5 w-full max-w-md pt-2 select-none items-stretch"
+                className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 w-full max-w-md pt-2 select-none items-stretch"
               >
                 {[
-                  { value: "150+", label: "Members" },
+                  { value: "50+", label: "Members" },
                   { value: String(upcomingEventsCount).padStart(2, "0"), label: "Upcoming Event" },
                   { value: "100%", label: "Student Led" },
                 ].map((stat, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col items-center justify-center text-center p-3.5 sm:p-4 rounded-xl bg-[#090e1a]/80 border border-slate-900 hover:border-orange-500/25 transition-all duration-300 shadow-sm relative overflow-hidden group w-full min-h-[95px] h-full"
+                    className="flex flex-col items-center justify-center text-center p-4 rounded-xl bg-[#090e1a]/80 border border-slate-900 hover:border-orange-500/25 transition-all duration-300 shadow-sm relative overflow-hidden group w-full h-[100px]"
                   >
                     <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-orange-500/0 via-orange-500/40 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <span className="text-xl sm:text-2xl font-black text-white tracking-tight leading-none bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text">
@@ -724,7 +728,7 @@ export function SolarSystemHero() {
 
             {/* ── RIGHT: Solar System ───────────────────────── */}
             <div
-              className="lg:col-span-5 xl:col-span-5 relative h-[300px] sm:h-[420px] md:h-[520px] lg:h-full flex items-center justify-center"
+              className="lg:col-span-7 xl:col-span-7 relative h-[300px] sm:h-[420px] md:h-[520px] lg:h-full flex items-center justify-center"
             >
               {/* Parallax wrapper */}
               <div

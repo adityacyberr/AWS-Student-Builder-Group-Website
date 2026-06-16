@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
 import { Mail, MapPin, Clock, Zap, Cloud, Users, Calendar, HelpCircle, Handshake } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -38,6 +39,46 @@ const scrollItemVariants = {
 
 export default function ContactPage() {
   const reducedMotion = useReducedMotion();
+  const card1Ref = useRef<HTMLDivElement>(null);
+  const card4Ref = useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
+  const [lineCoords, setLineCoords] = useState<{ top: number; bottom: number }>({ top: 60, bottom: 60 });
+
+  useEffect(() => {
+    const updateCoords = () => {
+      if (card1Ref.current && card4Ref.current && parentRef.current) {
+        const parentRect = parentRef.current.getBoundingClientRect();
+        const card1Rect = card1Ref.current.getBoundingClientRect();
+        const card4Rect = card4Ref.current.getBoundingClientRect();
+
+        const top = (card1Rect.top + card1Rect.height / 2) - parentRect.top;
+        const bottom = parentRect.bottom - (card4Rect.top + card4Rect.height / 2);
+
+        setLineCoords({ top, bottom });
+      }
+    };
+
+    updateCoords();
+    window.addEventListener("resize", updateCoords);
+    
+    let observer: ResizeObserver | null = null;
+    if (typeof window !== "undefined" && "ResizeObserver" in window) {
+      observer = new ResizeObserver(updateCoords);
+      if (parentRef.current) {
+        observer.observe(parentRef.current);
+      }
+    }
+
+    const timer = setTimeout(updateCoords, 150);
+
+    return () => {
+      window.removeEventListener("resize", updateCoords);
+      if (observer) {
+        observer.disconnect();
+      }
+      clearTimeout(timer);
+    };
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-[#050816] bg-grid-pattern overflow-hidden py-16 md:py-24 text-slate-300">
@@ -110,7 +151,7 @@ export default function ContactPage() {
         {/* ================================================= */}
         {/* MAIN SECTION                                      */}
         {/* ================================================= */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-10 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-10 items-start">
           
           {/* Left Column - Contact Info stacked (5 cols on lg, 6 on md) */}
           <motion.div 
@@ -118,10 +159,16 @@ export default function ContactPage() {
             className="md:col-span-6 lg:col-span-5 relative flex flex-col gap-0 w-full"
           >
             {/* Vertically stacked cards */}
-            <div className="relative flex flex-col gap-5 z-10 w-full pl-0 lg:pl-20">
+            <div ref={parentRef} className="relative flex flex-col gap-5 z-10 w-full pl-0 lg:pl-20">
               
               {/* Enhanced Vertical Spine Line with energy particles */}
-              <div className="absolute left-[24px] top-[60px] bottom-[60px] w-[1px] bg-gradient-to-b from-orange-500/10 via-orange-500/25 to-orange-500/10 pointer-events-none z-0 hidden lg:block">
+              <div 
+                style={{
+                  top: `${lineCoords.top}px`,
+                  bottom: `${lineCoords.bottom}px`,
+                }}
+                className="absolute left-[24px] w-[1px] bg-gradient-to-b from-orange-500/10 via-orange-500/25 to-orange-500/10 pointer-events-none z-0 hidden lg:block"
+              >
                 {/* Primary signal dot */}
                 <div className="absolute left-[-2px] w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_#ffffff] animate-[signal_6s_linear_infinite]" />
                 {/* Secondary energy particle 1 */}
@@ -134,25 +181,17 @@ export default function ContactPage() {
                   className="absolute left-[-1.5px] w-1 h-1 rounded-full bg-amber-400 shadow-[0_0_6px_#ffaa00]"
                   style={{ animation: "signal 10s linear infinite 4s" }}
                 />
-                {/* Pulsing nodes at intervals */}
-                {[0.15, 0.38, 0.62, 0.85].map((pos, i) => (
-                  <div
-                    key={i}
-                    className="absolute left-[-2.5px] w-1.5 h-1.5 rounded-full bg-orange-500/50 border border-orange-500/40"
-                    style={{
-                      top: `${pos * 100}%`,
-                      animation: `pulse 3.5s ease-in-out infinite ${i * 0.8}s`,
-                    }}
-                  />
-                ))}
               </div>
 
               {/* Card 1 — Email */}
-              <div className="relative flex items-center w-full">
+              <div ref={card1Ref} className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
-                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
+                <div className="absolute left-[-56px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
                   {/* Left node */}
-                  <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                  <div 
+                    className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" 
+                    style={{ animation: "pulse 3.5s ease-in-out infinite 0s" }}
+                  />
                   {/* Right node */}
                   <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
                 </div>
@@ -169,8 +208,13 @@ export default function ContactPage() {
               {/* Card 2 — Visit */}
               <div className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
-                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
-                  <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                <div className="absolute left-[-56px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
+                  {/* Left node */}
+                  <div 
+                    className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" 
+                    style={{ animation: "pulse 3.5s ease-in-out infinite 0.8s" }}
+                  />
+                  {/* Right node */}
                   <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
                 </div>
 
@@ -186,8 +230,13 @@ export default function ContactPage() {
               {/* Card 3 — Response Time */}
               <div className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
-                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
-                  <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                <div className="absolute left-[-56px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
+                  {/* Left node */}
+                  <div 
+                    className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" 
+                    style={{ animation: "pulse 3.5s ease-in-out infinite 1.6s" }}
+                  />
+                  {/* Right node */}
                   <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
                 </div>
 
@@ -200,10 +249,15 @@ export default function ContactPage() {
               </div>
 
               {/* Card 4 — Open to Collaborations (NEW) */}
-              <div className="relative flex items-center w-full">
+              <div ref={card4Ref} className="relative flex items-center w-full">
                 {/* Horizontal Connector */}
-                <div className="absolute left-[24px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
-                  <div className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
+                <div className="absolute left-[-56px] w-[56px] h-px bg-orange-500/20 hidden lg:block pointer-events-none z-0 top-1/2 -translate-y-1/2">
+                  {/* Left node */}
+                  <div 
+                    className="absolute left-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" 
+                    style={{ animation: "pulse 3.5s ease-in-out infinite 2.4s" }}
+                  />
+                  {/* Right node */}
                   <div className="absolute right-[-4px] top-[-4px] w-2 h-2 rounded-full bg-orange-500 border border-[#050816] shadow-[0_0_6px_#ff8c00]" />
                 </div>
 
@@ -234,7 +288,7 @@ export default function ContactPage() {
           {/* Right Column - Connect With Us Social Hub (7 cols on lg, 6 on md) */}
           <motion.div 
             variants={scrollItemVariants}
-            className="md:col-span-6 lg:col-span-7 flex w-full"
+            className="md:col-span-6 lg:col-span-7 w-full h-fit"
           >
             <SocialHub />
           </motion.div>

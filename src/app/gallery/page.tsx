@@ -237,7 +237,7 @@ export default function GalleryPage() {
             setCompletedEventsCount(eventsRes.data.filter((e: any) => e.status === "completed").length);
           }
         } catch (err) {
-          console.error("Supabase load failed, falling back to local files:", err);
+          console.warn("Supabase load failed, falling back to local files:", err);
         }
       } else {
         // Sandbox mode

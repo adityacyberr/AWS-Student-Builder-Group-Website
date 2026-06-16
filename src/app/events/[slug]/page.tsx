@@ -41,7 +41,7 @@ export default function EventDetailPage() {
             };
           }
         } catch (err) {
-          console.error("Error loading event from Supabase:", err);
+          console.warn("Error loading event from Supabase:", err);
         }
       }
       if (!foundEvent) {

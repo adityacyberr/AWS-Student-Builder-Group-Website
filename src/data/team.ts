@@ -66,7 +66,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     branch: "B.Tech CSE",
     specialization: "AI & ML",
     photo: "/team/amisha.jpg",
-    bio: "Owns the club's brand, content, and outreach, turning every event into reach across LinkedIn, Instagram, and WhatsApp. Drives community growth and makes sure the right students hear about us.",
+    bio: "Owns the club's brand, content, and outreach, turning every event into reach across LinkedIn and Instagram. Drives community growth and makes sure the right students hear about us.",
     quote: "Telling the story of every builder.",
     focusAreas: ["Brand & Content", "Social Growth", "Outreach", "Design"],
     initials: "AM",

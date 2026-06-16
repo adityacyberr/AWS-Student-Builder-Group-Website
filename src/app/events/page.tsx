@@ -137,7 +137,7 @@ export default function EventsPage() {
             }));
           }
         } catch (err) {
-          console.error("Error loading events from Supabase:", err);
+          console.warn("Error loading events from Supabase:", err);
         }
       }
       setEvents(eventsList);

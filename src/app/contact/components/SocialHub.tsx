@@ -97,7 +97,7 @@ export function SocialHub({ variants }: { variants?: Variants }) {
         transform: "translate3d(0,0,0)",
         backfaceVisibility: "hidden",
       }}
-      className="relative rounded-3xl border border-slate-800/80 bg-slate-950/75 backdrop-blur-md p-6 sm:p-8 flex flex-col justify-between w-full shadow-[inset_0_0_12px_rgba(255,140,0,0.02)] border-t-white/10 border-x-white/5 border-b-white/0"
+      className="relative rounded-3xl border border-slate-800/80 bg-slate-950/75 backdrop-blur-md p-6 sm:p-8 flex flex-col gap-6 w-full h-fit shadow-[inset_0_0_12px_rgba(255,140,0,0.02)] border-t-white/10 border-x-white/5 border-b-white/0"
     >
       {/* Dynamic follow cursor lighting */}
       <div 

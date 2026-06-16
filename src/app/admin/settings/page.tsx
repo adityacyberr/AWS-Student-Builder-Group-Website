@@ -30,7 +30,6 @@ export default function AdminSettings() {
   const [siteName, setSiteName] = useState("AWS Student Builder Group");
   const [siteTagline, setSiteTagline] = useState("RIMT University Campus Chapter");
   const [meetupUrl, setMeetupUrl] = useState("https://www.meetup.com/aws-sbg-at-rimt-university/");
-  const [whatsappUrl, setWhatsappUrl] = useState("https://chat.whatsapp.com/aws-sbg-rimt");
   const [contactEmail, setContactEmail] = useState("sbg.rimt@gmail.com");
   const [linkedinUrl, setLinkedinUrl] = useState("https://www.linkedin.com/company/awsrimt/");
   const [instagramUrl, setInstagramUrl] = useState("https://www.instagram.com/aws.rimt/");
@@ -80,7 +79,6 @@ export default function AdminSettings() {
             if (row.key === "site_name") setSiteName(row.value);
             if (row.key === "site_tagline") setSiteTagline(row.value);
             if (row.key === "meetup_url") setMeetupUrl(row.value);
-            if (row.key === "whatsapp_url") setWhatsappUrl(row.value);
             if (row.key === "contact_email") setContactEmail(row.value);
             if (row.key === "linkedin_url") setLinkedinUrl(row.value);
             if (row.key === "instagram_url") setInstagramUrl(row.value);
@@ -98,7 +96,6 @@ export default function AdminSettings() {
         // Fallback Local Storage Load
         if (typeof window !== "undefined") {
           setMeetupUrl(localStorage.getItem("aws_sbg_meetup_url") || "https://www.meetup.com/aws-sbg-at-rimt-university/");
-          setWhatsappUrl(localStorage.getItem("aws_sbg_whatsapp_url") || "https://chat.whatsapp.com/aws-sbg-rimt");
           setContactEmail(localStorage.getItem("aws_sbg_contact_email") || "sbg.rimt@gmail.com");
           
           const storedStats = localStorage.getItem("aws_sbg_home_stats");
@@ -131,7 +128,6 @@ export default function AdminSettings() {
           { key: "site_name", value: siteName.trim() },
           { key: "site_tagline", value: siteTagline.trim() },
           { key: "meetup_url", value: meetupUrl.trim() },
-          { key: "whatsapp_url", value: whatsappUrl.trim() },
           { key: "contact_email", value: contactEmail.trim() },
           { key: "linkedin_url", value: linkedinUrl.trim() },
           { key: "instagram_url", value: instagramUrl.trim() },
@@ -143,7 +139,6 @@ export default function AdminSettings() {
         if (error) throw error;
       } else {
         localStorage.setItem("aws_sbg_meetup_url", meetupUrl.trim());
-        localStorage.setItem("aws_sbg_whatsapp_url", whatsappUrl.trim());
         localStorage.setItem("aws_sbg_contact_email", contactEmail.trim());
       }
       showToast("General settings updated successfully!");
@@ -374,16 +369,6 @@ export default function AdminSettings() {
                   type="url"
                   value={meetupUrl}
                   onChange={(e) => setMeetupUrl(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900/60 border border-zinc-800 text-white focus:outline-none focus:border-orange-500/50"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">WhatsApp Invite Link</label>
-                <input
-                  type="url"
-                  value={whatsappUrl}
-                  onChange={(e) => setWhatsappUrl(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900/60 border border-zinc-800 text-white focus:outline-none focus:border-orange-500/50"
                 />
               </div>

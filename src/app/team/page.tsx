@@ -156,7 +156,7 @@ export default function TeamPage() {
             }));
           }
         } catch (err) {
-          console.error("Error loading team from Supabase:", err);
+          console.warn("Error loading team from Supabase:", err);
         }
       }
 

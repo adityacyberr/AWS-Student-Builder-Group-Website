@@ -84,6 +84,8 @@ create table if not exists public.announcements (
   content text not null,
   date text not null,
   active boolean default true not null,
+  button_text text,
+  destination_url text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -173,6 +175,25 @@ do $$ begin
   alter table public.gallery_images add constraint gallery_images_category_check check (category in ('events', 'workshops', 'labs', 'celebrations', 'community', 'achievements'));
 exception
   when others then null;
+end $$;
+
+-- Migration to add button_text and destination_url columns to public.announcements
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'announcements' and column_name = 'button_text'
+  ) then
+    alter table public.announcements add column button_text text;
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'announcements' and column_name = 'destination_url'
+  ) then
+    alter table public.announcements add column destination_url text;
+  end if;
 end $$;
 
 -- 2c. AUTO-UPDATE updated_at TRIGGER for team_members
@@ -315,7 +336,7 @@ insert into public.team_members (name, role, branch, specialization, bio, quote,
 values 
 ('Pranav Bansal', 'Group Leader', 'B.Tech ECE', 'AI & ML', 'Founder and driving force behind the chapter, setting the vision and building the partnerships that bring it to life. Passionate about applying AI/ML and edge computing on the cloud, and about creating a space where every student can become a builder.', 'Building a community where students learn, innovate, and grow through cloud, Generative AI, and AWS.', array['Community Strategy', 'Generative AI', 'Cloud Architecture', 'Leadership'], 'PB', 'orange', '/team/pranav.jpg', 'https://www.linkedin.com/in/pranav-bansal-31ba4a261/', '', 'pranav@sbg-rimt.com', 1, true, 'Super Admin'),
 ('Aditya', 'Technical Head', 'B.Tech CSE', 'Cybersecurity', 'Leads all technical programming — hands-on workshops, cloud labs, and the club''s own infrastructure. A cybersecurity enthusiast focused on secure cloud practices, IAM, and teaching builders to ship projects safely.', 'Secure by design — building cloud skills the right way.', array['Cloud Security', 'IAM', 'Hands-on Labs', 'Web & Infrastructure'], 'AK', 'orange', '/team/aditya.jpg', 'https://www.linkedin.com/in/adityacyber/', '', 'adityacybersecurity@gmail.com', 2, true, 'Super Admin'),
-('Amisha', 'Marketing Head', 'B.Tech CSE', 'AI & ML', 'Owns the club''s brand, content, and outreach, turning every event into reach across LinkedIn, Instagram, and WhatsApp. Drives community growth and makes sure the right students hear about us.', 'Telling the story of every builder.', array['Brand & Content', 'Social Growth', 'Outreach', 'Design'], 'AM', 'orange', '/team/amisha.jpg', 'https://www.linkedin.com/in/amisha-amisha-644aa3390/', '', 'amisha@sbg-rimt.com', 3, true, 'Editor'),
+('Amisha', 'Marketing Head', 'B.Tech CSE', 'AI & ML', 'Owns the club''s brand, content, and outreach, turning every event into reach across LinkedIn and Instagram. Drives community growth and makes sure the right students hear about us.', 'Telling the story of every builder.', array['Brand & Content', 'Social Growth', 'Outreach', 'Design'], 'AM', 'orange', '/team/amisha.jpg', 'https://www.linkedin.com/in/amisha-amisha-644aa3390/', '', 'amisha@sbg-rimt.com', 3, true, 'Editor'),
 ('Amber Prashar', 'Treasurer', 'B.Tech CSE', 'AI & ML', 'Manages budgets, sponsorships, and resource planning so events run smoothly and sustainably. Keeps the club''s operations financially healthy as it scales.', 'Making sure every resource builds something.', array['Budgeting', 'Sponsorships', 'Operations', 'Resource Planning'], 'AP', 'orange', '/team/amber.jpg', 'https://www.linkedin.com/in/amber-prashar-a57b65395/', '', 'amber@sbg-rimt.com', 4, true, 'Member'),
 ('Rohan Verma', 'Director of Photography', 'B.Tech CE', 'AI & ML', 'Documents every workshop and hackathon through photography, video, and visual storytelling — building the credibility archive that shows the world what the community does.', 'Capturing the moments that become our legacy.', array['Photography', 'Videography', 'Visual Storytelling', 'Media'], 'RV', 'orange', '/team/rohan.jpg', 'https://www.linkedin.com/in/rohan-verma-5a768b3b3/', '', 'rohan@sbg-rimt.com', 5, true, 'Member'),
 ('Rinku Bhalotiya', 'Event Head', 'B.Tech CSE', 'Software Engineering', 'Plans and runs workshops, bootcamps, and hackathons end-to-end, bridging industry mentors and student builders. Turns ideas into well-run events that people remember.', 'From idea to packed room.', array['Event Operations', 'Hackathons', 'Logistics', 'Partnerships'], 'RB', 'orange', '/team/rinku.jpg', 'https://www.linkedin.com/in/rinku-bhalotiya-7507003b3/', '', 'rinku@sbg-rimt.com', 6, true, 'Member')
@@ -352,6 +373,10 @@ on conflict (label) do nothing;
 insert into public.site_settings (key, value)
 values
 ('meetup_url', 'https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups'),
-('whatsapp_url', 'https://chat.whatsapp.com/aws-sbg-rimt'),
 ('contact_email', 'sbg.rimt@gmail.com')
 on conflict (key) do update set value = excluded.value;
+
+-- Seed announcements
+insert into public.announcements (title, content, date, active, button_text, destination_url)
+select 'AWS Cloud Bootcamp registrations are now open.', 'Register today for our structured study track and get access to cloud sandbox environments.', 'June 22, 2025', true, 'Learn More', 'https://www.meetup.com/aws-sbg-at-rimt-university/'
+where not exists (select 1 from public.announcements);

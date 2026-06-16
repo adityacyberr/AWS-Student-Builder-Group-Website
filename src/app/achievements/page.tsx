@@ -145,7 +145,7 @@ export default function AchievementsPage() {
             setAchievements(merged);
           }
         } catch (err) {
-          console.error("Error loading achievements from Supabase:", err);
+          console.warn("Error loading achievements from Supabase:", err);
         }
       }
     }

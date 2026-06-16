@@ -34,7 +34,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
       .maybeSingle();
 
     if (profileError) {
-      console.error("Error fetching team member profile:", profileError);
+      console.warn("Error fetching team member profile:", profileError);
     }
 
     if (profile) {
@@ -62,7 +62,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
       email: user.email || "",
     };
   } catch (err) {
-    console.error("Failed to get current user profile:", err);
+    console.warn("Failed to get current user profile:", err);
     return null;
   }
 }

@@ -198,7 +198,7 @@ RLS is enforced at the **database level** — even if someone finds the admin UI
 | `achievements` | Community milestones timeline |
 | `announcements` | Homepage banner messages with active toggle |
 | `homepage_stats` | Hero section counter values (Members, Bootcamps, etc.) |
-| `site_settings` | Global config (Meetup URL, WhatsApp link, contact email) |
+| `site_settings` | Global config (Meetup URL, contact email) |
 
 ---
 

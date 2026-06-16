@@ -65,10 +65,10 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-900 bg-slate-950/85 backdrop-blur-md transition-all">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1440px] px-4 md:px-6">
         <div className="flex h-[74px] items-center justify-between">
-          {/* Left Side Group: Brand + Partners + Nav */}
-          <div className="flex items-center flex-shrink-0">
+          {/* Left Side Group: Brand + Partners */}
+          <div className="flex flex-1 items-center justify-start min-w-max flex-shrink-0">
             {/* Logo link */}
             <Link href="/" className="flex items-center gap-3 select-none group py-1 flex-shrink-0">
               <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden group-hover:border-orange-500/40 transition-colors duration-300 flex-shrink-0">
@@ -94,59 +94,56 @@ export default function Header() {
             </Link>
 
             {/* Compact Institutional Partners Section (Exactly 24px spacing via ml-6) */}
-            <div className="hidden lg:flex items-center gap-2 select-none flex-shrink-0 ml-6">
-              {/* Subtle gray text */}
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                Supported by
-              </span>
+            <div className="hidden xl:flex items-center gap-2 select-none flex-shrink-0 ml-6">
 
-              {/* Tiny inline logos without separate containers (max height 28px, using h-[18px]) */}
-              <div className="flex items-center gap-1 flex-shrink-0">
+
+              {/* Institutional logos sized to match the main logo height (h-10 / 40px) */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <img
                   src="/brand/rimt-university.jpg"
                   alt="RIMT"
-                  className="h-[18px] w-auto object-contain rounded bg-white px-0.5"
+                  className="h-10 w-auto object-contain rounded bg-white px-1"
                   title="RIMT University"
                 />
                 <img
                   src="/brand/dri-lab.png"
                   alt="DRI"
-                  className="h-[18px] w-auto object-contain rounded bg-white px-0.5"
+                  className="h-10 w-auto object-contain rounded bg-white px-1"
                   title="DRI – Department of Research, Innovation and Incubation"
                 />
               </div>
 
               {/* Supported Text Line with Orange Dot Separator */}
-              <span className="text-[10.5px] font-semibold text-slate-400 whitespace-nowrap flex items-center gap-1.5">
+              <span className="hidden 2xl:flex text-[10.5px] font-semibold text-slate-400 whitespace-nowrap items-center gap-1.5">
                 RIMT University
                 <span className="h-1 w-1 rounded-full bg-orange-500 inline-block" />
                 DRI
               </span>
             </div>
-
-            {/* Desktop Nav (Exactly 40px spacing via ml-10, Gap 24px via gap-6) */}
-            <nav className="hidden lg:flex items-center gap-6 flex-shrink-0 ml-10">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                      isActive
-                        ? "text-orange-500 bg-slate-900/60 font-semibold"
-                        : "text-slate-300 hover:text-orange-400 hover:bg-slate-900/40"
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </nav>
           </div>
 
+          {/* Desktop Nav centered horizontally */}
+          <nav className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 2xl:gap-6 flex-shrink-0 lg:ml-12">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                    isActive
+                      ? "text-orange-500 bg-slate-900/60 font-semibold"
+                      : "text-slate-300 hover:text-orange-400 hover:bg-slate-900/40"
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+
           {/* Right Menu CTA / User Profile Widget */}
-          <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
+          <div className="hidden lg:flex flex-1 items-center justify-end gap-4 min-w-max flex-shrink-0">
             {profile ? (
               /* Authenticated User Dropdown */
               <div className="relative" ref={dropdownRef}>

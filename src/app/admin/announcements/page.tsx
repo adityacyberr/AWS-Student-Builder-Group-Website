@@ -22,6 +22,8 @@ interface Announcement {
   content: string;
   date: string;
   active: boolean;
+  button_text?: string | null;
+  destination_url?: string | null;
   created_at?: string;
 }
 
@@ -41,6 +43,8 @@ export default function ConsoleAnnouncements() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [content, setContent] = useState("");
+  const [buttonText, setButtonText] = useState("");
+  const [destinationUrl, setDestinationUrl] = useState("");
   const [active, setActive] = useState(true);
 
   const showToast = (message: string, type: ToastType = "success") => {
@@ -70,10 +74,12 @@ export default function ConsoleAnnouncements() {
           const defaultAnns: Announcement[] = [
             {
               id: "1",
-              title: "AWS Cloud Practitioner Relaunch",
-              content: "Join our core study tracks starting July 2026. Weekly bootcamps and sandbox endpoints will be provided.",
-              date: "June 25, 2026",
+              title: "AWS Cloud Bootcamp registrations are now open.",
+              content: "Register today for our structured study track and get access to cloud sandbox environments.",
+              date: "June 22, 2025",
               active: true,
+              button_text: "Learn More",
+              destination_url: "https://www.meetup.com/aws-sbg-at-rimt-university/",
             },
           ];
           localStorage.setItem("aws_sbg_announcements", JSON.stringify(defaultAnns));
@@ -93,6 +99,8 @@ export default function ConsoleAnnouncements() {
     setTitle("");
     setDate(new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
     setContent("");
+    setButtonText("");
+    setDestinationUrl("");
     setActive(true);
     setIsModalOpen(true);
   };
@@ -102,6 +110,8 @@ export default function ConsoleAnnouncements() {
     setTitle(ann.title);
     setDate(ann.date);
     setContent(ann.content);
+    setButtonText(ann.button_text || "");
+    setDestinationUrl(ann.destination_url || "");
     setActive(ann.active);
     setIsModalOpen(true);
   };
@@ -115,7 +125,14 @@ export default function ConsoleAnnouncements() {
     setSaving(true);
 
     try {
-      const payload = { title, content, date, active };
+      const payload = {
+        title,
+        content,
+        date,
+        active,
+        button_text: buttonText.trim() || null,
+        destination_url: destinationUrl.trim() || null,
+      };
 
       if (isSupabaseConfigured && supabase) {
         if (editingId) {
@@ -404,6 +421,33 @@ export default function ConsoleAnnouncements() {
                   placeholder="Provide details about what, when, and how students can participate..."
                   className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white placeholder-zinc-700 focus:outline-none focus:border-amber-500/50 resize-none"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5 col-span-2 md:col-span-1">
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                    Button Text (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={buttonText}
+                    onChange={(e) => setButtonText(e.target.value)}
+                    placeholder="e.g. Learn More"
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white placeholder-zinc-700 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
+                <div className="space-y-1.5 col-span-2 md:col-span-1">
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                    Destination URL (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    value={destinationUrl}
+                    onChange={(e) => setDestinationUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white placeholder-zinc-700 focus:outline-none focus:border-amber-500/50"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-3 py-2">

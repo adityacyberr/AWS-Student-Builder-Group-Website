@@ -23,14 +23,12 @@ export default function Footer() {
   if (isAuthOrPanelPath) return null;
 
   const [meetupUrl, setMeetupUrl] = useState("https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups");
-  const [whatsappUrl, setWhatsappUrl] = useState("https://chat.whatsapp.com/aws-sbg-rimt");
   const [contactEmail, setContactEmail] = useState("sbg.rimt@gmail.com");
 
   useEffect(() => {
     async function loadSettings() {
       if (typeof window !== "undefined") {
         setMeetupUrl(localStorage.getItem("aws_sbg_meetup_url") || "https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups");
-        setWhatsappUrl(localStorage.getItem("aws_sbg_whatsapp_url") || "https://chat.whatsapp.com/aws-sbg-rimt");
         setContactEmail(localStorage.getItem("aws_sbg_contact_email") || "sbg.rimt@gmail.com");
       }
 
@@ -42,12 +40,11 @@ export default function Footer() {
           if (!error && data) {
             (data as DBSettingRow[]).forEach((row) => {
               if (row.key === "meetup_url" && row.value) setMeetupUrl(row.value);
-              if (row.key === "whatsapp_url" && row.value) setWhatsappUrl(row.value);
               if (row.key === "contact_email" && row.value) setContactEmail(row.value);
             });
           }
         } catch (err) {
-          console.error("Error loading settings in footer:", err);
+          console.warn("Error loading settings in footer:", err);
         }
       }
     }
@@ -153,17 +150,6 @@ export default function Footer() {
                     className="text-orange-400/90 hover:text-orange-400 hover:underline font-mono"
                   >
                     Follow @aws.rimt
-                  </a>
-                </span>
-                <span>
-                  WhatsApp:{" "}
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-orange-400/90 hover:text-orange-400 hover:underline font-mono"
-                  >
-                    Join Group
                   </a>
                 </span>
                 <span>
