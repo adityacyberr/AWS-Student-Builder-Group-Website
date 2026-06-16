@@ -393,10 +393,10 @@ export default function GalleryPage() {
         {/* HERO SECTION                                      */}
         {/* ================================================= */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center w-full">
-          {/* Left Column: Heading */}
+          {/* Left Column: Heading (approx 40% width on desktop) */}
           <motion.div 
             variants={scrollItemVariants}
-            className="lg:col-span-7 text-left space-y-4"
+            className="lg:col-span-5 text-left space-y-4"
           >
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block">
               {"// MOMENTS CAPTURED"}
@@ -410,10 +410,10 @@ export default function GalleryPage() {
             </p>
           </motion.div>
 
-          {/* Right Column: Memories Orbit Showcase */}
+          {/* Right Column: Memories Orbit Showcase (approx 60% width on desktop) */}
           <motion.div 
             variants={scrollItemVariants}
-            className="lg:col-span-5 flex justify-center w-full"
+            className="lg:col-span-7 flex justify-center w-full"
           >
             <MemoriesOrbitShowcase />
           </motion.div>

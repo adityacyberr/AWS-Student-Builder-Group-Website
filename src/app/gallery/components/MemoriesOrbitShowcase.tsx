@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, Image as ImageIcon, Calendar, Heart, Trophy } from "lucide-react";
+import { Camera, Users, Calendar, Heart, Image as ImageIcon, Trophy } from "lucide-react";
 
 interface CardData {
   id: string;
@@ -10,7 +10,6 @@ interface CardData {
   title: string;
   subtitle: string;
   initialRotation: number;
-  // Position style values for desktop layout
   top?: string;
   bottom?: string;
   left?: string;
@@ -20,7 +19,7 @@ interface CardData {
 }
 
 const CARDS_DATA: CardData[] = [
-  // CENTER CARD (Large Featured Card)
+  // CENTER CARD (Large Featured Card - 1.3x larger)
   {
     id: "center",
     imageSrc: "/gallery/welcome-team.jpg",
@@ -36,7 +35,7 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/launch-agenda.jpg",
     title: "Workshop",
     subtitle: "Hands-on Learning",
-    initialRotation: -8,
+    initialRotation: -12,
     top: "6%",
     left: "2%",
     floatDelay: 0.8,
@@ -47,7 +46,7 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/welcome-team.jpg",
     title: "Meetup",
     subtitle: "Growing Together",
-    initialRotation: 7,
+    initialRotation: 10,
     top: "3%",
     right: "2%",
     floatDelay: 1.4,
@@ -58,7 +57,7 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/launch-agenda.jpg",
     title: "Tech Talk",
     subtitle: "Expert Sessions",
-    initialRotation: -10,
+    initialRotation: -8,
     bottom: "6%",
     left: "4%",
     floatDelay: 2.2,
@@ -69,7 +68,7 @@ const CARDS_DATA: CardData[] = [
     imageSrc: "/gallery/welcome-team.jpg",
     title: "Achievements",
     subtitle: "Milestones Earned",
-    initialRotation: 8,
+    initialRotation: 14,
     bottom: "3%",
     right: "4%",
     floatDelay: 2.8,
@@ -80,7 +79,7 @@ export function MemoriesOrbitShowcase() {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
 
   return (
-    <div className="relative w-full h-[420px] sm:h-[480px] md:h-[550px] lg:h-[600px] max-w-[650px] flex items-center justify-center overflow-hidden z-10 select-none">
+    <div className="relative w-full h-[450px] sm:h-[500px] md:h-[580px] lg:h-[650px] max-w-[680px] flex items-center justify-center overflow-hidden z-10 select-none">
       
       {/* 1. Ambient Background Particles */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
@@ -98,7 +97,7 @@ export function MemoriesOrbitShowcase() {
         ].map((pt, i) => (
           <motion.div
             key={i}
-            className="absolute h-1 w-1 bg-orange-500/35 rounded-full"
+            className="absolute h-1.5 w-1.5 bg-orange-500/30 rounded-full"
             style={{
               top: pt.top,
               left: pt.left,
@@ -119,9 +118,9 @@ export function MemoriesOrbitShowcase() {
 
       {/* 2. Soft radial orange glow behind the constellation */}
       <div
-        className="absolute w-[350px] h-[350px] sm:w-[480px] sm:h-[480px] rounded-full pointer-events-none z-0"
+        className="absolute w-[350px] h-[350px] sm:w-[500px] sm:h-[500px] rounded-full pointer-events-none z-0"
         style={{
-          background: "radial-gradient(circle, rgba(255,140,0,0.28), rgba(255,140,0,0.12), transparent 70%)"
+          background: "radial-gradient(circle, rgba(255,153,0,0.18), rgba(255,153,0,0.08), transparent 70%)"
         }}
       />
 
@@ -130,100 +129,183 @@ export function MemoriesOrbitShowcase() {
       {/* ================================================= */}
       <div className="hidden sm:flex relative w-full h-full items-center justify-center pointer-events-none">
         
-        {/* Tilted elliptical space for orbit paths and icons */}
+        {/* Glow filter definition for orbits & moving particles */}
+        <svg className="absolute w-0 h-0">
+          <defs>
+            <filter id="orbit-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+        </svg>
+
+        {/* Orbit Path 1 (Inner Ellipse) - Tilted -15deg */}
         <div 
-          className="absolute w-[600px] h-[600px] flex items-center justify-center pointer-events-none z-10"
-          style={{ transform: "rotate(-12deg) scaleY(0.48)" }}
+          className="absolute w-[600px] h-[600px] flex items-center justify-center pointer-events-none z-10 animate-[spin_60s_linear_infinite]"
+          style={{ transform: "rotate(-15deg) scaleY(0.48)" }}
         >
-          {/* Concentric dashed SVG Orbit paths */}
-          <svg className="absolute w-full h-full overflow-visible opacity-30" viewBox="0 0 600 600">
-            {/* Orbit Circle 1 (Inner - R=140px) */}
-            <circle
-              cx="300"
-              cy="300"
-              r="140"
+          <svg className="absolute w-full h-full overflow-visible" viewBox="0 0 600 600">
+            <path
+              id="orbit-path-1"
+              d="M 160,300 A 140,67 0 1,0 440,300 A 140,67 0 1,0 160,300"
               fill="none"
-              stroke="rgba(249, 115, 22, 0.55)"
-              strokeWidth="1.2"
-              strokeDasharray="4 8"
+              stroke="rgba(255,153,0,0.45)"
+              strokeWidth="1.5"
+              strokeDasharray="4 10"
+              filter="url(#orbit-glow)"
             />
-            {/* Orbit Circle 2 (Mid - R=210px) */}
-            <circle
-              cx="300"
-              cy="300"
-              r="210"
-              fill="none"
-              stroke="rgba(249, 115, 22, 0.35)"
-              strokeWidth="1"
-              strokeDasharray="6 12"
-            />
-            {/* Orbit Circle 3 (Outer - R=270px) */}
-            <circle
-              cx="300"
-              cy="300"
-              r="270"
-              fill="none"
-              stroke="rgba(249, 115, 22, 0.22)"
-              strokeWidth="0.8"
-              strokeDasharray="8 16"
-            />
+            {/* Glowing moving particle */}
+            <circle r="4" fill="#FF9900" filter="url(#orbit-glow)">
+              <animateMotion dur="8s" repeatCount="indefinite">
+                <mpath href="#orbit-path-1" />
+              </animateMotion>
+            </circle>
           </svg>
 
-          {/* 3. Orbiting Icons travelling along paths (using CSS keyframes) */}
-          
-          {/* Inner Orbit (60s speed) - Camera */}
-          <div className="absolute w-[280px] h-[280px] rounded-full flex items-center justify-center animate-[spin_60s_linear_infinite]">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/30 bg-slate-950/95 shadow-[0_0_12px_rgba(249,115,22,0.35)] flex items-center justify-center animate-pulse pointer-events-auto">
-              <div className="animate-[spin-reverse_60s_linear_infinite] flex items-center justify-center">
-                <Camera className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+          {/* Camera (Top) */}
+          <div className="absolute w-[280px] h-[280px] rounded-full flex items-center justify-center">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/85 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center pointer-events-auto transition-transform hover:scale-105 duration-350">
+              <div className="animate-[spin-reverse-inner-1_60s_linear_infinite] flex items-center justify-center w-full h-full">
+                <div className="animate-[pulse-icon_4s_ease-in-out_infinite] flex items-center justify-center">
+                  <Camera className="h-5 w-5 text-orange-400 filter drop-shadow-[0_0_4px_rgba(255,153,0,0.5)]" />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Inner Orbit (60s speed) - Heart (180deg offset position) */}
-          <div className="absolute w-[280px] h-[280px] rounded-full flex items-center justify-center animate-[spin_60s_linear_infinite]" style={{ transform: "rotate(180deg)" }}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/30 bg-slate-950/95 shadow-[0_0_12px_rgba(249,115,22,0.35)] flex items-center justify-center animate-pulse pointer-events-auto" style={{ animationDelay: "1s" }}>
-              <div className="animate-[spin-reverse_60s_linear_infinite] flex items-center justify-center">
-                <Heart className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
+          {/* Heart (Bottom - 180deg offset) */}
+          <div className="absolute w-[280px] h-[280px] rounded-full flex items-center justify-center" style={{ transform: "rotate(180deg)" }}>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/85 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center pointer-events-auto transition-transform hover:scale-105 duration-350">
+              <div className="animate-[spin-reverse-inner-2_60s_linear_infinite] flex items-center justify-center w-full h-full">
+                <div className="animate-[pulse-icon_4s_ease-in-out_infinite] flex items-center justify-center" style={{ animationDelay: "1s" }}>
+                  <Heart className="h-5 w-5 text-orange-400 filter drop-shadow-[0_0_4px_rgba(255,153,0,0.5)]" />
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Mid Orbit (90s speed) - ImageIcon */}
-          <div className="absolute w-[420px] h-[420px] rounded-full flex items-center justify-center animate-[spin_90s_linear_infinite]">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/25 bg-slate-950/95 shadow-[0_0_10px_rgba(249,115,22,0.3)] flex items-center justify-center animate-pulse pointer-events-auto" style={{ animationDelay: "0.5s" }}>
-              <div className="animate-[spin-reverse_90s_linear_infinite] flex items-center justify-center">
-                <ImageIcon className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
-              </div>
-            </div>
-          </div>
-
-          {/* Mid Orbit (90s speed) - Calendar (180deg offset position) */}
-          <div className="absolute w-[420px] h-[420px] rounded-full flex items-center justify-center animate-[spin_90s_linear_infinite]" style={{ transform: "rotate(180deg)" }}>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/25 bg-slate-950/95 shadow-[0_0_10px_rgba(249,115,22,0.3)] flex items-center justify-center animate-pulse pointer-events-auto" style={{ animationDelay: "1.5s" }}>
-              <div className="animate-[spin-reverse_90s_linear_infinite] flex items-center justify-center">
-                <Calendar className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
-              </div>
-            </div>
-          </div>
-
-          {/* Outer Orbit (120s speed) - Trophy */}
-          <div className="absolute w-[540px] h-[540px] rounded-full flex items-center justify-center animate-[spin_120s_linear_infinite]">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full border border-orange-500/20 bg-slate-950/95 shadow-[0_0_8px_rgba(249,115,22,0.25)] flex items-center justify-center animate-pulse pointer-events-auto" style={{ animationDelay: "2s" }}>
-              <div className="animate-[spin-reverse_120s_linear_infinite] flex items-center justify-center">
-                <Trophy className="h-4 w-4 text-orange-400 filter drop-shadow-[0_0_4px_rgba(249,115,22,0.5)]" />
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        {/* 4. Floating Photo Cards Layer */}
+        {/* Orbit Path 2 (Mid-1 Ellipse) - Tilted 18deg */}
+        <div 
+          className="absolute w-[600px] h-[600px] flex items-center justify-center pointer-events-none z-10 animate-[spin_90s_linear_infinite]"
+          style={{ transform: "rotate(18deg) scaleY(0.48)" }}
+        >
+          <svg className="absolute w-full h-full overflow-visible" viewBox="0 0 600 600">
+            <path
+              id="orbit-path-2"
+              d="M 100,300 A 200,96 0 1,0 500,300 A 200,96 0 1,0 100,300"
+              fill="none"
+              stroke="rgba(255,153,0,0.45)"
+              strokeWidth="1.5"
+              strokeDasharray="4 10"
+              filter="url(#orbit-glow)"
+            />
+            <circle r="4" fill="#FF9900" filter="url(#orbit-glow)">
+              <animateMotion dur="12s" repeatCount="indefinite">
+                <mpath href="#orbit-path-2" />
+              </animateMotion>
+            </circle>
+          </svg>
+
+          {/* Gallery Icon (Top) */}
+          <div className="absolute w-[400px] h-[400px] rounded-full flex items-center justify-center">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/85 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center pointer-events-auto transition-transform hover:scale-105 duration-350">
+              <div className="animate-[spin-reverse-mid-1_90s_linear_infinite] flex items-center justify-center w-full h-full">
+                <div className="animate-[pulse-icon_4s_ease-in-out_infinite] flex items-center justify-center" style={{ animationDelay: "0.5s" }}>
+                  <ImageIcon className="h-5 w-5 text-orange-400 filter drop-shadow-[0_0_4px_rgba(255,153,0,0.5)]" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* People Icon (Bottom - 180deg offset) */}
+          <div className="absolute w-[400px] h-[400px] rounded-full flex items-center justify-center" style={{ transform: "rotate(180deg)" }}>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/85 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center pointer-events-auto transition-transform hover:scale-105 duration-350">
+              <div className="animate-[spin-reverse-mid-2_90s_linear_infinite] flex items-center justify-center w-full h-full">
+                <div className="animate-[pulse-icon_4s_ease-in-out_infinite] flex items-center justify-center" style={{ animationDelay: "1.5s" }}>
+                  <Users className="h-5 w-5 text-orange-400 filter drop-shadow-[0_0_4px_rgba(255,153,0,0.5)]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Orbit Path 3 (Mid-2 Ellipse) - Tilted -35deg */}
+        <div 
+          className="absolute w-[600px] h-[600px] flex items-center justify-center pointer-events-none z-10 animate-[spin_120s_linear_infinite]"
+          style={{ transform: "rotate(-35deg) scaleY(0.48)" }}
+        >
+          <svg className="absolute w-full h-full overflow-visible" viewBox="0 0 600 600">
+            <path
+              id="orbit-path-3"
+              d="M 40,300 A 260,124 0 1,0 560,300 A 260,124 0 1,0 40,300"
+              fill="none"
+              stroke="rgba(255,153,0,0.45)"
+              strokeWidth="1.5"
+              strokeDasharray="4 10"
+              filter="url(#orbit-glow)"
+            />
+            <circle r="4" fill="#FF9900" filter="url(#orbit-glow)">
+              <animateMotion dur="15s" repeatCount="indefinite">
+                <mpath href="#orbit-path-3" />
+              </animateMotion>
+            </circle>
+          </svg>
+
+          {/* Calendar Icon (Top) */}
+          <div className="absolute w-[520px] h-[520px] rounded-full flex items-center justify-center">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/85 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center pointer-events-auto transition-transform hover:scale-105 duration-350">
+              <div className="animate-[spin-reverse-outer-1_120s_linear_infinite] flex items-center justify-center w-full h-full">
+                <div className="animate-[pulse-icon_4s_ease-in-out_infinite] flex items-center justify-center" style={{ animationDelay: "2s" }}>
+                  <Calendar className="h-5 w-5 text-orange-400 filter drop-shadow-[0_0_4px_rgba(255,153,0,0.5)]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Orbit Path 4 (Outer Ellipse) - Tilted 42deg */}
+        <div 
+          className="absolute w-[600px] h-[600px] flex items-center justify-center pointer-events-none z-10 animate-[spin_150s_linear_infinite]"
+          style={{ transform: "rotate(42deg) scaleY(0.48)" }}
+        >
+          <svg className="absolute w-full h-full overflow-visible" viewBox="0 0 600 600">
+            <path
+              id="orbit-path-4"
+              d="M -10,300 A 310,148 0 1,0 610,300 A 310,148 0 1,0 -10,300"
+              fill="none"
+              stroke="rgba(255,153,0,0.45)"
+              strokeWidth="1.5"
+              strokeDasharray="4 10"
+              filter="url(#orbit-glow)"
+            />
+            <circle r="4" fill="#FF9900" filter="url(#orbit-glow)">
+              <animateMotion dur="18s" repeatCount="indefinite">
+                <mpath href="#orbit-path-4" />
+              </animateMotion>
+            </circle>
+          </svg>
+
+          {/* Trophy Icon (Top) */}
+          <div className="absolute w-[620px] h-[620px] rounded-full flex items-center justify-center">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/85 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center pointer-events-auto transition-transform hover:scale-105 duration-350">
+              <div className="animate-[spin-reverse-outer-2_150s_linear_infinite] flex items-center justify-center w-full h-full">
+                <div className="animate-[pulse-icon_4s_ease-in-out_infinite] flex items-center justify-center" style={{ animationDelay: "2.5s" }}>
+                  <Trophy className="h-5 w-5 text-orange-400 filter drop-shadow-[0_0_4px_rgba(255,153,0,0.5)]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Interactive Floating Photo Cards */}
         {CARDS_DATA.map((card) => {
           const isHovered = hoveredCardId === card.id;
-          const cardZIndex = isHovered ? 50 : card.isCenter ? 30 : 20;
+          const cardZIndex = isHovered ? 50 : card.isCenter ? 30 : 25;
 
-          // Position style properties
           const positionStyle = card.isCenter
             ? {
                 top: "calc(50% - 120px)",
@@ -239,9 +321,9 @@ export function MemoriesOrbitShowcase() {
           return (
             <motion.div
               key={card.id}
-              className={`absolute select-none pointer-events-auto group cursor-pointer overflow-hidden border border-orange-500/20 bg-slate-950/80 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-all duration-300 ${
+              className={`absolute select-none pointer-events-auto group cursor-pointer overflow-hidden border border-orange-500/20 bg-[#0f0f19]/85 shadow-[0_10px_40px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-all duration-300 ${
                 card.isCenter
-                  ? "w-[360px] h-[240px] rounded-[24px]"
+                  ? "w-[360px] h-[240px] rounded-[20px]"
                   : "w-[230px] h-[155px] rounded-[20px]"
               }`}
               style={{
@@ -251,27 +333,27 @@ export function MemoriesOrbitShowcase() {
               initial={{ opacity: 0, scale: card.isCenter ? 0.95 : 0.85 }}
               animate={{
                 opacity: 1,
-                scale: isHovered ? 1.05 : card.isCenter ? 1.0 : 0.86,
-                y: isHovered ? -6 : [0, -10, 0],
+                scale: isHovered ? 1.04 : card.isCenter ? 1.0 : 0.88,
+                y: isHovered ? -8 : [0, -8, 0],
                 rotate: isHovered
                   ? card.initialRotation
-                  : [card.initialRotation, card.initialRotation + 1.5, card.initialRotation],
-                borderColor: isHovered ? "rgba(249, 115, 22, 0.65)" : "rgba(249, 115, 22, 0.2)",
+                  : [card.initialRotation, card.initialRotation + 1.2, card.initialRotation],
+                borderColor: isHovered ? "rgba(255, 153, 0, 0.65)" : "rgba(255, 153, 0, 0.2)",
                 boxShadow: isHovered
-                  ? "0 0 35px rgba(249, 115, 22, 0.45), 0 16px 48px rgba(0,0,0,0.65)"
+                  ? "0 0 35px rgba(255, 153, 0, 0.45), 0 16px 48px rgba(0,0,0,0.65)"
                   : card.isCenter
-                  ? "0 0 25px rgba(249, 115, 22, 0.15), 0 8px 32px rgba(0,0,0,0.5)"
-                  : "0 0 12px rgba(249, 115, 22, 0.05), 0 8px 32px rgba(0,0,0,0.5)",
+                  ? "0 0 25px rgba(255, 153, 0, 0.15), 0 10px 40px rgba(0,0,0,0.45)"
+                  : "0 0 12px rgba(255, 153, 0, 0.05), 0 10px 40px rgba(0,0,0,0.45)",
               }}
               transition={{
                 scale: { duration: 0.3, ease: "easeOut" },
-                rotate: isHovered ? { duration: 0.3 } : { duration: 5, repeat: Infinity, ease: "easeInOut" },
+                rotate: isHovered ? { duration: 0.3 } : { duration: 5.5, repeat: Infinity, ease: "easeInOut" },
                 borderColor: { duration: 0.3 },
                 boxShadow: { duration: 0.3 },
                 y: isHovered
                   ? { duration: 0.3 }
                   : {
-                      duration: card.isCenter ? 6.0 : 4.5,
+                      duration: card.isCenter ? 6.5 : 4.8,
                       repeat: Infinity,
                       ease: "easeInOut",
                       delay: card.floatDelay,
@@ -280,7 +362,7 @@ export function MemoriesOrbitShowcase() {
               onMouseEnter={() => setHoveredCardId(card.id)}
               onMouseLeave={() => setHoveredCardId(null)}
             >
-              {/* Glossy reflection effect */}
+              {/* Glossy reflection sheen overlay */}
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
 
               {/* Card Image */}
@@ -291,16 +373,16 @@ export function MemoriesOrbitShowcase() {
                   className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-104"
                   loading="lazy"
                 />
-                {/* Frosted dark overlay at bottom for labels */}
-                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950 via-slate-950/45 to-transparent opacity-95 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Bottom Overlay Gradient */}
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-95 transition-opacity duration-300" />
               </div>
 
-              {/* Card Title/Subtitle Overlay */}
+              {/* Card Labels */}
               <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 z-20 text-left">
-                <h4 className={`font-black text-white leading-tight ${card.isCenter ? 'text-base sm:text-lg md:text-xl' : 'text-sm'}`}>
+                <h4 className={`font-bold text-white leading-tight ${card.isCenter ? 'text-base sm:text-lg md:text-xl' : 'text-sm'}`}>
                   {card.title}
                 </h4>
-                <p className={`font-bold text-orange-400 mt-0.5 tracking-wide ${card.isCenter ? 'text-sm' : 'text-xs'}`}>
+                <p className={`font-bold text-[#FF9900] mt-0.5 tracking-wide ${card.isCenter ? 'text-sm' : 'text-xs'}`}>
                   {card.subtitle}
                 </p>
               </div>
@@ -310,13 +392,13 @@ export function MemoriesOrbitShowcase() {
       </div>
 
       {/* ================================================= */}
-      {/* MOBILE VIEW: SWIPEABLE CAROUSEL (Orbits disabled) */}
+      {/* MOBILE VIEW: VERTICAL STACKED CARDS (Orbits hidden) */}
       {/* ================================================= */}
-      <div className="flex sm:hidden overflow-x-auto gap-4 px-6 py-8 w-full snap-x snap-mandatory scrollbar-none scroll-smooth">
+      <div className="flex sm:hidden flex-col gap-6 w-full items-center px-4 py-8">
         {CARDS_DATA.map((card) => (
           <div
             key={card.id}
-            className="flex-shrink-0 w-[260px] h-[185px] snap-center rounded-2xl overflow-hidden border border-orange-500/25 bg-slate-950 shadow-[0_8px_32px_rgba(0,0,0,0.5)] relative"
+            className="w-[280px] h-[190px] rounded-2xl overflow-hidden border border-orange-500/25 bg-[#0f0f19]/85 shadow-[0_10px_40px_rgba(0,0,0,0.45)] relative"
           >
             {/* Card Image */}
             <div className="w-full h-full relative overflow-hidden bg-slate-900">
@@ -326,15 +408,15 @@ export function MemoriesOrbitShowcase() {
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-90" />
+              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-90" />
             </div>
 
             {/* Title Overlay */}
             <div className="absolute bottom-0 inset-x-0 p-4 text-left">
-              <h4 className="font-black text-white text-sm">
+              <h4 className="font-bold text-white text-sm">
                 {card.title}
               </h4>
-              <p className="font-bold text-orange-400 mt-0.5 text-xs">
+              <p className="font-bold text-[#FF9900] mt-0.5 text-xs">
                 {card.subtitle}
               </p>
             </div>
@@ -342,15 +424,39 @@ export function MemoriesOrbitShowcase() {
         ))}
       </div>
 
-      {/* CSS KEYFRAME SPIN ANIMATIONS */}
+      {/* CSS KEYFRAME SPIN & PULSE ANIMATIONS */}
       <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        @keyframes spin-reverse {
-          from { transform: rotate(360deg) scaleY(2.08) rotate(12deg); }
-          to { transform: rotate(0deg) scaleY(2.08) rotate(12deg); }
+        @keyframes spin-reverse-inner-1 {
+          from { transform: rotate(360deg) scaleY(2.08) rotate(15deg); }
+          to { transform: rotate(0deg) scaleY(2.08) rotate(15deg); }
+        }
+        @keyframes spin-reverse-inner-2 {
+          from { transform: rotate(180deg) scaleY(2.08) rotate(15deg); }
+          to { transform: rotate(-180deg) scaleY(2.08) rotate(15deg); }
+        }
+        @keyframes spin-reverse-mid-1 {
+          from { transform: rotate(360deg) scaleY(2.08) rotate(-18deg); }
+          to { transform: rotate(0deg) scaleY(2.08) rotate(-18deg); }
+        }
+        @keyframes spin-reverse-mid-2 {
+          from { transform: rotate(180deg) scaleY(2.08) rotate(-18deg); }
+          to { transform: rotate(-180deg) scaleY(2.08) rotate(-18deg); }
+        }
+        @keyframes spin-reverse-outer-1 {
+          from { transform: rotate(360deg) scaleY(2.08) rotate(35deg); }
+          to { transform: rotate(0deg) scaleY(2.08) rotate(35deg); }
+        }
+        @keyframes spin-reverse-outer-2 {
+          from { transform: rotate(360deg) scaleY(2.08) rotate(-42deg); }
+          to { transform: rotate(0deg) scaleY(2.08) rotate(-42deg); }
+        }
+        @keyframes pulse-icon {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
         }
       `}</style>
     </div>
