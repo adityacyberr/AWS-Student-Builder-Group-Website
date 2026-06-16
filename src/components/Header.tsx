@@ -66,7 +66,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-900 bg-slate-950/85 backdrop-blur-md transition-all">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-[74px] items-center justify-between">
           {/* Logo and Partner Logos */}
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-3 select-none group py-1 flex-shrink-0">
@@ -95,56 +95,52 @@ export default function Header() {
             {/* Vertical Divider */}
             <div className="h-6 w-px bg-slate-850 flex-shrink-0" />
 
-            {/* Institutional Logos Container */}
-            <div className="flex items-center gap-2 select-none flex-shrink-0">
-              {/* DRI Logo & Label */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center h-8.5 w-11 bg-white p-1 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
-                  <img
-                    src="/brand/dri-lab.png"
-                    alt="DRI – Department of Research, Innovation and Incubation"
-                    className="max-h-full max-w-full object-contain"
-                    title="DRI – Department of Research, Innovation and Incubation"
-                  />
-                </div>
-                <div className="hidden 2xl:flex flex-col leading-none text-left">
-                  <span className="text-[9.5px] font-black text-white uppercase tracking-wider">DRI</span>
-                  <span className="text-[7.5px] font-semibold text-slate-400 mt-0.5 max-w-[130px] leading-tight">
-                    Dept. of Research, Innovation & Incubation
-                  </span>
-                </div>
-              </div>
-
-              {/* Vertical line between logos */}
-              <div className="h-5 w-px bg-slate-800" />
-
-              {/* RIMT University Logo & Label */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center h-8.5 w-11 bg-white p-1 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
+            {/* Compact Institutional Partners Section (Max ~220px) */}
+            <div className="flex items-center gap-2 select-none flex-shrink-0 max-w-[220px]">
+              {/* RIMT Badging */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-center h-8 w-11 bg-white p-1 rounded-[8px] border border-slate-200 shadow-sm flex-shrink-0">
                   <img
                     src="/brand/rimt-university.jpg"
-                    alt="RIMT University"
+                    alt="RIMT"
                     className="max-h-full max-w-full object-contain"
                     title="RIMT University"
                   />
                 </div>
-                <div className="hidden 2xl:flex flex-col leading-none text-left">
-                  <span className="text-[9.5px] font-black text-white uppercase tracking-wider">RIMT University</span>
-                  <span className="text-[7.5px] font-semibold text-slate-400 mt-0.5">Academic Partner</span>
+                <span className="hidden xl:inline text-[11px] font-semibold text-slate-300 uppercase tracking-wider whitespace-nowrap">
+                  RIMT
+                </span>
+              </div>
+
+              {/* Minimal Divider */}
+              <div className="h-4 w-px bg-slate-800 flex-shrink-0" />
+
+              {/* DRI Badging */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-center h-8 w-11 bg-white p-1 rounded-[8px] border border-slate-200 shadow-sm flex-shrink-0">
+                  <img
+                    src="/brand/dri-lab.png"
+                    alt="DRI"
+                    className="max-h-full max-w-full object-contain"
+                    title="DRI – Department of Research, Innovation and Incubation"
+                  />
                 </div>
+                <span className="hidden xl:inline text-[11px] font-semibold text-slate-300 uppercase tracking-wider whitespace-nowrap">
+                  DRI
+                </span>
               </div>
             </div>
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex space-x-1 lg:space-x-2">
+          <nav className="hidden md:flex items-center gap-5 xl:gap-6 flex-shrink-0">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  className={`px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                     isActive
                       ? "text-orange-500 bg-slate-900/60 font-semibold"
                       : "text-slate-300 hover:text-orange-400 hover:bg-slate-900/40"
@@ -233,7 +229,7 @@ export default function Header() {
               href="https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white font-medium text-sm hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/10 hover:shadow-orange-500/20 active:scale-95 transition-all select-none"
+              className="inline-flex items-center justify-center gap-1.5 h-[42px] px-5 rounded-[12px] bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold text-sm hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/10 hover:shadow-orange-500/20 active:scale-95 transition-all select-none flex-shrink-0"
             >
               Join Our Club
               <ArrowRight className="h-4 w-4" />
