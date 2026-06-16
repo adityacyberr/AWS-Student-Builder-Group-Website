@@ -68,7 +68,7 @@ export default function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-[74px] items-center justify-between">
           {/* Logo and Partner Logos */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Link href="/" className="flex items-center gap-3 select-none group py-1 flex-shrink-0">
               <div className="flex items-center justify-center h-10 px-2.5 rounded-lg bg-[#0e1726] border border-blue-500/30 shadow-inner relative overflow-hidden group-hover:border-orange-500/40 transition-colors duration-300 flex-shrink-0">
                 {/* Subtle orange accent line */}
@@ -96,9 +96,9 @@ export default function Header() {
             <div className="h-6 w-px bg-slate-850 flex-shrink-0" />
 
             {/* Compact Institutional Partners Section (Max ~220px) */}
-            <div className="flex items-center gap-2 select-none flex-shrink-0 max-w-[220px]">
+            <div className="hidden md:flex items-center gap-2 select-none flex-shrink-0 max-w-[220px]">
               {/* RIMT Badging */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <div className="flex items-center justify-center h-8 w-11 bg-white p-1 rounded-[8px] border border-slate-200 shadow-sm flex-shrink-0">
                   <img
                     src="/brand/rimt-university.jpg"
@@ -107,7 +107,7 @@ export default function Header() {
                     title="RIMT University"
                   />
                 </div>
-                <span className="hidden xl:inline text-[11px] font-semibold text-slate-300 uppercase tracking-wider whitespace-nowrap">
+                <span className="hidden 2xl:inline text-[11px] font-semibold text-slate-300 uppercase tracking-wider whitespace-nowrap">
                   RIMT
                 </span>
               </div>
@@ -116,7 +116,7 @@ export default function Header() {
               <div className="h-4 w-px bg-slate-800 flex-shrink-0" />
 
               {/* DRI Badging */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <div className="flex items-center justify-center h-8 w-11 bg-white p-1 rounded-[8px] border border-slate-200 shadow-sm flex-shrink-0">
                   <img
                     src="/brand/dri-lab.png"
@@ -125,7 +125,7 @@ export default function Header() {
                     title="DRI – Department of Research, Innovation and Incubation"
                   />
                 </div>
-                <span className="hidden xl:inline text-[11px] font-semibold text-slate-300 uppercase tracking-wider whitespace-nowrap">
+                <span className="hidden 2xl:inline text-[11px] font-semibold text-slate-300 uppercase tracking-wider whitespace-nowrap">
                   DRI
                 </span>
               </div>
