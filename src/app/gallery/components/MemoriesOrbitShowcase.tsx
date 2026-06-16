@@ -186,28 +186,32 @@ export function MemoriesOrbitShowcase() {
             ))}
 
             {/* Camera Icon -> top-center (≈ 25% of path, begin="-10s") */}
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <Camera className="h-5 w-5 text-[#FF9900]" />
+            <g className="pointer-events-auto">
+              <foreignObject width="60" height="60" x="-30" y="-30">
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
+                    <Camera className="h-5 w-5 text-[#FF9900]" />
+                  </div>
                 </div>
-              </div>
+              </foreignObject>
               <animateMotion dur="40s" repeatCount="indefinite" begin="-10s">
                 <mpath href="#orbit-path-inner" />
               </animateMotion>
-            </foreignObject>
+            </g>
 
             {/* Heart Icon -> bottom-center (≈ 75% of path, begin="-30s") */}
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <Heart className="h-5 w-5 text-[#FF9900]" />
+            <g className="pointer-events-auto">
+              <foreignObject width="60" height="60" x="-30" y="-30">
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
+                    <Heart className="h-5 w-5 text-[#FF9900]" />
+                  </div>
                 </div>
-              </div>
+              </foreignObject>
               <animateMotion dur="40s" repeatCount="indefinite" begin="-30s">
                 <mpath href="#orbit-path-inner" />
               </animateMotion>
-            </foreignObject>
+            </g>
           </g>
 
           {/* ------------------------------------------------- */}
@@ -234,28 +238,32 @@ export function MemoriesOrbitShowcase() {
             ))}
 
             {/* Community/Users Icon -> left side (≈ 0% of path, begin="0s") */}
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <Users className="h-5 w-5 text-[#FF9900]" />
+            <g className="pointer-events-auto">
+              <foreignObject width="60" height="60" x="-30" y="-30">
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
+                    <Users className="h-5 w-5 text-[#FF9900]" />
+                  </div>
                 </div>
-              </div>
+              </foreignObject>
               <animateMotion dur="60s" repeatCount="indefinite" begin="0s">
                 <mpath href="#orbit-path-middle" />
               </animateMotion>
-            </foreignObject>
+            </g>
 
             {/* Trophy Icon -> right side (≈ 35% of path, begin="-21s") */}
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <Trophy className="h-5 w-5 text-[#FF9900]" />
+            <g className="pointer-events-auto">
+              <foreignObject width="60" height="60" x="-30" y="-30">
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
+                    <Trophy className="h-5 w-5 text-[#FF9900]" />
+                  </div>
                 </div>
-              </div>
+              </foreignObject>
               <animateMotion dur="60s" repeatCount="indefinite" begin="-21s">
                 <mpath href="#orbit-path-middle" />
               </animateMotion>
-            </foreignObject>
+            </g>
           </g>
 
           {/* ------------------------------------------------- */}
@@ -282,16 +290,18 @@ export function MemoriesOrbitShowcase() {
             ))}
 
             {/* Gallery Icon -> right-lower side (≈ 60% of path, begin="-48s") */}
-            <foreignObject width="60" height="60" x="-30" y="-30" className="pointer-events-auto">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
-                  <ImageIcon className="h-5 w-5 text-[#FF9900]" />
+            <g className="pointer-events-auto">
+              <foreignObject width="60" height="60" x="-30" y="-30">
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-[52px] h-[52px] rounded-full border border-orange-500/45 bg-[#0f0f19]/88 shadow-[0_0_15px_rgba(255,153,0,0.35),0_0_35px_rgba(255,153,0,0.18)] backdrop-blur-[12px] flex items-center justify-center animate-[pulse-icon_4s_ease-in-out_infinite]">
+                    <ImageIcon className="h-5 w-5 text-[#FF9900]" />
+                  </div>
                 </div>
-              </div>
+              </foreignObject>
               <animateMotion dur="80s" repeatCount="indefinite" begin="-48s">
                 <mpath href="#orbit-path-outer" />
               </animateMotion>
-            </foreignObject>
+            </g>
           </g>
         </svg>
 
