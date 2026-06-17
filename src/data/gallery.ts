@@ -14,27 +14,27 @@ export interface GalleryItem {
 
 export const GALLERY_ITEMS: GalleryItem[] = [
   {
-    id: "launch-celebration",
-    title: "University Recognition",
+    id: "launch-agenda",
+    title: "AWS SBG Launch Celebration",
     date: "12 Apr 2026",
-    description: "Official launch event of the AWS Student Builder Group chapter under DRI, featuring leader welcome sessions and goals roadmap.",
-    category: "celebrations",
-    imageUrl: "/gallery/welcome-team.jpg",
-    participants: 60,
-    location: "DRI Sandbox",
-    photoCount: 31,
-    instagramUrl: "https://www.instagram.com/p/C5rF6Y_rA_x/"
+    description: "Official launch of the AWS Student Builder Group at RIMT University, introducing our student core committee and cloud roadmap.",
+    category: "events",
+    imageUrl: "/gallery/launch-agenda.jpg",
+    participants: 80,
+    location: "DRI Sandbox, RIMT University",
+    photoCount: 12,
+    instagramUrl: "https://www.instagram.com/aws.rimt/"
   },
   {
-    id: "security-workshop",
-    title: "Cloud Security Workshop",
+    id: "welcome-team",
+    title: "University Welcomes AWS SBG",
     date: "05 Apr 2026",
-    description: "Advanced deep-dive on securing cloud assets, managing IAM users, defining security groups, and VPC firewall rules.",
-    category: "celebrations",
-    imageUrl: "/gallery/launch-agenda.jpg",
-    participants: 75,
-    location: "Lab-3, RIMT University",
-    photoCount: 20,
-    instagramUrl: "https://www.instagram.com/p/C5rF6Y_rA_x/"
+    description: "RIMT University officially welcomes the AWS Student Builder Group chapter, fostering student collaborations and cloud innovations.",
+    category: "community",
+    imageUrl: "/gallery/welcome-team.jpg",
+    participants: 120,
+    location: "Auditorium, RIMT University",
+    photoCount: 15,
+    instagramUrl: "https://www.instagram.com/aws.rimt/"
   }
 ];

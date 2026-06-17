@@ -266,7 +266,7 @@ export default function GalleryPage() {
           }));
           setItems(storedItems);
         } else {
-          setItems([]);
+          setItems(GALLERY_ITEMS);
         }
 
         const localEvents = getLocalEvents();

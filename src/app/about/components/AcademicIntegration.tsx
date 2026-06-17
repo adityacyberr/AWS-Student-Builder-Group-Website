@@ -52,47 +52,7 @@ export function AcademicIntegration({ reducedMotion }: { reducedMotion: boolean 
         </p>
       </div>
 
-      {/* Main CSE Sponsor Highlight */}
-      <motion.div
-        variants={itemVariants}
-        whileHover={reducedMotion ? {} : { scale: 1.005 }}
-        className="group relative overflow-hidden rounded-2xl border border-slate-800/80 bg-[#070b19]/65 p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] mb-12"
-        style={{
-          boxShadow: "0 0 0 1px rgba(255,140,0,0.02), 0 8px 30px rgba(0,0,0,0.3)",
-        }}
-      >
-        {/* Subtle orange mesh highlight on hover */}
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-orange-500/[0.01] rounded-full blur-3xl pointer-events-none group-hover:bg-orange-500/[0.02] transition-colors duration-500" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/25 to-transparent pointer-events-none" />
 
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-4 max-w-3xl">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">
-                <ShieldCheck className="h-6 w-6 animate-pulse" />
-              </div>
-              <h4 className="text-xl font-bold text-white tracking-tight">
-                Department of Computer Science & Engineering (CSE)
-              </h4>
-            </div>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              We operate officially under the guidance of the **Department of CSE** at RIMT University. 
-              This official endorsement allows our student community to secure exclusive access to technical seminars, 
-              institutional classrooms, academic credits mapping, and sponsored sandbox platforms.
-            </p>
-          </div>
-          
-          <div className="pt-2 md:pt-0 self-stretch md:self-auto flex items-center">
-            <Link 
-              href="/team" 
-              className="w-full md:w-auto text-center justify-center inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-orange-500/30 bg-orange-500/5 text-xs text-orange-400 font-bold uppercase tracking-wider hover:bg-orange-500/15 hover:text-white hover:border-orange-500/50 transition-all duration-300"
-            >
-              Meet Our Leadership
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </motion.div>
 
       {/* 3 Pillars of Academic Integration */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
