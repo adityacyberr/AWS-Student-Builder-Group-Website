@@ -15,10 +15,10 @@ interface OrbitConfig {
 }
 
 const ORBIT_CONFIGS: Record<number, OrbitConfig> = {
-  1: { id: 1, radiusPct: 17.5, speed: 20, direction: "cw" },    // Orbit 1: 18s-22s duration
-  2: { id: 2, radiusPct: 26.25, speed: 30, direction: "ccw" },   // Orbit 2: 28s-35s duration
-  3: { id: 3, radiusPct: 35.0, speed: 34, direction: "cw" },     // Orbit 3: 28s-35s duration
-  4: { id: 4, radiusPct: 43.75, speed: 45, direction: "ccw" },  // Orbit 4: 40s-50s duration
+  1: { id: 1, radiusPct: 23.0, speed: 20, direction: "cw" },    // Orbit 1: expanded to avoid overlap
+  2: { id: 2, radiusPct: 34.0, speed: 30, direction: "ccw" },   // Orbit 2: expanded
+  3: { id: 3, radiusPct: 45.0, speed: 34, direction: "cw" },     // Orbit 3: expanded
+  4: { id: 4, radiusPct: 56.0, speed: 45, direction: "ccw" },  // Orbit 4: expanded
 };
 
 // Robust slug mapper to identify members independently of UUID databases
@@ -227,7 +227,7 @@ export function OrbitingPlanets({
     
     const avatarX = centerX + r * Math.cos(currentAngleRad);
     const avatarY = centerY + r * Math.sin(currentAngleRad);
-    const avatarSize = Math.max(34, Math.round(58 * scaleFactor));
+    const avatarSize = Math.max(34, Math.round(80 * scaleFactor));
 
     // Get container viewport bounding rect
     const containerRect = containerRef.current?.getBoundingClientRect();
@@ -581,7 +581,7 @@ export function OrbitingPlanets({
                 }
 
                 // Node size calculations
-                const avatarSize = Math.max(34, Math.round(58 * scaleFactor));
+                const avatarSize = Math.max(34, Math.round(80 * scaleFactor));
                 
                 // Polar rectangular offsets inside rotating coordinate system
                 const x = r * Math.cos(angleOffset);
@@ -653,9 +653,9 @@ export function OrbitingPlanets({
                             <div
                               className="absolute rounded-full pointer-events-none transition-all duration-300"
                               style={{
-                                inset: -6 * scaleFactor,
-                                background: `radial-gradient(circle, rgba(255,140,0,${isHovered ? 0.6 : 0.08}) 0%, transparent 70%)`,
-                                filter: `blur(${isHovered ? 12 * scaleFactor : 4 * scaleFactor}px)`,
+                                inset: -9 * scaleFactor,
+                                background: `radial-gradient(circle, rgba(255,140,0,${isHovered ? 0.65 : 0.09}) 0%, transparent 70%)`,
+                                filter: `blur(${isHovered ? 16 * scaleFactor : 6 * scaleFactor}px)`,
                               }}
                             />
 
@@ -663,9 +663,9 @@ export function OrbitingPlanets({
                             <div
                               className="absolute rounded-full pointer-events-none transition-all duration-300"
                               style={{
-                                inset: -2.5 * scaleFactor,
-                                border: `${1.5 * scaleFactor}px solid rgba(255,140,0,${isHovered ? 1.0 : 0.2})`,
-                                boxShadow: isHovered ? "0 0 16px rgba(255,140,0,0.5)" : "none",
+                                inset: -3.5 * scaleFactor,
+                                border: `${2.0 * scaleFactor}px solid rgba(255,140,0,${isHovered ? 1.0 : 0.25})`,
+                                boxShadow: isHovered ? "0 0 24px rgba(255,140,0,0.65)" : "none",
                               }}
                             />
 
@@ -696,24 +696,24 @@ export function OrbitingPlanets({
                               )}
                             </div>
 
-                            {/* Upright Name/Role simple tag */}
+                             {/* Upright Name/Role simple tag */}
                             <div
-                              className="absolute text-center whitespace-nowrap pointer-events-none transition-all duration-300"
+                               className="absolute text-center whitespace-nowrap pointer-events-none transition-all duration-300"
                               style={{
-                                top: "105%",
+                                top: "108%",
                                 opacity: isHovered ? 1.0 : 0.65,
                                 transform: `scale(${isHovered ? 1.05 : 1})`,
                               }}
                             >
                               <p
                                 className="font-black text-white leading-none font-sans"
-                                style={{ fontSize: `${Math.max(9, Math.round(10.5 * scaleFactor))}px` }}
+                                style={{ fontSize: `${Math.max(12.0, Math.round(14.5 * scaleFactor))}px` }}
                               >
                                 {member.name.split(" ")[0]}
                               </p>
                               <p
                                 className="text-orange-400 font-bold uppercase mt-0.5 tracking-wider"
-                                style={{ fontSize: `${Math.max(6.5, Math.round(7.5 * scaleFactor))}px` }}
+                                style={{ fontSize: `${Math.max(9.0, Math.round(10.5 * scaleFactor))}px` }}
                               >
                                 {member.role.split(" ")[0]}
                               </p>

@@ -27,6 +27,9 @@ interface AuthContextType {
   updateProfileDetails: (details: Partial<UserProfile> & { branch?: string; specialization?: string; bio?: string; quote?: string; focus_areas?: string[]; linkedin?: string; github?: string }) => Promise<{ success: boolean; error: string | null }>;
   activeSessions: ActiveSession[];
   refreshActiveSessions: () => Promise<void>;
+  isSuperAdmin: boolean;
+  isOwner: (item: any) => boolean;
+  canManage: (item: any) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -268,6 +271,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const isSuperAdmin = profile?.portal_role === "Super Admin";
+
+  const isOwner = (item: any) => {
+    if (!profile) return false;
+    if (!item) return false;
+
+    // Check if the item has an owner_user_id matching the authenticated user's id
+    const itemOwnerId = item.owner_user_id || item.ownerUserId;
+    if (user && itemOwnerId && itemOwnerId === user.id) {
+      return true;
+    }
+
+    // Check if matching current user's profile owner_user_id
+    if (profile.owner_user_id && itemOwnerId && itemOwnerId === profile.owner_user_id) {
+      return true;
+    }
+
+    // Special case: if we are comparing a team member profile directly
+    // (a member should be the owner of their own team member record)
+    if (item.email && profile.email && item.email.toLowerCase() === profile.email.toLowerCase()) {
+      return true;
+    }
+    if (item.id && profile.id && item.id === profile.id) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const canManage = (item: any) => {
+    if (isSuperAdmin) return true;
+    return isOwner(item);
+  };
+
   const isProtectedRoute = pathname?.startsWith("/admin") && pathname !== "/admin/login";
 
   return (
@@ -284,6 +321,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateProfileDetails,
         activeSessions,
         refreshActiveSessions,
+        isSuperAdmin,
+        isOwner,
+        canManage,
       }}
     >
       {loading && isProtectedRoute ? (

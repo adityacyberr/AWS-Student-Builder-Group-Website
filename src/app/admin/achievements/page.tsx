@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
-import { getLocalAchievements, saveLocalAchievements, AchievementItem } from "@/data/achievements";
+import { useAuth } from "@/context/AuthContext";
+import { getAchievements, saveAchievement, deleteAchievement, CMSAchievement } from "@/lib/cms";
 import {
   Trophy,
   Plus,
@@ -15,15 +16,17 @@ import {
   Save,
   Award,
   Calendar,
+  Shield,
 } from "lucide-react";
 
 export default function ConsoleAchievements() {
+  const { user, isSuperAdmin, canManage } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // Lists and filters
-  const [achievements, setAchievements] = useState<AchievementItem[]>([]);
+  const [achievements, setAchievements] = useState<CMSAchievement[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [badgeFilter, setBadgeFilter] = useState<string>("all");
 
@@ -34,7 +37,7 @@ export default function ConsoleAchievements() {
   // Form Fields
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
-  const [badgeType, setBadgeType] = useState<AchievementItem["badgeType"]>("milestone");
+  const [badgeType, setBadgeType] = useState<CMSAchievement["badgeType"]>("milestone");
   const [description, setDescription] = useState("");
 
   const showToast = (message: string, type: ToastType = "success") => {
@@ -49,24 +52,8 @@ export default function ConsoleAchievements() {
   const loadAchievements = async () => {
     setLoading(true);
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from("achievements")
-          .select("*")
-          .order("date", { ascending: false });
-        if (error) throw error;
-
-        const mapped = (data || []).map((d: any) => ({
-          id: d.id,
-          title: d.title,
-          date: d.date,
-          description: d.description,
-          badgeType: d.badge_type,
-        }));
-        setAchievements(mapped);
-      } else {
-        setAchievements(getLocalAchievements());
-      }
+      const data = await getAchievements();
+      setAchievements(data);
     } catch (err: any) {
       console.error(err);
       showToast("Error loading achievements", "error");
@@ -84,7 +71,7 @@ export default function ConsoleAchievements() {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (ach: AchievementItem) => {
+  const handleOpenEdit = (ach: CMSAchievement) => {
     setEditingId(ach.id);
     setTitle(ach.title);
     setDate(ach.date);
@@ -102,45 +89,15 @@ export default function ConsoleAchievements() {
     setSaving(true);
 
     try {
-      const payload: Omit<AchievementItem, "id"> = {
+      const payload: Omit<CMSAchievement, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
         title,
         date,
         description,
         badgeType,
       };
 
-      if (isSupabaseConfigured && supabase) {
-        const dbRow = {
-          title: payload.title,
-          date: payload.date,
-          description: payload.description,
-          badge_type: payload.badgeType,
-        };
-
-        if (editingId) {
-          const { error } = await supabase.from("achievements").update(dbRow).eq("id", editingId);
-          if (error) throw error;
-          showToast("Milestone updated.");
-        } else {
-          const { error } = await supabase.from("achievements").insert([dbRow]);
-          if (error) throw error;
-          showToast("Milestone created.");
-        }
-      } else {
-        // Sandbox mode
-        let list = [...achievements];
-        if (editingId) {
-          list = list.map((ach) => (ach.id === editingId ? { ...ach, ...payload } : ach));
-          showToast("Milestone updated in sandbox.");
-        } else {
-          list.unshift({
-            id: Math.random().toString(36).substring(2, 9),
-            ...payload,
-          });
-          showToast("Milestone created in sandbox.");
-        }
-        saveLocalAchievements(list);
-      }
+      await saveAchievement(editingId, payload, user?.id || null);
+      showToast(editingId ? "Milestone updated successfully!" : "Milestone created successfully!");
       setIsModalOpen(false);
       await loadAchievements();
     } catch (err: any) {
@@ -154,15 +111,8 @@ export default function ConsoleAchievements() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this achievement milestone?")) return;
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.from("achievements").delete().eq("id", id);
-        if (error) throw error;
-        showToast("Deleted milestone.");
-      } else {
-        const list = achievements.filter((ach) => ach.id !== id);
-        saveLocalAchievements(list);
-        showToast("Deleted milestone from sandbox.");
-      }
+      await deleteAchievement(id);
+      showToast("Deleted milestone.");
       await loadAchievements();
     } catch (err: any) {
       console.error(err);
@@ -181,7 +131,7 @@ export default function ConsoleAchievements() {
     return matchesSearch && matchesType;
   });
 
-  const getBadgeBadgeStyle = (type: AchievementItem["badgeType"]) => {
+  const getBadgeBadgeStyle = (type: CMSAchievement["badgeType"]) => {
     switch (type) {
       case "charter":
         return "bg-amber-500/10 text-amber-400 border border-amber-500/10";
@@ -281,18 +231,29 @@ export default function ConsoleAchievements() {
               </div>
 
               <div className="flex gap-1.5 flex-shrink-0">
-                <button
-                  onClick={() => handleOpenEdit(ach)}
-                  className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors"
-                >
-                  <Edit2 className="h-3 w-3" />
-                </button>
-                <button
-                  onClick={() => handleDelete(ach.id)}
-                  className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-455 hover:text-rose-400 transition-colors"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
+                {canManage(ach) ? (
+                  <>
+                    <button
+                      onClick={() => handleOpenEdit(ach)}
+                      className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors"
+                      title="Edit Achievement"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(ach.id)}
+                      className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-455 hover:text-rose-400 transition-colors"
+                      title="Delete Achievement"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-[10px] text-zinc-600 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
+                    <Shield className="h-3 w-3 text-zinc-650" />
+                    Read-only
+                  </span>
+                )}
               </div>
             </div>
           ))}
@@ -351,7 +312,7 @@ export default function ConsoleAchievements() {
                 </label>
                 <select
                   value={badgeType}
-                  onChange={(e) => setBadgeType(e.target.value as AchievementItem["badgeType"])}
+                  onChange={(e) => setBadgeType(e.target.value as CMSAchievement["badgeType"])}
                   className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
                 >
                   <option value="charter" className="bg-zinc-950">Charter Badge (Core Foundations)</option>

@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
-import { getLocalEvents, saveLocalEvents, EventItem } from "@/data/events";
+import { useAuth } from "@/context/AuthContext";
+import { getEvents, saveEvent, deleteEvent, CMSEvent } from "@/lib/cms";
 import {
   Calendar,
   Plus,
@@ -18,15 +19,17 @@ import {
   MapPin,
   Clock,
   ExternalLink,
+  Shield,
 } from "lucide-react";
 
 export default function ConsoleEvents() {
+  const { user, isSuperAdmin, isOwner, canManage } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // Lists and filters
-  const [events, setEvents] = useState<EventItem[]>([]);
+  const [events, setEvents] = useState<CMSEvent[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "upcoming" | "completed">("all");
 
@@ -39,13 +42,13 @@ export default function ConsoleEvents() {
   const [slug, setSlug] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [type, setType] = useState<EventItem["type"]>("Workshop");
+  const [type, setType] = useState<CMSEvent["type"]>("Workshop");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [longDescription, setLongDescription] = useState("");
   const [registrationLink, setRegistrationLink] = useState("");
-  const [status, setStatus] = useState<EventItem["status"]>("upcoming");
-  const [coverPlaceholderColor, setCoverPlaceholderColor] = useState<EventItem["coverPlaceholderColor"]>("orange");
+  const [status, setStatus] = useState<CMSEvent["status"]>("upcoming");
+  const [coverPlaceholderColor, setCoverPlaceholderColor] = useState<CMSEvent["coverPlaceholderColor"]>("orange");
   const [imageUrl, setImageUrl] = useState("");
 
   const showToast = (message: string, type: ToastType = "success") => {
@@ -60,32 +63,8 @@ export default function ConsoleEvents() {
   const loadEvents = async () => {
     setLoading(true);
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from("events")
-          .select("*")
-          .order("date", { ascending: false });
-        if (error) throw error;
-
-        const mapped = (data || []).map((d: any) => ({
-          id: d.id,
-          title: d.title,
-          slug: d.slug,
-          date: d.date,
-          time: d.time || "",
-          type: d.type,
-          location: d.location,
-          description: d.description,
-          longDescription: d.long_description || "",
-          registrationLink: d.registration_link,
-          status: d.status,
-          coverPlaceholderColor: d.cover_placeholder_color,
-          imageUrl: d.image_url || "",
-        }));
-        setEvents(mapped);
-      } else {
-        setEvents(getLocalEvents());
-      }
+      const data = await getEvents();
+      setEvents(data);
     } catch (err: any) {
       console.error(err);
       showToast("Error loading events", "error");
@@ -123,7 +102,7 @@ export default function ConsoleEvents() {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (ev: EventItem) => {
+  const handleOpenEdit = (ev: CMSEvent) => {
     setEditingId(ev.id);
     setTitle(ev.title);
     setSlug(ev.slug);
@@ -149,7 +128,7 @@ export default function ConsoleEvents() {
     setSaving(true);
 
     try {
-      const payload: Omit<EventItem, "id"> = {
+      const payload: Omit<CMSEvent, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
         title,
         slug,
         date,
@@ -164,46 +143,8 @@ export default function ConsoleEvents() {
         imageUrl,
       };
 
-      if (isSupabaseConfigured && supabase) {
-        const dbRow = {
-          title: payload.title,
-          slug: payload.slug,
-          date: payload.date,
-          time: payload.time,
-          type: payload.type,
-          location: payload.location,
-          description: payload.description,
-          long_description: payload.longDescription,
-          registration_link: payload.registrationLink,
-          status: payload.status,
-          cover_placeholder_color: payload.coverPlaceholderColor,
-          image_url: payload.imageUrl || null,
-        };
-
-        if (editingId) {
-          const { error } = await supabase.from("events").update(dbRow).eq("id", editingId);
-          if (error) throw error;
-          showToast("Event updated successfully!");
-        } else {
-          const { error } = await supabase.from("events").insert([dbRow]);
-          if (error) throw error;
-          showToast("Event created successfully!");
-        }
-      } else {
-        // Sandbox mode
-        let list = [...events];
-        if (editingId) {
-          list = list.map((ev) => (ev.id === editingId ? { ...ev, ...payload } : ev));
-          showToast("Event updated in sandbox.");
-        } else {
-          list.unshift({
-            id: Math.random().toString(36).substring(2, 9),
-            ...payload,
-          });
-          showToast("Event created in sandbox.");
-        }
-        saveLocalEvents(list);
-      }
+      await saveEvent(editingId, payload, user?.id || null);
+      showToast(editingId ? "Event updated successfully!" : "Event created successfully!");
       setIsModalOpen(false);
       await loadEvents();
     } catch (err: any) {
@@ -218,15 +159,8 @@ export default function ConsoleEvents() {
     if (!confirm("Are you sure you want to delete this event? This action is irreversible.")) return;
 
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.from("events").delete().eq("id", id);
-        if (error) throw error;
-        showToast("Event deleted from Supabase.");
-      } else {
-        const list = events.filter((ev) => ev.id !== id);
-        saveLocalEvents(list);
-        showToast("Event deleted from sandbox.");
-      }
+      await deleteEvent(id);
+      showToast("Event deleted successfully.");
       await loadEvents();
     } catch (err: any) {
       console.error(err);
@@ -367,18 +301,29 @@ export default function ConsoleEvents() {
                 </a>
 
                 <div className="flex gap-1">
-                  <button
-                    onClick={() => handleOpenEdit(ev)}
-                    className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors"
-                  >
-                    <Edit2 className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(ev.id)}
-                    className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-450 hover:text-rose-455 transition-colors"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
+                  {canManage(ev) ? (
+                    <>
+                      <button
+                        onClick={() => handleOpenEdit(ev)}
+                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors"
+                        title="Edit Event"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(ev.id)}
+                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-450 hover:text-rose-455 transition-colors"
+                        title="Delete Event"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-[10px] text-zinc-600 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
+                      <Shield className="h-3 w-3 text-zinc-650" />
+                      Read-only
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -464,7 +409,7 @@ export default function ConsoleEvents() {
                   </label>
                   <select
                     value={type}
-                    onChange={(e) => setType(e.target.value as EventItem["type"])}
+                    onChange={(e) => setType(e.target.value as CMSEvent["type"])}
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
                   >
                     {["Workshop", "Bootcamp", "Meetup", "Webinar", "Hackathon", "Celebration", "Community Event", "Other"].map((t) => (
@@ -507,7 +452,7 @@ export default function ConsoleEvents() {
                   </label>
                   <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as EventItem["status"])}
+                    onChange={(e) => setStatus(e.target.value as CMSEvent["status"])}
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
                   >
                     <option value="upcoming" className="bg-zinc-950">Upcoming</option>
@@ -521,7 +466,7 @@ export default function ConsoleEvents() {
                   </label>
                   <select
                     value={coverPlaceholderColor}
-                    onChange={(e) => setCoverPlaceholderColor(e.target.value as EventItem["coverPlaceholderColor"])}
+                    onChange={(e) => setCoverPlaceholderColor(e.target.value as CMSEvent["coverPlaceholderColor"])}
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
                   >
                     {["orange", "blue", "purple", "mint", "amber"].map((c) => (

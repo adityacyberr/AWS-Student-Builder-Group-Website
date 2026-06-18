@@ -13,7 +13,7 @@ import { OrbitingPlanets } from "./components/OrbitingPlanets";
 import { SolarProfileConsole } from "./components/SolarProfileConsole";
 import { BottomSheet } from "./components/BottomSheet";
 import { OrbitStrengthSection } from "./components/OrbitStrengthSection";
-import { PrinciplesSection } from "./components/PrinciplesSection";
+import { BuilderJourneySection } from "./components/BuilderJourneySection";
 import { SolarCTA } from "./components/SolarCTA";
 
 interface DBTeamMemberRow {
@@ -373,13 +373,13 @@ export default function TeamPage() {
         </motion.div>
 
         {/* ====================================================== */}
-        {/* OUR PRINCIPLES                                          */}
+        {/* OUR BUILDER JOURNEY                                     */}
         {/* ====================================================== */}
         <motion.div
           variants={scrollItemVariants}
           className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8"
         >
-          <PrinciplesSection reducedMotion={reducedMotion} />
+          <BuilderJourneySection reducedMotion={reducedMotion} />
         </motion.div>
 
         {/* ====================================================== */}

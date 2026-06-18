@@ -380,3 +380,140 @@ on conflict (key) do update set value = excluded.value;
 insert into public.announcements (title, content, date, active, button_text, destination_url)
 select 'AWS Cloud Bootcamp registrations are now open.', 'Register today for our structured study track and get access to cloud sandbox environments.', 'June 22, 2025', true, 'Learn More', 'https://www.meetup.com/aws-sbg-at-rimt-university/'
 where not exists (select 1 from public.announcements);
+
+-- ============================================================
+-- 8. RBAC AND OWNERSHIP MIGRATIONS (idempotent)
+-- ============================================================
+
+-- Add owner_user_id, created_by, updated_by to team_members
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'team_members' and column_name = 'owner_user_id') then
+    alter table public.team_members add column owner_user_id uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'team_members' and column_name = 'created_by') then
+    alter table public.team_members add column created_by uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'team_members' and column_name = 'updated_by') then
+    alter table public.team_members add column updated_by uuid references auth.users(id) on delete set null;
+  end if;
+end $$;
+
+-- Add owner_user_id, created_by, updated_by to events
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'owner_user_id') then
+    alter table public.events add column owner_user_id uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'created_by') then
+    alter table public.events add column created_by uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'events' and column_name = 'updated_by') then
+    alter table public.events add column updated_by uuid references auth.users(id) on delete set null;
+  end if;
+end $$;
+
+-- Add owner_user_id, created_by, updated_by to gallery_images
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'gallery_images' and column_name = 'owner_user_id') then
+    alter table public.gallery_images add column owner_user_id uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'gallery_images' and column_name = 'created_by') then
+    alter table public.gallery_images add column created_by uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'gallery_images' and column_name = 'updated_by') then
+    alter table public.gallery_images add column updated_by uuid references auth.users(id) on delete set null;
+  end if;
+end $$;
+
+-- Add owner_user_id, created_by, updated_by to achievements
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'achievements' and column_name = 'owner_user_id') then
+    alter table public.achievements add column owner_user_id uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'achievements' and column_name = 'created_by') then
+    alter table public.achievements add column created_by uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'achievements' and column_name = 'updated_by') then
+    alter table public.achievements add column updated_by uuid references auth.users(id) on delete set null;
+  end if;
+end $$;
+
+-- Add owner_user_id, created_by, updated_by to announcements
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'announcements' and column_name = 'owner_user_id') then
+    alter table public.announcements add column owner_user_id uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'announcements' and column_name = 'created_by') then
+    alter table public.announcements add column created_by uuid references auth.users(id) on delete set null;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'announcements' and column_name = 'updated_by') then
+    alter table public.announcements add column updated_by uuid references auth.users(id) on delete set null;
+  end if;
+end $$;
+
+-- Update RLS policies to check for owner_user_id and Super Admin role
+
+-- Events Update/Delete Policies
+drop policy if exists "Allow admin write events" on public.events;
+create policy "Allow super admins and owners to manage events" on public.events
+  for all to authenticated
+  using (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  )
+  with check (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  );
+
+-- Team Members Update/Delete Policies
+drop policy if exists "Allow admin write team_members" on public.team_members;
+create policy "Allow super admins and owners to manage profiles" on public.team_members
+  for all to authenticated
+  using (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  )
+  with check (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  );
+
+-- Gallery Images Update/Delete Policies
+drop policy if exists "Allow admin write gallery_images" on public.gallery_images;
+create policy "Allow super admins and owners to manage gallery" on public.gallery_images
+  for all to authenticated
+  using (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  )
+  with check (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  );
+
+-- Achievements Update/Delete Policies
+drop policy if exists "Allow admin write achievements" on public.achievements;
+create policy "Allow super admins and owners to manage achievements" on public.achievements
+  for all to authenticated
+  using (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  )
+  with check (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  );
+
+-- Announcements Update/Delete Policies
+drop policy if exists "Allow admin write announcements" on public.announcements;
+create policy "Allow super admins and owners to manage announcements" on public.announcements
+  for all to authenticated
+  using (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  )
+  with check (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  );
+

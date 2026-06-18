@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
+import { useAuth } from "@/context/AuthContext";
+import { getAnnouncements, saveAnnouncement, deleteAnnouncement, CMSAnnouncement } from "@/lib/cms";
 import {
   Megaphone,
   Plus,
@@ -14,6 +16,7 @@ import {
   Save,
   CheckCircle,
   AlertCircle,
+  Shield,
 } from "lucide-react";
 
 interface Announcement {
@@ -28,12 +31,13 @@ interface Announcement {
 }
 
 export default function ConsoleAnnouncements() {
+  const { user, isSuperAdmin, canManage } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // Lists and filters
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcements, setAnnouncements] = useState<CMSAnnouncement[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
@@ -59,33 +63,8 @@ export default function ConsoleAnnouncements() {
   const loadAnnouncements = async () => {
     setLoading(true);
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from("announcements")
-          .select("*")
-          .order("created_at", { ascending: false });
-        if (error) throw error;
-        setAnnouncements((data as Announcement[]) || []);
-      } else {
-        const stored = localStorage.getItem("aws_sbg_announcements");
-        if (stored) {
-          setAnnouncements(JSON.parse(stored));
-        } else {
-          const defaultAnns: Announcement[] = [
-            {
-              id: "1",
-              title: "AWS Cloud Bootcamp registrations are now open.",
-              content: "Register today for our structured study track and get access to cloud sandbox environments.",
-              date: "June 22, 2025",
-              active: true,
-              button_text: "Learn More",
-              destination_url: "https://www.meetup.com/aws-sbg-at-rimt-university/",
-            },
-          ];
-          localStorage.setItem("aws_sbg_announcements", JSON.stringify(defaultAnns));
-          setAnnouncements(defaultAnns);
-        }
-      }
+      const data = await getAnnouncements();
+      setAnnouncements(data);
     } catch (err: any) {
       console.error(err);
       showToast("Error loading announcements", "error");
@@ -105,13 +84,13 @@ export default function ConsoleAnnouncements() {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (ann: Announcement) => {
+  const handleOpenEdit = (ann: CMSAnnouncement) => {
     setEditingId(ann.id);
     setTitle(ann.title);
     setDate(ann.date);
     setContent(ann.content);
-    setButtonText(ann.button_text || "");
-    setDestinationUrl(ann.destination_url || "");
+    setButtonText(ann.buttonText || "");
+    setDestinationUrl(ann.destinationUrl || "");
     setActive(ann.active);
     setIsModalOpen(true);
   };
@@ -125,45 +104,17 @@ export default function ConsoleAnnouncements() {
     setSaving(true);
 
     try {
-      const payload = {
+      const payload: Omit<CMSAnnouncement, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
         title,
         content,
         date,
         active,
-        button_text: buttonText.trim() || null,
-        destination_url: destinationUrl.trim() || null,
+        buttonText: buttonText.trim() || undefined,
+        destinationUrl: destinationUrl.trim() || undefined,
       };
 
-      if (isSupabaseConfigured && supabase) {
-        if (editingId) {
-          // Update
-          const { error } = await supabase
-            .from("announcements")
-            .update(payload)
-            .eq("id", editingId);
-          if (error) throw error;
-          showToast("Announcement updated successfully!");
-        } else {
-          // Create
-          const { error } = await supabase.from("announcements").insert([payload]);
-          if (error) throw error;
-          showToast("Announcement published successfully!");
-        }
-      } else {
-        // Sandbox mode
-        let list = [...announcements];
-        if (editingId) {
-          list = list.map((a) => (a.id === editingId ? { ...a, ...payload } : a));
-          showToast("Announcement updated in sandbox.");
-        } else {
-          list.unshift({
-            id: Math.random().toString(36).substring(2, 9),
-            ...payload,
-          });
-          showToast("Announcement published in sandbox.");
-        }
-        localStorage.setItem("aws_sbg_announcements", JSON.stringify(list));
-      }
+      await saveAnnouncement(editingId, payload, user?.id || null);
+      showToast(editingId ? "Announcement updated successfully!" : "Announcement published successfully!");
       setIsModalOpen(false);
       await loadAnnouncements();
     } catch (err: any) {
@@ -178,15 +129,8 @@ export default function ConsoleAnnouncements() {
     if (!confirm("Are you sure you want to delete this announcement?")) return;
 
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.from("announcements").delete().eq("id", id);
-        if (error) throw error;
-        showToast("Announcement deleted.");
-      } else {
-        const list = announcements.filter((a) => a.id !== id);
-        localStorage.setItem("aws_sbg_announcements", JSON.stringify(list));
-        showToast("Announcement deleted from sandbox.");
-      }
+      await deleteAnnouncement(id);
+      showToast("Announcement deleted.");
       await loadAnnouncements();
     } catch (err: any) {
       console.error(err);
@@ -301,20 +245,29 @@ export default function ConsoleAnnouncements() {
                   </td>
                   <td className="py-3.5 px-4 text-right">
                     <div className="flex justify-end gap-1.5">
-                      <button
-                        onClick={() => handleOpenEdit(ann)}
-                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors"
-                        title="Edit announcement"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(ann.id)}
-                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-450 hover:text-rose-400 transition-colors"
-                        title="Delete announcement"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                      {canManage(ann) ? (
+                        <>
+                          <button
+                            onClick={() => handleOpenEdit(ann)}
+                            className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors"
+                            title="Edit announcement"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(ann.id)}
+                            className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-455 hover:text-rose-455 transition-colors"
+                            title="Delete announcement"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-zinc-600 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
+                          <Shield className="h-3 w-3 text-zinc-650" />
+                          Read-only
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -343,20 +296,29 @@ export default function ConsoleAnnouncements() {
                   <p className="text-zinc-400 text-xs leading-relaxed">{ann.content}</p>
                 </div>
                 <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900/30">
-                  <button
-                    onClick={() => handleOpenEdit(ann)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded border border-zinc-850 hover:border-zinc-700 text-[10px] font-bold text-zinc-450 hover:text-white transition-all cursor-pointer"
-                  >
-                    <Edit2 className="h-3.5 w-3.5" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(ann.id)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 text-[10px] font-bold text-zinc-450 hover:text-rose-400 transition-all cursor-pointer"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>Delete</span>
-                  </button>
+                  {canManage(ann) ? (
+                    <>
+                      <button
+                        onClick={() => handleOpenEdit(ann)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded border border-zinc-855 hover:border-zinc-700 text-[10px] font-bold text-zinc-455 hover:text-white transition-all cursor-pointer"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(ann.id)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded border border-zinc-855 hover:border-zinc-755 hover:bg-rose-500/5 text-[10px] font-bold text-zinc-455 hover:text-rose-455 transition-all cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-[10px] text-zinc-600 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
+                      <Shield className="h-3 w-3 text-zinc-650" />
+                      Read-only
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

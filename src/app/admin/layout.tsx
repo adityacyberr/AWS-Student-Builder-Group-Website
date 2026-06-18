@@ -100,9 +100,17 @@ export default function ConsoleLayout({
 
 
 
+  const isSuperAdmin = profile?.portal_role === "Super Admin";
+  const allowedNavSections = navSections.map(section => {
+    if (section.title === "System" && !isSuperAdmin) {
+      return { ...section, items: [] };
+    }
+    return section;
+  }).filter(section => section.items.length > 0);
+
   // Get active section name for Breadcrumbs
   const getBreadcrumbs = () => {
-    const activeItem = navSections
+    const activeItem = allowedNavSections
       .flatMap(s => s.items)
       .find(item => pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href)));
     
@@ -146,7 +154,7 @@ export default function ConsoleLayout({
 
         {/* Navigation Items (Grouped by section) */}
         <nav className="flex-grow px-2 lg:px-3 space-y-4 overflow-y-auto pt-2">
-          {navSections.map((section) => (
+          {allowedNavSections.map((section) => (
             <div key={section.title} className="space-y-1">
               <p className="text-[9px] font-bold text-zinc-650 uppercase tracking-widest px-3.5 hidden lg:block">
                 {section.title}
@@ -295,7 +303,7 @@ export default function ConsoleLayout({
                   )}
 
                   <nav className="space-y-4">
-                    {navSections.map((section) => (
+                    {allowedNavSections.map((section) => (
                       <div key={section.title} className="space-y-1">
                         <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-wider px-2">
                           {section.title}

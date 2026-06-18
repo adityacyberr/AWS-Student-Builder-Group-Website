@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
+import { useAuth } from "@/context/AuthContext";
 import { 
   Settings as SettingsIcon, Save, Activity, Plus, Trash2, Edit2, X, Check, Loader, Info, ShieldAlert
 } from "lucide-react";
@@ -21,6 +22,7 @@ interface DBSettingRow {
 }
 
 export default function AdminSettings() {
+  const { isSuperAdmin, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<"general" | "metrics" | "seo" | "danger">("general");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -278,10 +280,24 @@ export default function AdminSettings() {
     setConfirmOpen(true);
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Loader className="h-6 w-6 animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="p-6 md:p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <div className="h-16 w-16 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full flex items-center justify-center mb-4">
+          <ShieldAlert className="h-8 w-8" />
+        </div>
+        <h2 className="text-lg font-bold text-white uppercase tracking-wider mb-2">Access Denied</h2>
+        <p className="text-sm text-zinc-400 max-w-md">
+          This profile can only be managed by its owner or an administrator.
+        </p>
       </div>
     );
   }

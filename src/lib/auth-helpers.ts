@@ -7,6 +7,7 @@ export interface UserProfile {
   portal_role: "Super Admin" | "Editor" | "Member";
   email: string;
   photo?: string;
+  owner_user_id?: string;
 }
 
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
@@ -19,6 +20,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
       portal_role: "Super Admin",
       email: "admin@sbg-rimt.com",
       photo: "",
+      owner_user_id: "sandbox-id",
     };
   }
 
@@ -29,7 +31,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
     // Fetch matching team member by email
     const { data: profile, error: profileError } = await supabase
       .from("team_members")
-      .select("id, name, role, portal_role, email, photo")
+      .select("id, name, role, portal_role, email, photo, owner_user_id")
       .eq("email", user.email)
       .maybeSingle();
 
@@ -45,6 +47,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
         portal_role: profile.portal_role as "Super Admin" | "Editor" | "Member",
         email: profile.email || user.email || "",
         photo: profile.photo || "",
+        owner_user_id: profile.owner_user_id || "",
       };
     }
 
@@ -60,6 +63,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
       role: isAdminEmail ? "Super Admin" : "External User",
       portal_role: isAdminEmail ? "Super Admin" : "Member",
       email: user.email || "",
+      owner_user_id: user.id,
     };
   } catch (err) {
     console.warn("Failed to get current user profile:", err);

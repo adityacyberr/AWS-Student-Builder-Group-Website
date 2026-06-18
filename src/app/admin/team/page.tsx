@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
-import { TEAM_MEMBERS, TeamMember } from "@/data/team";
+import { useAuth } from "@/context/AuthContext";
+import { getTeamMembers, saveTeamMember, deleteTeamMember, CMSTeamMember } from "@/lib/cms";
 import {
   Users,
   Plus,
@@ -18,6 +19,7 @@ import {
   ArrowDown,
   ShieldAlert,
   RefreshCw,
+  Shield,
 } from "lucide-react";
 
 const LinkedInIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
@@ -35,8 +37,8 @@ const GitHubIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
 // ─── Client-side dedup safety net ────────────────────────────────────────────
 // Even if DB has duplicates, the UI will never show them while the proper
 // DB cleanup is being applied.
-function deduplicateMembers(list: TeamMember[]): TeamMember[] {
-  const seen = new Map<string, TeamMember>();
+function deduplicateMembers(list: CMSTeamMember[]): CMSTeamMember[] {
+  const seen = new Map<string, CMSTeamMember>();
   for (const m of list) {
     const key = `${m.name.trim().toLowerCase()}||${m.role.trim().toLowerCase()}`;
     if (!seen.has(key)) {
@@ -47,6 +49,7 @@ function deduplicateMembers(list: TeamMember[]): TeamMember[] {
 }
 
 export default function ConsoleTeam() {
+  const { user, isSuperAdmin, canManage } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [removingDups, setRemovingDups] = useState(false);
@@ -56,7 +59,7 @@ export default function ConsoleTeam() {
   const hasFetched = useRef(false);
 
   // Lists
-  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [members, setMembers] = useState<CMSTeamMember[]>([]);
   const [dbCount, setDbCount] = useState<number | null>(null); // raw DB row count
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -78,6 +81,8 @@ export default function ConsoleTeam() {
   const [linkedin, setLinkedin] = useState("");
   const [github, setGithub] = useState("");
   const [displayOrder, setDisplayOrder] = useState(1);
+  const [portalRole, setPortalRole] = useState<"Super Admin" | "Editor" | "Member">("Member");
+  const [email, setEmail] = useState("");
 
   const showToast = (message: string, type: ToastType = "success") => {
     setToast({ message, type });
@@ -94,61 +99,10 @@ export default function ConsoleTeam() {
   const loadTeam = async () => {
     setLoading(true);
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { data, error } = await supabase
-          .from("team_members")
-          .select("*")
-          .order("display_order", { ascending: true });
-
-        if (error) throw error;
-
-        const rawCount = (data || []).length;
-        setDbCount(rawCount);
-
-        const mapped: TeamMember[] = (data || []).map((d: any) => ({
-          id: d.id,
-          name: d.name,
-          role: d.role,
-          branch: d.branch,
-          specialization: d.specialization,
-          bio: d.bio,
-          quote: d.quote,
-          focusAreas: d.focus_areas || [],
-          initials: d.initials,
-          themeColor: d.theme_color,
-          photo: d.photo || "",
-          linkedin: d.linkedin || "",
-          github: d.github || "",
-          displayOrder: d.display_order,
-        }));
-
-        // Safety-net dedup on the client side
-        const deduped = deduplicateMembers(mapped);
-
-        console.log(
-          `[Team Roster] DB rows: ${rawCount} | After dedup: ${deduped.length}`
-        );
-
-        if (rawCount > deduped.length) {
-          console.warn(
-            `[Team Roster] ⚠️ ${rawCount - deduped.length} duplicate row(s) detected in DB. Use "Remove Duplicates" to clean up.`
-          );
-        }
-
-        // ALWAYS replace, never append
-        setMembers(deduped);
-      } else {
-        // Sandbox mode
-        const stored = localStorage.getItem("aws_sbg_team");
-        const raw: TeamMember[] = stored
-          ? JSON.parse(stored)
-          : TEAM_MEMBERS;
-        const deduped = deduplicateMembers(
-          raw.sort((a: any, b: any) => a.displayOrder - b.displayOrder)
-        );
-        setDbCount(raw.length);
-        setMembers(deduped);
-      }
+      const data = await getTeamMembers();
+      // ALWAYS replace, never append
+      setMembers(data);
+      setDbCount(data.length);
     } catch (err: any) {
       console.error("[Team Roster] Load error:", err);
       showToast("Error loading team members", "error");
@@ -235,10 +189,12 @@ export default function ConsoleTeam() {
     setLinkedin("");
     setGithub("");
     setDisplayOrder(members.length + 1);
+    setPortalRole("Member");
+    setEmail("");
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (m: TeamMember) => {
+  const handleOpenEdit = (m: CMSTeamMember) => {
     setEditingId(m.id);
     setName(m.name);
     setRole(m.role);
@@ -253,6 +209,8 @@ export default function ConsoleTeam() {
     setLinkedin(m.linkedin);
     setGithub(m.github);
     setDisplayOrder(m.displayOrder);
+    setPortalRole(m.portalRole || "Member");
+    setEmail(m.email || "");
     setIsModalOpen(true);
   };
 
@@ -270,59 +228,14 @@ export default function ConsoleTeam() {
       .filter((item) => item !== "");
 
     try {
-      const payload = {
+      const payload: Omit<CMSTeamMember, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
         name, role, branch, specialization, bio, quote,
         focusAreas, initials, themeColor, photo, linkedin, github, displayOrder,
+        portalRole, email,
       };
 
-      if (isSupabaseConfigured && supabase) {
-        const dbRow = {
-          name: payload.name,
-          role: payload.role,
-          branch: payload.branch,
-          specialization: payload.specialization,
-          bio: payload.bio,
-          quote: payload.quote,
-          focus_areas: payload.focusAreas,
-          initials: payload.initials,
-          theme_color: payload.themeColor,
-          photo: payload.photo || null,
-          linkedin: payload.linkedin,
-          github: payload.github,
-          display_order: payload.displayOrder,
-        };
-
-        if (editingId) {
-          const { error } = await supabase
-            .from("team_members")
-            .update(dbRow)
-            .eq("id", editingId);
-          if (error) throw error;
-          showToast("Member updated successfully!");
-        } else {
-          // Use UPSERT to prevent duplicates on insert
-          const { error } = await supabase
-            .from("team_members")
-            .upsert([dbRow], { onConflict: "name,role" });
-          if (error) throw error;
-          showToast("Member added successfully!");
-        }
-      } else {
-        let list = [...members];
-        if (editingId) {
-          list = list.map((m) => (m.id === editingId ? { ...m, ...payload } : m));
-          showToast("Member updated in sandbox.");
-        } else {
-          list.push({
-            id: Math.random().toString(36).substring(2, 9),
-            ...payload,
-          });
-          showToast("Member added in sandbox.");
-        }
-        list = deduplicateMembers(list);
-        localStorage.setItem("aws_sbg_team", JSON.stringify(list));
-      }
-
+      await saveTeamMember(editingId, payload, user?.id || null);
+      showToast(editingId ? "Member updated successfully!" : "Member added successfully!");
       setIsModalOpen(false);
       hasFetched.current = false;
       await loadTeam();
@@ -338,15 +251,8 @@ export default function ConsoleTeam() {
   const handleDelete = async (id: string) => {
     if (!confirm("Remove this member from the roster permanently?")) return;
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.from("team_members").delete().eq("id", id);
-        if (error) throw error;
-        showToast("Member removed.");
-      } else {
-        const list = deduplicateMembers(members.filter((m) => m.id !== id));
-        localStorage.setItem("aws_sbg_team", JSON.stringify(list));
-        showToast("Member removed from sandbox.");
-      }
+      await deleteTeamMember(id);
+      showToast("Member removed.");
       hasFetched.current = false;
       await loadTeam();
       hasFetched.current = true;
@@ -368,16 +274,9 @@ export default function ConsoleTeam() {
     b.displayOrder = tempOrder;
 
     try {
-      if (isSupabaseConfigured && supabase) {
-        await Promise.all([
-          supabase.from("team_members").update({ display_order: a.displayOrder }).eq("id", a.id),
-          supabase.from("team_members").update({ display_order: b.displayOrder }).eq("id", b.id),
-        ]);
-        showToast("Order updated.");
-      } else {
-        localStorage.setItem("aws_sbg_team", JSON.stringify(list));
-        showToast("Order updated in sandbox.");
-      }
+      await saveTeamMember(a.id, a, user?.id || null);
+      await saveTeamMember(b.id, b, user?.id || null);
+      showToast("Order updated.");
       hasFetched.current = false;
       await loadTeam();
       hasFetched.current = true;
@@ -441,13 +340,15 @@ export default function ConsoleTeam() {
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
 
-          <button
-            onClick={handleOpenAdd}
-            className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
-          >
-            <Plus className="h-4 w-4" />
-            Add Member
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={handleOpenAdd}
+              className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+            >
+              <Plus className="h-4 w-4" />
+              Add Member
+            </button>
+          )}
         </div>
       </div>
 
@@ -535,57 +436,55 @@ export default function ConsoleTeam() {
               </div>
 
               <div className="flex items-center justify-between md:justify-end gap-5 border-t md:border-t-0 border-zinc-900/80 pt-3.5 md:pt-0">
-                {/* Order controls */}
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-zinc-550 mr-1.5 font-mono">Pos: {m.displayOrder}</span>
-                  <button
-                    onClick={() => handleMove(index, "up")}
-                    disabled={index === 0}
-                    className="h-7 w-7 rounded border border-zinc-855 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleMove(index, "down")}
-                    disabled={index === filteredMembers.length - 1}
-                    className="h-7 w-7 rounded border border-zinc-855 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
-                {/* Social links */}
-                <div className="flex items-center gap-2">
-                  {m.linkedin && m.linkedin !== "javascript:void(0)" && m.linkedin !== "" && (
-                    <a href={m.linkedin} target="_blank" rel="noopener noreferrer"
-                       className="text-zinc-550 hover:text-blue-400 transition-colors">
-                      <LinkedInIcon className="h-3.5 w-3.5" />
-                    </a>
+                 {/* Actions / Rls Ownership Warnings */}
+                <div className="flex items-center gap-3.5 flex-grow justify-end">
+                  {canManage(m) ? (
+                    <>
+                      {isSuperAdmin && (
+                        <div className="flex items-center gap-1.5 border-r border-zinc-900 pr-3.5">
+                          <span className="text-[10px] text-zinc-550 mr-1.5 font-mono">Pos: {m.displayOrder}</span>
+                          <button
+                            onClick={() => handleMove(index, "up")}
+                            disabled={index === 0}
+                            className="h-7 w-7 rounded border border-zinc-855 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleMove(index, "down")}
+                            disabled={index === filteredMembers.length - 1}
+                            className="h-7 w-7 rounded border border-zinc-855 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleOpenEdit(m)}
+                          className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors"
+                          title="Edit Profile"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </button>
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => handleDelete(m.id)}
+                            className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-450 hover:text-rose-400 transition-colors"
+                            title="Delete Member"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-[10px] text-zinc-500 italic bg-zinc-900/30 border border-zinc-900/60 px-3 py-1.5 rounded-lg flex items-center gap-1.5 max-w-xs text-right">
+                      <Shield className="h-3 w-3 text-zinc-600 shrink-0" />
+                      This profile can only be managed by its owner or an administrator.
+                    </span>
                   )}
-                  {m.github && m.github !== "javascript:void(0)" && m.github !== "" && (
-                    <a href={m.github} target="_blank" rel="noopener noreferrer"
-                       className="text-zinc-550 hover:text-zinc-200 transition-colors">
-                      <GitHubIcon className="h-3.5 w-3.5" />
-                    </a>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => handleOpenEdit(m)}
-                    className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors"
-                    title="Edit"
-                  >
-                    <Edit2 className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(m.id)}
-                    className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-450 hover:text-rose-400 transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
                 </div>
               </div>
             </div>
@@ -680,6 +579,27 @@ export default function ConsoleTeam() {
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
                 </div>
               </div>
+
+              {/* Portal Role & Email config if Super Admin */}
+              {isSuperAdmin && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-zinc-900 pt-4 mt-2">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Email Address (linked Auth account)</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                      placeholder="user@sbg-rimt.com"
+                      className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Portal Access Role</label>
+                    <select value={portalRole} onChange={(e) => setPortalRole(e.target.value as any)}
+                      className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none">
+                      <option value="Member">Member</option>
+                      <option value="Editor">Editor</option>
+                      <option value="Super Admin">Super Admin</option>
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {/* Focus Areas */}
               <div className="space-y-1.5">

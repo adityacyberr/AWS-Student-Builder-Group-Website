@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
-import { GALLERY_ITEMS, GalleryItem } from "@/data/gallery";
-import { getLocalEvents } from "@/data/events";
+import { useAuth } from "@/context/AuthContext";
+import { getEvents } from "@/lib/cms";
+import { getGalleryImages, saveGalleryImage, deleteGalleryImage, CMSGalleryItem } from "@/lib/cms";
 import {
   Image as ImageIcon,
   Plus,
@@ -17,6 +18,7 @@ import {
   Save,
   Calendar,
   ExternalLink,
+  Shield,
 } from "lucide-react";
 
 interface ConsoleGalleryItem {
@@ -30,17 +32,18 @@ interface ConsoleGalleryItem {
 }
 
 export default function ConsoleGallery() {
+  const { user, isSuperAdmin, canManage } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // Lists and filters
-  const [items, setItems] = useState<ConsoleGalleryItem[]>([]);
+  const [items, setItems] = useState<CMSGalleryItem[]>([]);
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<"all" | CMSGalleryItem["category"]>("all");
 
-  // Modal State
+  // Form Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -48,9 +51,9 @@ export default function ConsoleGallery() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<ConsoleGalleryItem["category"]>("workshops");
+  const [category, setCategory] = useState<CMSGalleryItem["category"]>("workshops");
   const [imageUrl, setImageUrl] = useState("");
-  const [placeholderColor, setPlaceholderColor] = useState("orange");
+  const [placeholderColor, setPlaceholderColor] = useState<CMSGalleryItem["placeholderColor"]>("orange");
 
   const showToast = (message: string, type: ToastType = "success") => {
     setToast({ message, type });
@@ -69,51 +72,13 @@ export default function ConsoleGallery() {
   const loadGallery = async () => {
     setLoading(true);
     try {
-      if (isSupabaseConfigured && supabase) {
-        const [galleryRes, eventsRes] = await Promise.all([
-          supabase
-            .from("gallery_images")
-            .select("*")
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("events")
-            .select("status")
-            .eq("status", "completed")
-        ]);
+      const [galleryData, eventsData] = await Promise.all([
+        getGalleryImages(),
+        getEvents(),
+      ]);
 
-        if (galleryRes.error) throw galleryRes.error;
-
-        const mapped = (galleryRes.data || []).map((d: any) => ({
-          id: d.id,
-          title: d.title,
-          date: d.date,
-          description: d.description,
-          category: d.category,
-          imageUrl: d.image_url || "",
-          placeholderColor: d.placeholder_color || "orange",
-        }));
-        setItems(mapped);
-
-        if (eventsRes.data) {
-          setCompletedEventsCount(eventsRes.data.length);
-        }
-      } else {
-        const stored = localStorage.getItem("aws_sbg_gallery");
-        if (stored) {
-          setItems(JSON.parse(stored));
-        } else {
-          setItems([]);
-        }
-
-        const storedEvents = localStorage.getItem("aws_sbg_events");
-        if (storedEvents) {
-          const localEvents = JSON.parse(storedEvents);
-          setCompletedEventsCount(localEvents.filter((e: any) => e.status === "completed").length);
-        } else {
-          const localEvents = getLocalEvents();
-          setCompletedEventsCount(localEvents.filter((e: any) => e.status === "completed").length);
-        }
-      }
+      setItems(galleryData);
+      setCompletedEventsCount(eventsData.filter((e) => e.status === "completed").length);
     } catch (err: any) {
       console.error(err);
       showToast("Error loading gallery images", "error");
@@ -133,13 +98,13 @@ export default function ConsoleGallery() {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (item: ConsoleGalleryItem) => {
+  const handleOpenEdit = (item: CMSGalleryItem) => {
     setEditingId(item.id);
     setTitle(item.title);
     setDate(item.date);
     setDescription(item.description);
     setCategory(item.category);
-    setImageUrl(item.imageUrl);
+    setImageUrl(item.imageUrl || "");
     setPlaceholderColor(item.placeholderColor || "orange");
     setIsModalOpen(true);
   };
@@ -153,55 +118,20 @@ export default function ConsoleGallery() {
     setSaving(true);
 
     try {
-      const payload: Omit<ConsoleGalleryItem, "id"> = {
+      const payload: Omit<CMSGalleryItem, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
         title,
         date,
         description,
         category,
         imageUrl,
         placeholderColor,
+        participants: 0,
+        location: "DRI Sandbox, RIMT University",
+        photoCount: 1,
       };
 
-      if (isSupabaseConfigured && supabase) {
-        // Double-check check-constraint mapping for Category ('events', 'workshops', 'labs')
-        let dbCategory = category;
-        if (category === "community" || category === "celebrations") {
-          dbCategory = "events";
-        }
-
-        const dbRow = {
-          title: payload.title,
-          date: payload.date,
-          description: payload.description,
-          category: dbCategory,
-          placeholder_color: payload.placeholderColor,
-          image_url: payload.imageUrl,
-        };
-
-        if (editingId) {
-          const { error } = await supabase.from("gallery_images").update(dbRow).eq("id", editingId);
-          if (error) throw error;
-          showToast("Gallery image updated successfully!");
-        } else {
-          const { error } = await supabase.from("gallery_images").insert([dbRow]);
-          if (error) throw error;
-          showToast("Gallery image published successfully!");
-        }
-      } else {
-        // Sandbox mode
-        let list = [...items];
-        if (editingId) {
-          list = list.map((item) => (item.id === editingId ? { ...item, ...payload } : item));
-          showToast("Gallery image updated in sandbox.");
-        } else {
-          list.unshift({
-            id: Math.random().toString(36).substring(2, 9),
-            ...payload,
-          });
-          showToast("Gallery image published in sandbox.");
-        }
-        localStorage.setItem("aws_sbg_gallery", JSON.stringify(list));
-      }
+      await saveGalleryImage(editingId, payload, user?.id || null);
+      showToast(editingId ? "Gallery image updated successfully!" : "Gallery image published successfully!");
       setIsModalOpen(false);
       await loadGallery();
     } catch (err: any) {
@@ -215,15 +145,8 @@ export default function ConsoleGallery() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this gallery item?")) return;
     try {
-      if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.from("gallery_images").delete().eq("id", id);
-        if (error) throw error;
-        showToast("Gallery image deleted.");
-      } else {
-        const list = items.filter((item) => item.id !== id);
-        localStorage.setItem("aws_sbg_gallery", JSON.stringify(list));
-        showToast("Gallery image deleted from sandbox.");
-      }
+      await deleteGalleryImage(id);
+      showToast("Gallery image deleted.");
       await loadGallery();
     } catch (err: any) {
       console.error(err);
@@ -303,7 +226,7 @@ export default function ConsoleGallery() {
           {["all", "workshops", "events", "labs"].map((tab) => (
             <button
               key={tab}
-              onClick={() => setCategoryFilter(tab)}
+              onClick={() => setCategoryFilter(tab as any)}
               className={`px-3 py-1.5 rounded-md font-bold transition-all capitalize text-[10px] ${
                 categoryFilter === tab ? "bg-zinc-900 text-zinc-100 border border-zinc-800" : "text-zinc-500 hover:text-zinc-350"
               }`}
@@ -371,18 +294,29 @@ export default function ConsoleGallery() {
                 )}
 
                 <div className="flex justify-end gap-1.5 ml-auto">
-                  <button
-                    onClick={() => handleOpenEdit(item)}
-                    className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors"
-                  >
-                    <Edit2 className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-455 hover:text-rose-400 transition-colors"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
+                  {canManage(item) ? (
+                    <>
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors"
+                        title="Edit Image"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-455 hover:text-rose-455 transition-colors"
+                        title="Delete Image"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-[10px] text-zinc-600 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
+                      <Shield className="h-3 w-3 text-zinc-650" />
+                      Read-only
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -456,7 +390,7 @@ export default function ConsoleGallery() {
                   </label>
                   <select
                     value={placeholderColor}
-                    onChange={(e) => setPlaceholderColor(e.target.value)}
+                    onChange={(e) => setPlaceholderColor(e.target.value as CMSGalleryItem["placeholderColor"])}
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
                   >
                     {["orange", "blue", "purple", "mint"].map((c) => (

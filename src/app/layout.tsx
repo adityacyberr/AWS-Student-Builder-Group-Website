@@ -55,13 +55,13 @@ const amazonEmberMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "AWS Student Builder Group | RIMT University",
-  description: "Official student-led cloud community of Amazon Web Services (AWS) at RIMT University. Build skills, attend bootcamps, and master cloud computing.",
+  title: "AWS | RIMT University",
+  description: "Official AWS Student Builder Group at RIMT University. Learn, build, collaborate, and innovate through cloud technologies.",
   keywords: ["AWS", "RIMT University", "Student Builder Group", "Cloud Computing", "Amazon Web Services", "Generative AI", "Punjab Tech Clubs"],
   authors: [{ name: "AWS Student Builder Group Core Team" }],
   openGraph: {
-    title: "AWS Student Builder Group | RIMT University",
-    description: "Official student-led cloud community of Amazon Web Services (AWS) at RIMT University. Build skills, attend bootcamps, and master cloud computing.",
+    title: "AWS | RIMT University",
+    description: "Official AWS Student Builder Group at RIMT University. Learn, build, collaborate, and innovate through cloud technologies.",
     images: [
       {
         url: "/brand/og-image.png",
@@ -74,8 +74,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "AWS Student Builder Group | RIMT University",
-    description: "Official student-led cloud community of Amazon Web Services (AWS) at RIMT University. Build skills, attend bootcamps, and master cloud computing.",
+    title: "AWS | RIMT University",
+    description: "Official AWS Student Builder Group at RIMT University. Learn, build, collaborate, and innovate through cloud technologies.",
     images: ["/brand/og-image.png"],
   },
 };
