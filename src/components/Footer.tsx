@@ -79,7 +79,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-sm text-slate-300 font-medium leading-relaxed max-w-md">
-              Building the next generation of cloud builders through learning, collaboration, and innovation.
+              The AWS Student Builder Group at RIMT was created with a simple vision: to bridge the gap between classroom learning and industry-ready cloud skills through hands-on experiences and community-driven innovation.
             </p>
           </div>
 
