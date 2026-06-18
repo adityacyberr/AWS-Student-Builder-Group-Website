@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { TeamMember } from "@/data/team";
 import { motion, AnimatePresence } from "framer-motion";
@@ -98,11 +99,17 @@ export function OrbitingPlanets({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(600);
   const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
+  const [hoveredAvatarEl, setHoveredAvatarEl] = useState<HTMLElement | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [windowWidth, setWindowWidth] = useState(1200);
   const [windowHeight, setWindowHeight] = useState(800);
   const [scrollTrigger, setScrollTrigger] = useState(0);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     onHoverMember?.(hoveredMemberId);
@@ -211,84 +218,90 @@ export function OrbitingPlanets({
   // We will calculate positioning details for the hovered member if it exists
   let popupDetails = null;
 
-  if (hoveredMember && selectedId === null) {
-    // Reference scrollTrigger to ensure re-calculation on scroll
+  if (hoveredMember && selectedId === null && hoveredAvatarEl) {
+    // Reference scrollTrigger and angles to ensure re-calculation on scroll / animation frames
+    const _anglesRefVal = angles;
     const _scrollTriggerVal = scrollTrigger;
-    const key = getMemberKey(hoveredMember);
-    const orbitId = MEMBER_ORBITS[key] || 1;
-    const orbit = ORBIT_CONFIGS[orbitId];
-    const r = (orbit.radiusPct / 100) * containerWidth;
-    const orbitAngle = angles[orbitId - 1];
 
-    const { angle: angleOffset } = getMemberOrbitAndAngle(hoveredMember, members);
-    
-    // Calculate current coordinates in container reference frame
-    const currentAngleRad = angleOffset + (orbit.direction === "cw" ? 1 : -1) * (orbitAngle * Math.PI / 180);
-    
-    const avatarX = centerX + r * Math.cos(currentAngleRad);
-    const avatarY = centerY + r * Math.sin(currentAngleRad);
-    const avatarSize = Math.max(34, Math.round(80 * scaleFactor));
+    const avatarRect = hoveredAvatarEl.getBoundingClientRect();
+    const avatarViewportX = avatarRect.left + avatarRect.width / 2;
+    const avatarViewportY = avatarRect.top + avatarRect.height / 2;
+    const avatarRadius = avatarRect.width / 2;
 
-    // Get container viewport bounding rect
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    
-    if (containerRect) {
-      // Current coordinates of avatar center in viewport space
-      const avatarViewportX = containerRect.left + avatarX + parallaxAvatars.x;
-      const avatarViewportY = containerRect.top + avatarY + parallaxAvatars.y;
+    const popupWidth = isMobile ? Math.min(320, windowWidth - 32) : (isTablet ? 280 : 320);
+    const popupHeight = 240; // budget estimate for height check
 
-      // Available space in viewport (minus 24px margins)
-      const spaceLeft = avatarViewportX - 24;
-      const spaceRight = windowWidth - avatarViewportX - 24;
-      const spaceTop = avatarViewportY - 24;
-      const spaceBottom = windowHeight - avatarViewportY - 24;
+    const gap = 20; // consistent gap of 20px
 
-      // Popup size configuration
-      const popupWidth = isMobile ? Math.min(320, windowWidth * 0.9) : (isTablet ? 280 : 320);
-      const popupHeight = 240; // budget estimate for height check
+    const spaceLeft = avatarRect.left;
+    const spaceRight = windowWidth - avatarRect.right;
+    const spaceTop = avatarRect.top;
+    const spaceBottom = windowHeight - avatarRect.bottom;
 
-      const offset = avatarSize / 2 + 18;
+    let hDir: "left" | "right" = "right";
+    let vDir: "top" | "bottom" = "top";
 
-      let direction: "left" | "right" = "right";
-      if (spaceRight >= offset + popupWidth) {
-        direction = "right";
-      } else if (spaceLeft >= offset + popupWidth) {
-        direction = "left";
-      } else {
-        direction = spaceRight >= spaceLeft ? "right" : "left";
-      }
-
-      // Viewport-relative horizontal position
-      let popupViewportX = 0;
-      if (direction === "right") {
-        popupViewportX = avatarViewportX + offset;
-      } else {
-        popupViewportX = avatarViewportX - offset - popupWidth;
-      }
-
-      // Viewport-relative vertical position (keep in bounds with 24px margins)
-      let popupViewportY = avatarViewportY - popupHeight / 2;
-      if (popupViewportY < 24) {
-        popupViewportY = 24;
-      } else if (popupViewportY + popupHeight > windowHeight - 24) {
-        popupViewportY = windowHeight - 24 - popupHeight;
-      }
-
-      // Translate back to container coordinates (adjusted for parallax transform on parent)
-      const popupContainerX = popupViewportX - containerRect.left - parallaxAvatars.x;
-      const popupContainerY = popupViewportY - containerRect.top - parallaxAvatars.y;
-
-      popupDetails = {
-        member: hoveredMember,
-        direction,
-        popupWidth,
-        popupContainerX,
-        popupContainerY,
-        avatarX,
-        avatarY,
-        avatarSize,
-      };
+    // Horizontal placement check
+    if (spaceRight >= gap + popupWidth) {
+      hDir = "right";
+    } else if (spaceLeft >= gap + popupWidth) {
+      hDir = "left";
+    } else {
+      hDir = spaceRight >= spaceLeft ? "right" : "left";
     }
+
+    // Vertical placement check
+    const defaultTop = avatarViewportY - popupHeight;
+    if (defaultTop >= 24) {
+      vDir = "top";
+    } else {
+      vDir = "bottom";
+    }
+
+    // Viewport-relative horizontal position
+    let popupViewportX = 0;
+    if (hDir === "right") {
+      popupViewportX = avatarRect.right + gap;
+    } else {
+      popupViewportX = avatarRect.left - gap - popupWidth;
+    }
+
+    // Viewport-relative vertical position
+    let popupViewportY = 0;
+    if (vDir === "top") {
+      popupViewportY = avatarViewportY - popupHeight;
+    } else {
+      popupViewportY = avatarViewportY;
+    }
+
+    // Viewport boundary constraints (keeps it 16px from edges)
+    popupViewportX = Math.max(16, Math.min(popupViewportX, windowWidth - popupWidth - 16));
+    popupViewportY = Math.max(16, Math.min(popupViewportY, windowHeight - popupHeight - 16));
+
+    // Calculate dynamic transform origin for corner scaling
+    let transformOrigin = "bottom left";
+    if (hDir === "right" && vDir === "top") {
+      transformOrigin = "bottom left";
+    } else if (hDir === "left" && vDir === "top") {
+      transformOrigin = "bottom right";
+    } else if (hDir === "right" && vDir === "bottom") {
+      transformOrigin = "top left";
+    } else if (hDir === "left" && vDir === "bottom") {
+      transformOrigin = "top right";
+    }
+
+    popupDetails = {
+      member: hoveredMember,
+      hDir,
+      vDir,
+      popupWidth,
+      popupViewportX,
+      popupViewportY,
+      avatarViewportX,
+      avatarViewportY,
+      avatarRadius,
+      transformOrigin,
+    };
   }
 
   return (
@@ -636,13 +649,19 @@ export function OrbitingPlanets({
                           {/* DIV 4: Avatar floating & breathing wrapper */}
                           <div
                             className="relative w-full h-full flex items-center justify-center rounded-full touch-target-expand cursor-pointer pointer-events-auto"
-                            onMouseEnter={() => {
+                            onMouseEnter={(e) => {
                               setHoveredMemberId(member.id);
+                              setHoveredAvatarEl(e.currentTarget as HTMLElement);
                               if (onHoverMember) onHoverMember(member.id);
                             }}
-                            onMouseLeave={() => setHoveredMemberId(null)}
+                            onMouseLeave={() => {
+                              setHoveredMemberId(null);
+                              setHoveredAvatarEl(null);
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
+                              setHoveredMemberId(null);
+                              setHoveredAvatarEl(null);
                               onSelect(member);
                             }}
                             style={{
@@ -732,47 +751,51 @@ export function OrbitingPlanets({
 
         {/* Dynamic Popup rendering */}
         <AnimatePresence>
-          {popupDetails && (
+          {mounted && popupDetails && createPortal(
             <>
               {/* If mobile, render backdrop overlay */}
               {isMobile && (
                 <div
-                  className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-40 pointer-events-auto"
-                  onClick={() => setHoveredMemberId(null)}
+                  className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-[9998] pointer-events-auto"
+                  onClick={() => {
+                    setHoveredMemberId(null);
+                    setHoveredAvatarEl(null);
+                  }}
                 />
               )}
 
               {/* Connecting line (not shown on mobile) */}
               {!isMobile && (
                 <div
-                  className="absolute pointer-events-none z-50"
+                  className="fixed pointer-events-none"
                   style={{
-                    left: popupDetails.direction === "right" 
-                      ? `${popupDetails.avatarX + popupDetails.avatarSize / 2}px` 
-                      : `${popupDetails.avatarX - popupDetails.avatarSize / 2 - 18}px`,
-                    top: `${popupDetails.avatarY}px`,
+                    left: popupDetails.hDir === "right" 
+                      ? `${popupDetails.avatarViewportX + popupDetails.avatarRadius}px` 
+                      : `${popupDetails.avatarViewportX - popupDetails.avatarRadius - 20}px`,
+                    top: `${popupDetails.avatarViewportY}px`,
                     transform: "translateY(-50%)",
-                    width: "18px",
+                    width: "20px",
                     height: "10px",
+                    zIndex: 9998,
                   }}
                 >
-                  {popupDetails.direction === "right" ? (
+                  {popupDetails.hDir === "right" ? (
                     <svg className="w-full h-full overflow-visible">
-                      <line x1="0" y1="5" x2="18" y2="5" stroke="rgba(255,145,0,0.6)" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="18">
-                        <animate attributeName="stroke-dashoffset" values="18;0" dur="0.25s" fill="freeze" />
+                      <line x1="0" y1="5" x2="20" y2="5" stroke="rgba(255,145,0,0.6)" strokeWidth="1.5" strokeDasharray="20" strokeDashoffset="20">
+                        <animate attributeName="stroke-dashoffset" values="20;0" dur="0.25s" fill="freeze" />
                       </line>
                       <circle cx="0" cy="5" r="3" fill="#ff9100" filter="drop-shadow(0 0 3px #ff9100)">
-                        <animate attributeName="cx" values="0;18" dur="1.5s" repeatCount="indefinite" />
+                        <animate attributeName="cx" values="0;20" dur="1.5s" repeatCount="indefinite" />
                         <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="1.5s" repeatCount="indefinite" />
                       </circle>
                     </svg>
                   ) : (
                     <svg className="w-full h-full overflow-visible">
-                      <line x1="18" y1="5" x2="0" y2="5" stroke="rgba(255,145,0,0.6)" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="18">
-                        <animate attributeName="stroke-dashoffset" values="18;0" dur="0.25s" fill="freeze" />
+                      <line x1="20" y1="5" x2="0" y2="5" stroke="rgba(255,145,0,0.6)" strokeWidth="1.5" strokeDasharray="20" strokeDashoffset="20">
+                        <animate attributeName="stroke-dashoffset" values="20;0" dur="0.25s" fill="freeze" />
                       </line>
-                      <circle cx="18" cy="5" r="3" fill="#ff9100" filter="drop-shadow(0 0 3px #ff9100)">
-                        <animate attributeName="cx" values="18;0" dur="1.5s" repeatCount="indefinite" />
+                      <circle cx="20" cy="5" r="3" fill="#ff9100" filter="drop-shadow(0 0 3px #ff9100)">
+                        <animate attributeName="cx" values="20;0" dur="1.5s" repeatCount="indefinite" />
                         <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.2;0.8;1" dur="1.5s" repeatCount="indefinite" />
                       </circle>
                     </svg>
@@ -790,15 +813,15 @@ export function OrbitingPlanets({
                         top: "50%",
                         transform: "translate(-50%, -50%)",
                         width: `${popupDetails.popupWidth}px`,
-                        zIndex: 1000,
+                        zIndex: 9999,
                         pointerEvents: "auto",
                       }
                     : {
-                        position: "absolute",
-                        left: `${popupDetails.popupContainerX}px`,
-                        top: `${popupDetails.popupContainerY}px`,
+                        position: "fixed",
+                        left: `${popupDetails.popupViewportX}px`,
+                        top: `${popupDetails.popupViewportY}px`,
                         width: `${popupDetails.popupWidth}px`,
-                        zIndex: 100,
+                        zIndex: 9999,
                         pointerEvents: "auto",
                       }
                 }
@@ -806,30 +829,25 @@ export function OrbitingPlanets({
                 <motion.div
                   initial={{
                     opacity: 0,
-                    scale: 0.96,
-                    x: isMobile ? 0 : (popupDetails.direction === "right" ? -8 : 8),
-                    y: isMobile ? 16 : 0,
+                    scale: 0.95,
                   }}
                   animate={{
                     opacity: 1,
                     scale: 1,
-                    x: 0,
-                    y: 0,
                   }}
                   exit={{
                     opacity: 0,
-                    scale: 0.96,
-                    x: isMobile ? 0 : (popupDetails.direction === "right" ? -8 : 8),
-                    y: isMobile ? 16 : 0,
+                    scale: 0.95,
                   }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="relative z-50 pointer-events-auto select-none text-left rounded-[22px] border border-orange-500/25 bg-[#080a16]/92 backdrop-blur-[20px] shadow-[0_0_40px_rgba(255,140,0,0.22)] p-5 overflow-hidden"
+                  transition={{ duration: 0.22, ease: "easeOut" }}
                   style={{
+                    transformOrigin: popupDetails.transformOrigin,
                     background: "linear-gradient(-45deg, #080a16, #101224, #0c0e1c, #080a16)",
                     backgroundSize: "400% 400%",
                     animation: "bg-gradient-shift 12s ease infinite",
                   }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="relative z-50 pointer-events-auto select-none text-left rounded-[22px] border border-orange-500/25 bg-[#080a16]/92 backdrop-blur-[20px] shadow-[0_0_40px_rgba(255,140,0,0.22)] p-5 overflow-hidden"
                 >
                   {/* Tiny floating particles */}
                   {[...Array(4)].map((_, idx) => {
@@ -863,7 +881,10 @@ export function OrbitingPlanets({
                   {/* Close button for Mobile centered modal */}
                   {isMobile && (
                     <button
-                      onClick={() => setHoveredMemberId(null)}
+                      onClick={() => {
+                        setHoveredMemberId(null);
+                        setHoveredAvatarEl(null);
+                      }}
                       className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-900/60 border border-slate-800/80 text-slate-400 hover:text-white z-50 pointer-events-auto"
                     >
                       <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -942,6 +963,8 @@ export function OrbitingPlanets({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        setHoveredMemberId(null);
+                        setHoveredAvatarEl(null);
                         onSelect(popupDetails!.member);
                       }}
                       className="flex items-center justify-center h-[42px] rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-[11px] font-extrabold text-white uppercase tracking-wider shadow-md hover:shadow-[0_0_15px_rgba(255,145,0,0.3)] transition-all cursor-pointer pointer-events-auto active:scale-95 text-center"
@@ -952,7 +975,7 @@ export function OrbitingPlanets({
                 </motion.div>
               </div>
             </>
-          )}
+          , document.body)}
         </AnimatePresence>
       </div>
     </div>
