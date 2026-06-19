@@ -126,10 +126,10 @@ export default function ContactPage() {
               </div>
             </div>
             <a
-              href="tel:+919876543210"
+              href="tel:+919416773013"
               className="text-[11px] sm:text-xs font-bold text-[#FF9900] hover:underline mt-4"
             >
-              +91 98765 43210
+              +91 94167 73013
             </a>
           </motion.div>
 
