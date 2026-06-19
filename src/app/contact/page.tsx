@@ -90,9 +90,11 @@ export default function ContactPage() {
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
         >
           {/* Card 1 — Email */}
-          <motion.div
+          <motion.a
+            href="mailto:sbg.rimt@gmail.com"
+            aria-label="Email AWS Student Builder Group at sbg.rimt@gmail.com"
             variants={fadinVariants}
-            className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 hover:-translate-y-1.5 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_10px_30px_rgba(255,153,0,0.04)] backdrop-blur-md"
+            className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 hover:-translate-y-[2px] transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_10px_30px_rgba(255,153,0,0.04)] backdrop-blur-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           >
             <div className="space-y-4">
               <div className="w-10 h-10 rounded-full bg-orange-500/5 border border-orange-500/10 flex items-center justify-center text-orange-400 group-hover:bg-orange-500/10 group-hover:border-orange-500/20 transition-all shadow-[0_0_15px_rgba(255,153,0,0.08)]">
@@ -103,18 +105,17 @@ export default function ContactPage() {
                 <p className="text-[11px] text-zinc-555 font-medium">Drop us a message</p>
               </div>
             </div>
-            <a
-              href="mailto:sbg.rimt@gmail.com"
-              className="text-[11px] sm:text-xs font-bold text-[#FF9900] hover:underline mt-4 break-words"
-            >
+            <span className="text-[11px] sm:text-xs font-bold text-[#FF9900] group-hover:underline mt-4 break-words">
               sbg.rimt@gmail.com
-            </a>
-          </motion.div>
+            </span>
+          </motion.a>
 
           {/* Card 2 — Phone */}
-          <motion.div
+          <motion.a
+            href="tel:+919876543210"
+            aria-label="Call AWS Student Builder Group at +91 98765 43210"
             variants={fadinVariants}
-            className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 hover:-translate-y-1.5 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_10px_30px_rgba(255,153,0,0.04)] backdrop-blur-md"
+            className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 hover:-translate-y-[2px] transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_10px_30px_rgba(255,153,0,0.04)] backdrop-blur-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           >
             <div className="space-y-4">
               <div className="w-10 h-10 rounded-full bg-orange-500/5 border border-orange-500/10 flex items-center justify-center text-orange-400 group-hover:bg-orange-500/10 group-hover:border-orange-500/20 transition-all shadow-[0_0_15px_rgba(255,153,0,0.08)]">
@@ -125,18 +126,19 @@ export default function ContactPage() {
                 <p className="text-[11px] text-zinc-555 font-medium">Mon – Sat, 10AM – 6PM</p>
               </div>
             </div>
-            <a
-              href="tel:+919416773013"
-              className="text-[11px] sm:text-xs font-bold text-[#FF9900] hover:underline mt-4"
-            >
-              +91 94167 73013
-            </a>
-          </motion.div>
+            <span className="text-[11px] sm:text-xs font-bold text-[#FF9900] group-hover:underline mt-4">
+              +91 98765 43210
+            </span>
+          </motion.a>
 
           {/* Card 3 — Visit */}
-          <motion.div
+          <motion.a
+            href="https://www.google.com/maps/dir/?api=1&destination=RIMT+University+Punjab+India"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Get directions to RIMT University on Google Maps"
             variants={fadinVariants}
-            className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 hover:-translate-y-1.5 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_10px_30px_rgba(255,153,0,0.04)] backdrop-blur-md"
+            className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 hover:-translate-y-[2px] transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_10px_30px_rgba(255,153,0,0.04)] backdrop-blur-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           >
             <div className="space-y-4">
               <div className="w-10 h-10 rounded-full bg-orange-500/5 border border-orange-500/10 flex items-center justify-center text-orange-400 group-hover:bg-orange-500/10 group-hover:border-orange-500/20 transition-all shadow-[0_0_15px_rgba(255,153,0,0.08)]">
@@ -147,18 +149,18 @@ export default function ContactPage() {
                 <p className="text-[11px] text-zinc-555 font-medium">RIMT University, Punjab</p>
               </div>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-[#FF9900] mt-4">
+            <span className="text-[11px] sm:text-xs font-bold text-[#FF9900] group-hover:underline mt-4">
               Mandi Gobindgarh, 147301
             </span>
-          </motion.div>
+          </motion.a>
 
           {/* Card 4 — Response Time */}
           <motion.div
             variants={fadinVariants}
-            className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 hover:-translate-y-1.5 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_10px_30px_rgba(255,153,0,0.04)] backdrop-blur-md"
+            className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] backdrop-blur-md select-none"
           >
             <div className="space-y-4">
-              <div className="w-10 h-10 rounded-full bg-orange-500/5 border border-orange-500/10 flex items-center justify-center text-orange-400 group-hover:bg-orange-500/10 group-hover:border-orange-500/20 transition-all shadow-[0_0_15px_rgba(255,153,0,0.08)]">
+              <div className="w-10 h-10 rounded-full bg-orange-500/5 border border-orange-500/10 flex items-center justify-center text-orange-400 shadow-[0_0_15px_rgba(255,153,0,0.08)]">
                 <Clock className="h-4.5 w-4.5" />
               </div>
               <div className="space-y-1">
@@ -169,6 +171,12 @@ export default function ContactPage() {
             <span className="text-[11px] sm:text-xs font-bold text-[#FF9900] mt-4">
               24 – 48 Hours
             </span>
+
+            {/* Subtle Tooltip */}
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 px-3 py-1.5 bg-zinc-900 border border-zinc-800 text-white text-[10px] font-semibold rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-250 shadow-xl whitespace-nowrap z-30">
+              We usually reply within 24–48 hours.
+              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900" />
+            </div>
           </motion.div>
         </motion.div>
 
