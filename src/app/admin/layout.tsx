@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { CommandPalette } from "@/components/admin/CommandPalette";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -21,6 +22,10 @@ import {
   ChevronRight,
   Search,
   ArrowLeftRight,
+  Globe,
+  Bell,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 interface NavItem {
@@ -72,8 +77,10 @@ export default function ConsoleLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { profile, logout, loading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   // Keyboard listener for command palette
   useEffect(() => {
@@ -134,21 +141,75 @@ export default function ConsoleLayout({
           <span className="text-xs font-black uppercase tracking-widest text-white hidden lg:inline-block">Admin Console</span>
         </div>
 
-        {/* User Pill / Meta Details */}
+        {/* User Pill / Meta Details with interactive toggle */}
         {profile && (
-          <div className="p-2 lg:p-4 mx-2 lg:mx-3 my-4 rounded-xl border border-zinc-900 bg-zinc-900/10 flex items-center justify-center lg:justify-start gap-3">
-            <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-455 font-bold uppercase select-none text-xs flex-shrink-0">
-              {profile.name.substring(0, 2)}
-            </div>
-            <div className="min-w-0 flex-grow hidden lg:block">
-              <div className="flex items-center gap-1.5 justify-between">
-                <p className="text-xs text-zinc-300 font-bold truncate">{profile.name}</p>
-                <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide bg-orange-500/10 border border-orange-500/20 text-orange-500 shrink-0">
-                  {profile.portal_role}
-                </span>
+          <div className="relative">
+            <button
+              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+              className="w-full text-left p-2 lg:p-4 mx-2 lg:mx-3 my-4 rounded-xl border border-zinc-900 bg-zinc-900/10 hover:bg-zinc-900/20 flex items-center justify-center lg:justify-start gap-3 transition-colors cursor-pointer group"
+            >
+              <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 font-bold uppercase select-none text-xs flex-shrink-0 group-hover:border-orange-500/30 transition-colors">
+                {profile.name.substring(0, 2)}
               </div>
-              <p className="text-[10px] text-zinc-550 truncate font-mono">{profile.email}</p>
-            </div>
+              <div className="min-w-0 flex-grow hidden lg:block">
+                <div className="flex items-center gap-1.5 justify-between">
+                  <p className="text-xs text-zinc-300 font-bold truncate">{profile.name}</p>
+                  <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide bg-orange-500/10 border border-orange-500/20 text-orange-500 shrink-0">
+                    {profile.portal_role}
+                  </span>
+                </div>
+                <p className="text-[10px] text-zinc-550 truncate font-mono">{profile.email}</p>
+              </div>
+            </button>
+
+            {/* Sidebar dropdown menu */}
+            {profileDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} />
+                <div className="absolute left-2 lg:left-4 bottom-16 mb-2 w-48 rounded-xl border border-zinc-900 bg-zinc-950 p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                  <div className="px-3 py-2 border-b border-zinc-900/85 mb-1">
+                    <p className="text-[9px] font-black uppercase text-zinc-650 tracking-wider">User Account</p>
+                    <p className="text-xs font-bold text-zinc-250 truncate mt-0.5">{profile.name}</p>
+                  </div>
+                  <Link
+                    href="/admin/settings"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 text-xs text-zinc-400 hover:text-white hover:bg-zinc-900/60 rounded-lg transition-colors"
+                  >
+                    <User className="h-4 w-4 text-zinc-550" />
+                    <span>My Profile</span>
+                  </Link>
+                  <a
+                    href="/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 text-xs text-[#FF9900] hover:bg-orange-500/5 rounded-lg transition-colors"
+                  >
+                    <Globe className="h-4 w-4" />
+                    <span>View Website</span>
+                  </a>
+                  <Link
+                    href="/admin/settings"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 text-xs text-zinc-400 hover:text-white hover:bg-zinc-900/60 rounded-lg transition-colors"
+                  >
+                    <Settings className="h-4 w-4 text-zinc-550" />
+                    <span>Settings</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-400 hover:bg-red-500/5 rounded-lg transition-colors text-left font-semibold cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -188,10 +249,21 @@ export default function ConsoleLayout({
         </nav>
 
         {/* Footer / Logout */}
-        <div className="p-2 lg:p-3 border-t border-zinc-900">
+        <div className="p-2 lg:p-3 border-t border-zinc-900 space-y-1">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center lg:justify-start gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold text-zinc-400 hover:text-[#FF9900] hover:bg-orange-500/5 hover:-translate-y-0.5 border border-transparent hover:border-orange-500/10 hover:shadow-[0_0_10px_rgba(255,153,0,0.05)] transition-all cursor-pointer"
+            title="View Website"
+          >
+            <Globe className="h-4.5 w-4.5 text-[#FF9900]" />
+            <span className="hidden lg:inline">View Website</span>
+          </a>
+
           <button
             onClick={logout}
-            className="w-full flex items-center justify-center lg:justify-start gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold text-zinc-555 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer"
+            className="w-full flex items-center justify-center lg:justify-start gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold text-zinc-500 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer"
             title="Sign Out"
           >
             <LogOut className="h-4.5 w-4.5 flex-shrink-0" />
@@ -216,36 +288,138 @@ export default function ConsoleLayout({
             <span className="text-[10px] font-black uppercase tracking-wider text-white">Admin Console</span>
           </div>
 
-          {/* Breadcrumbs (Desktop) */}
-          <nav className="hidden md:flex items-center space-x-2 text-xs">
-            {breadcrumbs.map((crumb, idx) => (
-              <React.Fragment key={crumb.name}>
-                {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-zinc-700" />}
-                <Link 
-                  href={crumb.href}
-                  className={`font-semibold transition-colors ${
-                    idx === breadcrumbs.length - 1 ? "text-zinc-250 font-bold" : "text-zinc-550 hover:text-zinc-300"
-                  }`}
-                >
-                  {crumb.name}
-                </Link>
-              </React.Fragment>
-            ))}
-          </nav>
+          {/* Breadcrumbs (Desktop) with Back Link */}
+          <div className="hidden md:flex items-center justify-between flex-grow mr-6">
+            <nav className="flex items-center space-x-2 text-xs">
+              {breadcrumbs.map((crumb, idx) => (
+                <React.Fragment key={crumb.name}>
+                  {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-zinc-700" />}
+                  <Link 
+                    href={crumb.href}
+                    className={`font-semibold transition-colors ${
+                      idx === breadcrumbs.length - 1 ? "text-zinc-250 font-bold" : "text-zinc-550 hover:text-zinc-300"
+                    }`}
+                  >
+                    {crumb.name}
+                  </Link>
+                </React.Fragment>
+              ))}
+            </nav>
+            <a
+              href="/"
+              className="text-xs font-bold text-zinc-500 hover:text-[#FF9900] transition-colors flex items-center gap-1.5"
+            >
+              <span>← Back to Website</span>
+            </a>
+          </div>
 
-          {/* Search Trigger and Status Bar */}
-          <div className="flex items-center gap-4">
-            {/* Global Search Button */}
+          {/* Search Trigger and Actions */}
+          <div className="flex items-center gap-3">
+            {/* Preview Website Action */}
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex h-9 px-3.5 rounded-lg border border-orange-500/25 bg-orange-500/5 items-center gap-2 text-xs font-bold text-zinc-100 hover:border-orange-500/50 hover:bg-orange-500/10 hover:shadow-[0_0_15px_rgba(255,153,0,0.15)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+            >
+              <Globe className="h-4 w-4 text-[#FF9900]" />
+              <span>Preview Website</span>
+            </a>
+
+            {/* Global Search Trigger */}
             <button 
               onClick={() => setPaletteOpen(true)}
-              className="h-9 px-3.5 rounded-lg border border-zinc-900 hover:border-zinc-800 bg-zinc-900/10 flex items-center justify-between gap-6 text-zinc-500 hover:text-zinc-300 transition-all text-xs w-[160px] md:w-[220px]"
+              className="h-9 px-3.5 rounded-lg border border-zinc-900 hover:border-zinc-800 bg-zinc-900/10 flex items-center justify-between gap-4 text-zinc-550 hover:text-zinc-300 transition-all text-xs w-[120px] sm:w-[160px]"
             >
               <div className="flex items-center gap-2">
                 <Search className="h-3.5 w-3.5" />
                 <span className="font-medium">Search...</span>
               </div>
-              <span className="text-[10px] bg-zinc-900 border border-zinc-850 px-1 py-0.5 rounded text-zinc-650 font-bold font-mono">⌘K</span>
+              <span className="text-[10px] bg-zinc-900 border border-zinc-850 px-1 py-0.5 rounded text-zinc-650 font-bold font-mono hidden sm:inline">⌘K</span>
             </button>
+
+            {/* Notification Bell */}
+            <button className="h-9 w-9 rounded-lg border border-zinc-900 hover:border-zinc-850 flex items-center justify-center text-zinc-500 hover:text-zinc-200 transition-colors">
+              <Bell className="h-4 w-4" />
+            </button>
+
+            {/* Theme Switcher */}
+            <button
+              onClick={() => toggleTheme()}
+              className="h-9 w-9 rounded-lg border border-zinc-900 hover:border-zinc-850 flex items-center justify-center text-zinc-500 hover:text-zinc-200 transition-colors pointer-events-auto cursor-pointer"
+              title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+            >
+              {theme === "light" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </button>
+
+            {/* Top Header User Profile Circle Menu */}
+            {profile && (
+              <div className="relative">
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="h-9 px-2.5 rounded-lg border border-zinc-900 hover:border-zinc-855 bg-zinc-900/10 flex items-center gap-2 text-xs font-bold text-zinc-300 hover:text-zinc-100 transition-all"
+                >
+                  <div className="h-6.5 w-6.5 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500 uppercase text-[9px] font-black shrink-0">
+                    {profile.name.substring(0, 2)}
+                  </div>
+                  <span className="hidden md:inline truncate max-w-[80px] font-medium">{profile.name.split(" ")[0]}</span>
+                  <span className="text-zinc-650 text-[7px] shrink-0">▼</span>
+                </button>
+
+                {/* Dropdown Card */}
+                {profileDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-48 rounded-xl border border-zinc-900 bg-zinc-950 p-1.5 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="px-3 py-2 border-b border-zinc-900/80 mb-1">
+                        <p className="text-[9px] font-black uppercase text-zinc-550 tracking-wider">User Account</p>
+                        <p className="text-xs font-bold text-zinc-200 truncate mt-0.5">{profile.name}</p>
+                      </div>
+                      <Link
+                        href="/admin/settings"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs text-zinc-400 hover:text-white hover:bg-zinc-900/60 rounded-lg transition-colors"
+                      >
+                        <User className="h-4 w-4 text-zinc-550" />
+                        <span>My Profile</span>
+                      </Link>
+                      <a
+                        href="/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs text-[#FF9900] hover:bg-orange-500/5 rounded-lg transition-colors"
+                      >
+                        <Globe className="h-4 w-4" />
+                        <span>View Website</span>
+                      </a>
+                      <Link
+                        href="/admin/settings"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs text-zinc-400 hover:text-white hover:bg-zinc-900/60 rounded-lg transition-colors"
+                      >
+                        <Settings className="h-4 w-4 text-zinc-550" />
+                        <span>Settings</span>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setProfileDropdownOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-400 hover:bg-red-500/5 rounded-lg transition-colors text-left font-semibold cursor-pointer"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </header>        {/* Mobile Slide-Over Menu (Framer Motion Drawer) */}
         <AnimatePresence>
@@ -331,13 +505,24 @@ export default function ConsoleLayout({
                   </nav>
                 </div>
 
-                <button
-                  onClick={logout}
-                  className="flex items-center justify-center gap-2 py-3.5 rounded-xl border border-zinc-900 text-xs font-bold text-zinc-550 hover:text-red-400 hover:bg-red-500/5 transition-colors w-full cursor-pointer"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Sign Out</span>
-                </button>
+                <div className="space-y-2.5 w-full mt-auto pt-4 border-t border-zinc-900/60">
+                  <a
+                    href="/"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-2 py-3.5 rounded-xl border border-orange-500/10 bg-orange-500/5 text-xs font-bold text-[#FF9900] hover:bg-orange-500/10 transition-colors w-full cursor-pointer"
+                  >
+                    <Globe className="h-4 w-4" />
+                    <span>View Website</span>
+                  </a>
+
+                  <button
+                    onClick={logout}
+                    className="flex items-center justify-center gap-2 py-3.5 rounded-xl border border-red-500/10 bg-red-500/5 text-xs font-bold text-red-400 hover:bg-red-500/10 transition-colors w-full cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
               </motion.div>
             </>
           )}

@@ -44,6 +44,7 @@ create table if not exists public.team_members (
   github text not null default '',
   email text,
   portal_role text not null default 'Member' check (portal_role in ('Super Admin', 'Editor', 'Member')),
+  theme_preference text not null default 'dark',
   display_order integer not null default 0,
   is_active boolean not null default true,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -140,6 +141,15 @@ do $$ begin
     where table_schema = 'public' and table_name = 'team_members' and column_name = 'portal_role'
   ) then
     alter table public.team_members add column portal_role text not null default 'Member' check (portal_role in ('Super Admin', 'Editor', 'Member'));
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'team_members' and column_name = 'theme_preference'
+  ) then
+    alter table public.team_members add column theme_preference text not null default 'dark';
   end if;
 end $$;
 

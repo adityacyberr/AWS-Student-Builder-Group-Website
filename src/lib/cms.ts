@@ -138,6 +138,7 @@ export async function saveEvent(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...eventData,
         id: data.id,
@@ -152,6 +153,7 @@ export async function saveEvent(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...eventData,
         id: data.id,
@@ -179,6 +181,7 @@ export async function saveEvent(
     }
     saveLocalEvents(updatedList);
     triggerStorageRefresh(STORAGE_KEYS.EVENTS);
+    console.log("Database updated");
     return item;
   }
 }
@@ -274,6 +277,7 @@ export async function saveTeamMember(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...memberData,
         id: data.id,
@@ -288,6 +292,7 @@ export async function saveTeamMember(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...memberData,
         id: data.id,
@@ -314,6 +319,7 @@ export async function saveTeamMember(
     }
     localStorage.setItem(STORAGE_KEYS.TEAM, JSON.stringify(updatedList));
     triggerStorageRefresh(STORAGE_KEYS.TEAM);
+    console.log("Database updated");
     return item;
   }
 }
@@ -403,6 +409,7 @@ export async function saveGalleryImage(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...imageData,
         id: data.id,
@@ -417,6 +424,7 @@ export async function saveGalleryImage(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...imageData,
         id: data.id,
@@ -443,6 +451,7 @@ export async function saveGalleryImage(
     }
     localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(updatedList));
     triggerStorageRefresh(STORAGE_KEYS.GALLERY);
+    console.log("Database updated");
     return item;
   }
 }
@@ -510,6 +519,7 @@ export async function saveAchievement(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...achievementData,
         id: data.id,
@@ -524,6 +534,7 @@ export async function saveAchievement(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...achievementData,
         id: data.id,
@@ -550,6 +561,7 @@ export async function saveAchievement(
     }
     saveLocalAchievements(updatedList);
     triggerStorageRefresh(STORAGE_KEYS.ACHIEVEMENTS);
+    console.log("Database updated");
     return item;
   }
 }
@@ -641,6 +653,7 @@ export async function saveAnnouncement(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...annData,
         id: data.id,
@@ -655,6 +668,7 @@ export async function saveAnnouncement(
         .select()
         .single();
       if (error) throw error;
+      console.log("Database updated");
       return {
         ...annData,
         id: data.id,
@@ -681,6 +695,7 @@ export async function saveAnnouncement(
     }
     localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(updatedList));
     triggerStorageRefresh(STORAGE_KEYS.ANNOUNCEMENTS);
+    console.log("Database updated");
     return item;
   }
 }

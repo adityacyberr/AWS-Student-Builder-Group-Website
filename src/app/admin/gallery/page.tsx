@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
@@ -33,6 +34,7 @@ interface ConsoleGalleryItem {
 
 export default function ConsoleGallery() {
   const { user, isSuperAdmin, canManage } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -134,6 +136,7 @@ export default function ConsoleGallery() {
       showToast(editingId ? "Gallery image updated successfully!" : "Gallery image published successfully!");
       setIsModalOpen(false);
       await loadGallery();
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       showToast(err.message || "Failed to save gallery image.", "error");
@@ -148,6 +151,7 @@ export default function ConsoleGallery() {
       await deleteGalleryImage(id);
       showToast("Gallery image deleted.");
       await loadGallery();
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       showToast("Failed to delete gallery image", "error");

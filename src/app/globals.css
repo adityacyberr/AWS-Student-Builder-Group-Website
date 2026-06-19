@@ -15,16 +15,156 @@
 }
 
 :root {
-  color-scheme: dark;
-  --background: #070a13;
-  --foreground: #f8fafc;
+  --bg-primary: #070a13;
+  --bg-secondary: #0f172a;
+  --card-bg: #0f172a;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: #1e293b;
+  --accent: #ff9900;
 }
 
+html.light,
+html[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --card-bg: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --border-color: #d1d5db;
+  --accent: #ff8c00;
+
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+  color-scheme: light;
+
+  /* Overrides for AWS smile & orange icons in light theme */
+  --color-aws-orange: var(--accent);
+  --color-aws-smile: var(--accent);
+
+  /* Overrides for Slate colors (Tailwind classes in Light Mode) */
+  --color-slate-980: var(--bg-primary);
+  --color-slate-950: var(--bg-primary);
+  --color-slate-900: var(--bg-secondary);
+  --color-slate-850: var(--border-color);
+  --color-slate-800: var(--border-color);
+  --color-slate-700: var(--text-secondary);
+  --color-slate-650: var(--text-secondary);
+  --color-slate-600: var(--text-secondary);
+  --color-slate-500: var(--text-secondary);
+  --color-slate-400: var(--text-secondary);
+  --color-slate-305: var(--text-secondary);
+  --color-slate-300: var(--text-primary);
+  --color-slate-200: var(--text-primary);
+  --color-slate-100: var(--text-primary);
+  --color-slate-50: var(--text-primary);
+
+  /* Overrides for Zinc colors (Tailwind classes in Light Mode) */
+  --color-zinc-950: var(--bg-primary);
+  --color-zinc-900: var(--bg-secondary);
+  --color-zinc-850: var(--border-color);
+  --color-zinc-800: var(--border-color);
+  --color-zinc-750: var(--border-color);
+  --color-zinc-700: var(--text-secondary);
+  --color-zinc-650: var(--text-secondary);
+  --color-zinc-600: var(--text-secondary);
+  --color-zinc-550: var(--text-secondary);
+  --color-zinc-500: var(--text-secondary);
+  --color-zinc-400: var(--text-secondary);
+  --color-zinc-300: var(--text-primary);
+  --color-zinc-200: var(--text-primary);
+  --color-zinc-100: var(--text-primary);
+  --color-zinc-50: var(--text-primary);
+}
+
+/* 100% untouched native Dark Theme variables & default styles */
 html, body {
   background-color: #070a13;
   color: #f8fafc;
   scroll-behavior: smooth;
   overflow-x: hidden;
+}
+
+/* Light Theme selective styles */
+html.light,
+html[data-theme="light"] {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+html.light body,
+html[data-theme="light"] body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Light mode overrides for arbitrary hardcoded dark backgrounds */
+html.light .bg-\[\#050816\],
+html.light .bg-\[\#030712\],
+html.light .bg-\[\#060a12\],
+html.light .bg-\[\#080a16\],
+html.light .bg-\[\#070b19\],
+html.light .bg-\[\#0a0f1e\],
+html.light .bg-\[\#0f0f19\],
+html.light .bg-\[\#090e1a\],
+html.light .bg-\[\#080c16\],
+html.light .bg-\[\#14141e\],
+html[data-theme="light"] .bg-\[\#050816\],
+html[data-theme="light"] .bg-\[\#030712\],
+html[data-theme="light"] .bg-\[\#060a12\],
+html[data-theme="light"] .bg-\[\#080a16\],
+html[data-theme="light"] .bg-\[\#070b19\],
+html[data-theme="light"] .bg-\[\#0a0f1e\],
+html[data-theme="light"] .bg-\[\#0f0f19\],
+html[data-theme="light"] .bg-\[\#090e1a\],
+html[data-theme="light"] .bg-\[\#080c16\],
+html[data-theme="light"] .bg-\[\#14141e\] {
+  background-color: var(--bg-primary) !important;
+}
+
+html.light .bg-\[\#070b19\],
+html.light .bg-\[\#0a0f1e\],
+html.light .bg-\[\#0f0f19\],
+html.light .bg-\[\#090e1a\],
+html.light .bg-\[\#080a16\],
+html[data-theme="light"] .bg-\[\#070b19\],
+html[data-theme="light"] .bg-\[\#0a0f1e\],
+html[data-theme="light"] .bg-\[\#0f0f19\],
+html[data-theme="light"] .bg-\[\#090e1a\],
+html[data-theme="light"] .bg-\[\#080a16\] {
+  background-color: var(--card-bg) !important;
+}
+
+html.light .bg-\[\#060a12\],
+html.light .bg-\[\#080c16\],
+html.light .bg-\[\#14141e\],
+html[data-theme="light"] .bg-\[\#060a12\],
+html[data-theme="light"] .bg-\[\#080c16\],
+html[data-theme="light"] .bg-\[\#14141e\] {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* Light mode overrides for text-white elements that are placed on white backgrounds */
+html.light .text-white:not(
+  .bg-\[\#0e1726\] *,
+  .bg-\[\#0c101b\] *,
+  .bg-orange-500 *,
+  .bg-orange-600 *,
+  .bg-amber-500 *,
+  button *,
+  .badge *,
+  .badge
+) {
+  color: var(--text-primary) !important;
+}
+
+/* Clean shadows and hover effects in light mode */
+html.light .glow-orange,
+html.light .glow-blue,
+html.light .glow-purple,
+html.light .glow-mint,
+html.light .glow-amber {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Fluid Typography Utilities */

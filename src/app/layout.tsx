@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
@@ -94,13 +95,32 @@ export default async function RootLayout({
       lang="en"
       className={`${amazonEmberDisplay.variable} ${amazonEmberMono.variable} h-full antialiased`}
       data-scroll-behavior="smooth"
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const savedTheme = localStorage.getItem('theme') || 'dark';
+                  document.documentElement.classList.remove('light', 'dark');
+                  document.documentElement.classList.add(savedTheme);
+                  document.documentElement.setAttribute('data-theme', savedTheme);
+                } catch (e) {}
+              })()
+            `
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-orange-500/30 selection:text-orange-300">
         <AuthProvider>
-          {!isConsole && <Header />}
-          {!isConsole && <AnnouncementBanner />}
-          <main className="flex-grow flex flex-col">{children}</main>
-          {!isConsole && <Footer />}
+          <ThemeProvider>
+            {!isConsole && <Header />}
+            {!isConsole && <AnnouncementBanner />}
+            <main className="flex-grow flex flex-col">{children}</main>
+            {!isConsole && <Footer />}
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

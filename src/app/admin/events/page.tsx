@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
@@ -24,6 +25,7 @@ import {
 
 export default function ConsoleEvents() {
   const { user, isSuperAdmin, isOwner, canManage } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -147,6 +149,7 @@ export default function ConsoleEvents() {
       showToast(editingId ? "Event updated successfully!" : "Event created successfully!");
       setIsModalOpen(false);
       await loadEvents();
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       showToast(err.message || "Failed to save event.", "error");
@@ -162,6 +165,7 @@ export default function ConsoleEvents() {
       await deleteEvent(id);
       showToast("Event deleted successfully.");
       await loadEvents();
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       showToast("Failed to delete event.", "error");

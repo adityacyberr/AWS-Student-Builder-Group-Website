@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
@@ -50,6 +51,7 @@ function deduplicateMembers(list: CMSTeamMember[]): CMSTeamMember[] {
 
 export default function ConsoleTeam() {
   const { user, isSuperAdmin, canManage } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [removingDups, setRemovingDups] = useState(false);
@@ -240,6 +242,7 @@ export default function ConsoleTeam() {
       hasFetched.current = false;
       await loadTeam();
       hasFetched.current = true;
+      router.refresh();
     } catch (err: any) {
       console.error("[Save Member]", err);
       showToast(err.message || "Failed to save member.", "error");
@@ -256,6 +259,7 @@ export default function ConsoleTeam() {
       hasFetched.current = false;
       await loadTeam();
       hasFetched.current = true;
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       showToast("Failed to delete member.", "error");
@@ -280,6 +284,7 @@ export default function ConsoleTeam() {
       hasFetched.current = false;
       await loadTeam();
       hasFetched.current = true;
+      router.refresh();
     } catch (err: any) {
       console.error(err);
       showToast("Failed to update order.", "error");
