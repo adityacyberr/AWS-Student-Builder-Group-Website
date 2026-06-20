@@ -45,7 +45,7 @@ export function InstitutionalSupport({ reducedMotion }: { reducedMotion: boolean
           </span>
         </h3>
         <p className="text-slate-400 text-sm mt-3 max-w-xl">
-          The AWS Student Builder Group is proudly supported by RIMT University and the Department of Research & Innovation (DRI) Lab, providing students with official sponsorship, infrastructure, and technical guidance.
+          The AWS Student Builder Group is proudly supported by RIMT University and the Department of Research, Innovations and Incubations (DRI) Lab, providing students with official sponsorship, infrastructure, and technical guidance.
         </p>
       </div>
 
@@ -113,7 +113,7 @@ export function InstitutionalSupport({ reducedMotion }: { reducedMotion: boolean
             </div>
             
             <p className="text-sm text-slate-400 leading-relaxed">
-              The Department of Research & Innovation (DRI) Lab functions as the innovation hub and research partner of our community. By providing advanced project mentorship, high-performance compute resources, and experimental sandbox sandboxes, the DRI Lab enables our student builders to work on hands-on applications in Cloud Architecture, Internet of Things, and Generative AI.
+              The Department of Research, Innovations and Incubations (DRI) Lab functions as the innovation hub and research partner of our community. By providing advanced project mentorship, high-performance compute resources, and experimental sandbox sandboxes, the DRI Lab enables our student builders to work on hands-on applications in Cloud Architecture, Internet of Things, and Generative AI.
             </p>
           </div>
         </motion.div>

@@ -109,7 +109,7 @@ export default function Header() {
                   src="/brand/dri-lab.png"
                   alt="DRI"
                   className="h-10 w-auto object-contain rounded bg-white px-1"
-                  title="DRI – Department of Research, Innovation and Incubation"
+                  title="DRI – Department of Research, Innovations and Incubations"
                 />
               </div>
 
@@ -285,9 +285,9 @@ export default function Header() {
                     <div className="flex items-center justify-center h-8.5 w-11 bg-white p-1 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
                       <img
                         src="/brand/dri-lab.png"
-                        alt="DRI – Department of Research, Innovation and Incubation"
+                        alt="DRI – Department of Research, Innovations and Incubations"
                         className="max-h-full max-w-full object-contain"
-                        title="DRI – Department of Research, Innovation and Incubation"
+                        title="DRI – Department of Research, Innovations and Incubations"
                       />
                     </div>
                     <div className="h-5 w-px bg-slate-850" />
@@ -318,7 +318,7 @@ export default function Header() {
                   RIMT AWS Student Builder Group
                 </span>
                 <span className="text-[10px] font-semibold text-slate-400 mt-1 leading-relaxed">
-                  An initiative under RIMT University & DRI – Department of Research, Innovation and Incubation
+                  An initiative under RIMT University & DRI – Department of Research, Innovations and Incubations
                 </span>
               </div>
             </div>

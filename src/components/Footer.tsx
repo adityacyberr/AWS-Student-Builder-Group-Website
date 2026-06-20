@@ -193,7 +193,7 @@ export default function Footer() {
                 <div className="flex items-center justify-center h-10 w-14 bg-white p-1 rounded-md border border-slate-200 shadow-sm transition-all duration-300 group-hover:scale-105 flex-shrink-0">
                   <img
                     src="/brand/dri-lab.png"
-                    alt="DRI – Department of Research, Innovation and Incubation"
+                    alt="DRI – Department of Research, Innovations and Incubations"
                     className="max-h-full max-w-full object-contain"
                   />
                 </div>
@@ -202,7 +202,7 @@ export default function Footer() {
                     DRI
                   </span>
                   <span className="text-[10px] text-slate-300 font-medium mt-0.5 leading-snug">
-                    Department of Research, Innovation and Incubation
+                    Department of Research, Innovations and Incubations
                   </span>
                 </div>
               </div>
