@@ -85,7 +85,7 @@ CREATE POLICY "super_admin_insert_profiles"
   ON public.team_members FOR INSERT
   TO authenticated
   WITH CHECK (
-    (SELECT portal_role FROM public.team_members WHERE owner_user_id = auth.uid()) = 'Super Admin'
+    EXISTS (SELECT 1 FROM public.team_members WHERE owner_user_id = auth.uid() AND portal_role = 'Super Admin')
   );
 
 DROP POLICY IF EXISTS "manage_own_profile_or_super_admin_update" ON public.team_members;
@@ -94,11 +94,11 @@ CREATE POLICY "manage_own_profile_or_super_admin_update"
   TO authenticated
   USING (
     auth.uid() = owner_user_id
-    OR (SELECT portal_role FROM public.team_members WHERE owner_user_id = auth.uid()) = 'Super Admin'
+    OR EXISTS (SELECT 1 FROM public.team_members WHERE owner_user_id = auth.uid() AND portal_role = 'Super Admin')
   )
   WITH CHECK (
     auth.uid() = owner_user_id
-    OR (SELECT portal_role FROM public.team_members WHERE owner_user_id = auth.uid()) = 'Super Admin'
+    OR EXISTS (SELECT 1 FROM public.team_members WHERE owner_user_id = auth.uid() AND portal_role = 'Super Admin')
   );
 
 DROP POLICY IF EXISTS "super_admin_delete_profiles" ON public.team_members;
@@ -106,7 +106,7 @@ CREATE POLICY "super_admin_delete_profiles"
   ON public.team_members FOR DELETE
   TO authenticated
   USING (
-    (SELECT portal_role FROM public.team_members WHERE owner_user_id = auth.uid()) = 'Super Admin'
+    EXISTS (SELECT 1 FROM public.team_members WHERE owner_user_id = auth.uid() AND portal_role = 'Super Admin')
   );
 
 -- 7. Add database trigger to prevent non-Super Admins from editing restricted fields
@@ -197,12 +197,14 @@ CREATE POLICY "admin_and_owner_write_storage" ON storage.objects
     bucket_id = 'builder-assets'
     AND (
       -- 1. Caller is a Super Admin
-      (SELECT portal_role FROM public.team_members WHERE owner_user_id = auth.uid()) = 'Super Admin'
+      EXISTS (SELECT 1 FROM public.team_members WHERE owner_user_id = auth.uid() AND portal_role = 'Super Admin')
       -- 2. Or the file path starts with 'team-photos/' and the prefix matches their team member record id
       OR (
         name LIKE 'team-photos/%'
-        AND split_part(substring(name FROM 13), '-', 1) = (
-          SELECT id::text FROM public.team_members WHERE owner_user_id = auth.uid()
+        AND EXISTS (
+          SELECT 1 FROM public.team_members 
+          WHERE owner_user_id = auth.uid() 
+            AND id::text = split_part(substring(name FROM 13), '-', 1)
         )
       )
     )
@@ -211,12 +213,14 @@ CREATE POLICY "admin_and_owner_write_storage" ON storage.objects
     bucket_id = 'builder-assets'
     AND (
       -- 1. Caller is a Super Admin
-      (SELECT portal_role FROM public.team_members WHERE owner_user_id = auth.uid()) = 'Super Admin'
+      EXISTS (SELECT 1 FROM public.team_members WHERE owner_user_id = auth.uid() AND portal_role = 'Super Admin')
       -- 2. Or the file path starts with 'team-photos/', matches their ID, and is an allowed image format
       OR (
         name LIKE 'team-photos/%'
-        AND split_part(substring(name FROM 13), '-', 1) = (
-          SELECT id::text FROM public.team_members WHERE owner_user_id = auth.uid()
+        AND EXISTS (
+          SELECT 1 FROM public.team_members 
+          WHERE owner_user_id = auth.uid() 
+            AND id::text = split_part(substring(name FROM 13), '-', 1)
         )
         AND (
           lower(storage.extension(name)) = 'jpg' OR 

@@ -379,7 +379,6 @@ export async function saveTeamMember(
   userName?: string | null
 ): Promise<CMSTeamMember> {
   const auditFields = {
-    owner_user_id: userAuthId,
     updated_by: userAuthId,
     ...(id ? {} : { created_by: userAuthId }),
   };
