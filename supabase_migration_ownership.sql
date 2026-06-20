@@ -115,6 +115,11 @@ RETURNS TRIGGER AS $$
 DECLARE
   caller_role text;
 BEGIN
+  -- Bypass checks if executed outside an authenticated user session (e.g., database admin / SQL editor)
+  IF auth.uid() IS NULL THEN
+    RETURN NEW;
+  END IF;
+
   -- Check database role of current authenticated user
   SELECT portal_role INTO caller_role 
   FROM public.team_members 
