@@ -31,6 +31,12 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'gallery_images' AND column_name = 'updated_by') THEN
     ALTER TABLE public.gallery_images ADD COLUMN updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'gallery_images' AND column_name = 'event_id') THEN
+    ALTER TABLE public.gallery_images ADD COLUMN event_id uuid REFERENCES public.events(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'gallery_images' AND column_name = 'instagram_url') THEN
+    ALTER TABLE public.gallery_images ADD COLUMN instagram_url text;
+  END IF;
 
   -- achievements
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'owner_user_id') THEN
