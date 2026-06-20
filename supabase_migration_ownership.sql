@@ -11,6 +11,12 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'team_members' AND column_name = 'portal_role') THEN
     ALTER TABLE public.team_members ADD COLUMN portal_role text NOT NULL DEFAULT 'Member' CHECK (portal_role IN ('Super Admin', 'Member'));
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'team_members' AND column_name = 'created_by') THEN
+    ALTER TABLE public.team_members ADD COLUMN created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'team_members' AND column_name = 'updated_by') THEN
+    ALTER TABLE public.team_members ADD COLUMN updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
 END $$;
 
 -- 2. Clean up any invalid portal_role values (keep only 'Super Admin' or 'Member')
@@ -222,3 +228,5 @@ CREATE POLICY "admin_and_owner_write_storage" ON storage.objects
     )
   );
 
+-- 10. Reload PostgREST schema cache
+NOTIFY pgrst, 'reload schema';
