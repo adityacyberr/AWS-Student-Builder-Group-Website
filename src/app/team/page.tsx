@@ -130,7 +130,6 @@ export default function TeamPage() {
 
   useEffect(() => {
     async function loadTeam() {
-      let teamList = [...TEAM_MEMBERS];
       if (isSupabaseConfigured && supabase) {
         try {
           const { data, error } = await supabase
@@ -138,7 +137,7 @@ export default function TeamPage() {
             .select("*")
             .order("display_order", { ascending: true });
           if (!error && data && data.length > 0) {
-            teamList = (data as DBTeamMemberRow[]).map((d) => ({
+            const dbMembers = (data as DBTeamMemberRow[]).map((d) => ({
               id: d.id,
               name: d.name,
               role: d.role,
@@ -154,15 +153,17 @@ export default function TeamPage() {
               github: d.github,
               displayOrder: d.display_order,
             }));
+            setMembers(dbMembers);
+            return;
           }
         } catch (err) {
           console.warn("Error loading team from Supabase:", err);
         }
       }
 
-      // Deduplicate
+      // Fallback: use static data only if Supabase is not configured or returned nothing
       const unique = new Map<string, TeamMember>();
-      teamList.forEach((member) => {
+      TEAM_MEMBERS.forEach((member) => {
         const key = `${member.name.toLowerCase()}-${member.role.toLowerCase()}`;
         if (!unique.has(key)) {
           unique.set(key, member);
@@ -172,6 +173,15 @@ export default function TeamPage() {
     }
 
     loadTeam();
+
+    // Listen for CMS data updates (same-tab from admin portal)
+    const handleUpdate = () => { loadTeam(); };
+    window.addEventListener("cms-data-updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    return () => {
+      window.removeEventListener("cms-data-updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
   }, []);
 
   const sortedMembers = useMemo(

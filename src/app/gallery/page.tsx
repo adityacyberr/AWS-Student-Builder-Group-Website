@@ -15,18 +15,9 @@ import { WireframeGlobe } from "@/app/achievements/components/WireframeGlobe";
 import { MemoriesOrbitShowcase } from "./components/MemoriesOrbitShowcase";
 import { QuickStats } from "./components/QuickStats";
 import { MediaInspector } from "./components/MediaInspector";
-
-interface DBGalleryRow {
-  id: string;
-  title: string;
-  date: string;
-  description: string;
-  category: "workshops" | "events" | "community" | "celebrations";
-  image_url?: string;
-  participants?: number;
-  location?: string;
-  photo_count?: number;
-}
+import { subscribeCmsUpdates } from "@/lib/cmsEvents";
+import { SkeletonCard } from "@/components/console/SkeletonLoader";
+import { CMSErrorBoundary, CMSErrorState } from "@/components/console/CMSErrorBoundary";
 
 const scrollContainerVariants = {
   hidden: { opacity: 0 },
@@ -100,7 +91,7 @@ const CardContainer = ({
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onClick={handleClick}
-      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-900 bg-slate-950/60 p-4 shadow-[inset_0_0_12px_rgba(255,140,0,0.01)] transition-all duration-300 hover:border-orange-500/35 hover:-translate-y-2 hover:shadow-[0_12px_36px_rgba(255,140,0,0.1),inset_0_0_12px_rgba(255,140,0,0.02)] cursor-pointer select-none text-left"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-900 bg-slate-950/60 p-4 shadow-[inset_0_0_12px_rgba(255,140,0,0.01)] transition-all duration-300 hover:border-orange-500/35 hover:-translate-y-2 hover:shadow-[0_12px_36px_rgba(255,140,0,1,0.1),inset_0_0_12px_rgba(255,140,0,0.02)] cursor-pointer select-none text-left"
     >
       {/* Cursor spotlight layer */}
       <div 
@@ -166,7 +157,7 @@ const CardContainer = ({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="w-full text-center py-2 px-4 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all duration-300 border border-orange-500/30 bg-orange-500/10 text-orange-400 group-hover:bg-orange-500 group-hover:text-white flex items-center justify-center gap-1.5 h-9"
+          className="w-full text-center py-2 px-4 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all duration-300 border border-orange-500/30 bg-orange-500/10 text-orange-400 group-hover:bg-orange-50 group-hover:text-white flex items-center justify-center gap-1.5 h-9"
         >
           <span>View on Instagram</span>
           <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
@@ -176,7 +167,7 @@ const CardContainer = ({
   );
 };
 
-export default function GalleryPage() {
+function GalleryPageContent() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [completedEventsCount, setCompletedEventsCount] = useState(0);
@@ -187,6 +178,10 @@ export default function GalleryPage() {
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [inspectorItem, setInspectorItem] = useState<GalleryItem | null>(null);
+  
+  // Loader & Error states
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Floating button state tracking
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -208,47 +203,46 @@ export default function GalleryPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Fetch Supabase gallery items dynamically
-  useEffect(() => {
-    async function fetchGalleryAndEvents() {
+  async function fetchGalleryAndEvents(isSilent = false) {
+    if (!isSilent) setLoading(true);
+    try {
       if (isSupabaseConfigured && supabase) {
-        try {
-          const [galleryRes, eventsRes] = await Promise.all([
-            supabase
-              .from("gallery_images")
-              .select("*")
-              .order("created_at", { ascending: false }),
-            supabase
-              .from("events")
-              .select("*")
-          ]);
+        const [galleryRes, eventsRes] = await Promise.all([
+          supabase
+            .from("gallery_images")
+            .select("*")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("events")
+            .select("*")
+        ]);
 
-          if (galleryRes.data) {
-            const dbItems: GalleryItem[] = galleryRes.data.map((d: any) => ({
-              id: d.id,
-              title: d.title,
-              date: d.date,
-              description: d.description,
-              category: d.category,
-              imageUrl: d.image_url || "/gallery/welcome-team.jpg",
-              participants: 80,
-              location: "RIMT University",
-              photoCount: 1,
-              eventId: d.event_id || undefined,
-              instagramUrl: d.instagram_url || undefined,
-            }));
-            setItems(dbItems);
-          }
+        if (galleryRes.error) throw galleryRes.error;
+        if (eventsRes.error) throw eventsRes.error;
 
-          if (eventsRes.data) {
-            setEvents(eventsRes.data);
-            setCompletedEventsCount(eventsRes.data.filter((e: any) => e.status === "completed").length);
-          }
-        } catch (err) {
-          console.warn("Supabase load failed, falling back to local files:", err);
+        if (galleryRes.data) {
+          const dbItems: GalleryItem[] = galleryRes.data.map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            date: d.date,
+            description: d.description,
+            category: d.category,
+            imageUrl: d.image_url || "/gallery/welcome-team.jpg",
+            participants: 80,
+            location: "RIMT University",
+            photoCount: 1,
+            eventId: d.event_id || undefined,
+            instagramUrl: d.instagram_url || undefined,
+          }));
+          setItems(dbItems);
+        }
+
+        if (eventsRes.data) {
+          setEvents(eventsRes.data);
+          setCompletedEventsCount(eventsRes.data.filter((e: any) => e.status === "completed").length);
         }
       } else {
-        // Sandbox mode
+        // Sandbox mode fallbacks
         const storedGallery = localStorage.getItem("aws_sbg_gallery");
         if (storedGallery) {
           const storedItems = JSON.parse(storedGallery).map((item: any) => ({
@@ -273,8 +267,30 @@ export default function GalleryPage() {
         setEvents(localEvents);
         setCompletedEventsCount(localEvents.filter((e: any) => e.status === "completed").length);
       }
+      setError(null);
+    } catch (err: any) {
+      console.error("Gallery Page fetch error:", err);
+      setError("Failed to stream gallery files. Please retry later.");
+    } finally {
+      if (!isSilent) setLoading(false);
     }
+  }
+
+  // Fetch Supabase gallery items dynamically on mount and subscribe to realtime updates
+  useEffect(() => {
     fetchGalleryAndEvents();
+
+    const unsubscribeGallery = subscribeCmsUpdates("gallery_images", () => {
+      fetchGalleryAndEvents(true);
+    });
+    const unsubscribeEvents = subscribeCmsUpdates("events", () => {
+      fetchGalleryAndEvents(true);
+    });
+
+    return () => {
+      unsubscribeGallery();
+      unsubscribeEvents();
+    };
   }, []);
 
   // Likes/Views initialization
@@ -344,7 +360,7 @@ export default function GalleryPage() {
         const query = searchQuery.toLowerCase();
         const matchTitle = item.title.toLowerCase().includes(query);
         const matchDesc = item.description.toLowerCase().includes(query);
-        const matchLoc = item.location.toLowerCase().includes(query);
+        const matchLoc = (item.location || "").toLowerCase().includes(query);
         if (!matchTitle && !matchDesc && !matchLoc) return false;
       }
 
@@ -395,28 +411,24 @@ export default function GalleryPage() {
         animate="visible"
         className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 relative z-10 space-y-16"
       >
-        {/* ================================================= */}
-        {/* HERO SECTION                                      */}
-        {/* ================================================= */}
+        {/* HERO SECTION */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center w-full">
-          {/* Left Column: Heading (approx 40% width on desktop) */}
           <motion.div 
             variants={scrollItemVariants}
             className="lg:col-span-5 text-left space-y-4"
           >
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block font-mono">
               {"// MOMENTS CAPTURED"}
             </span>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-none">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-none font-sans">
               Captured Moments<br />
               at <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">RIMT</span>
             </h1>
-            <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
+            <p className="text-slate-450 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
               Memories from workshops, meetups, collaborations, and community milestones.
             </p>
           </motion.div>
 
-          {/* Right Column: Memories Orbit Showcase (approx 60% width on desktop) */}
           <motion.div 
             variants={scrollItemVariants}
             className="lg:col-span-7 flex justify-center w-full"
@@ -425,9 +437,7 @@ export default function GalleryPage() {
           </motion.div>
         </div>
 
-        {/* ================================================= */}
-        {/* QUICK STATS                                       */}
-        {/* ================================================= */}
+        {/* QUICK STATS */}
         <motion.div variants={scrollItemVariants} className="w-full">
           <QuickStats
             items={items}
@@ -437,9 +447,7 @@ export default function GalleryPage() {
           />
         </motion.div>
 
-        {/* ================================================= */}
-        {/* CONTROL CENTER BAR                                */}
-        {/* ================================================= */}
+        {/* CONTROL CENTER BAR */}
         <motion.div 
           variants={scrollItemVariants}
           className="sticky top-6 z-30 w-full"
@@ -465,7 +473,7 @@ export default function GalleryPage() {
 
             {/* Middle: Search Field */}
             <div className="relative flex-grow max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-550" />
               <input
                 type="text"
                 value={searchQuery}
@@ -497,7 +505,7 @@ export default function GalleryPage() {
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    viewMode === "grid" ? "bg-orange-500/10 text-orange-400" : "text-slate-500 hover:text-slate-300"
+                    viewMode === "grid" ? "bg-orange-500/10 text-orange-400" : "text-slate-500 hover:text-slate-350"
                   }`}
                   title="Grid View"
                 >
@@ -506,7 +514,7 @@ export default function GalleryPage() {
                 <button
                   onClick={() => setViewMode("masonry")}
                   className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    viewMode === "masonry" ? "bg-orange-500/10 text-orange-400" : "text-slate-500 hover:text-slate-300"
+                    viewMode === "masonry" ? "bg-orange-500/10 text-orange-400" : "text-slate-500 hover:text-slate-350"
                   }`}
                   title="Masonry View"
                 >
@@ -514,7 +522,6 @@ export default function GalleryPage() {
                 </button>
               </div>
 
-              {/* Future proof parameters (Settings modal trigger on mobile or advanced parameters) */}
               <button 
                 onClick={() => setShowMobileFilters(!showMobileFilters)}
                 className={`p-2 rounded-xl border transition-colors cursor-pointer ${
@@ -573,7 +580,6 @@ export default function GalleryPage() {
                     </select>
                   </div>
 
-                  {/* Clear filter triggers */}
                   {(selectedYear !== "all" || selectedMonth !== "all") && (
                     <button
                       onClick={() => {
@@ -591,17 +597,24 @@ export default function GalleryPage() {
           </AnimatePresence>
         </motion.div>
 
-        {/* ================================================= */}
-        {/* IMAGE GRID                                        */}
-        {/* ================================================= */}
-        {items.length === 0 ? (
+        {/* IMAGE GRID */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        ) : error ? (
+          <CMSErrorState message={error} onRetry={() => fetchGalleryAndEvents()} />
+        ) : items.length === 0 ? (
           <motion.div 
             variants={scrollItemVariants}
             className="text-center py-24 border border-dashed border-slate-900/60 rounded-3xl bg-slate-950/30 max-w-md mx-auto relative z-10"
           >
             <ImageIcon className="h-10 w-10 text-orange-500/80 mx-auto mb-4 animate-pulse" />
             <h3 className="text-lg font-bold text-white mb-2">No Memories Yet</h3>
-            <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+            <p className="text-xs text-slate-455 max-w-xs mx-auto leading-relaxed">
               No memories have been added yet. Check back after our upcoming events.
             </p>
           </motion.div>
@@ -612,7 +625,7 @@ export default function GalleryPage() {
           >
             <SearchCode className="h-10 w-10 text-slate-650 mx-auto mb-4 animate-pulse" />
             <h3 className="text-lg font-bold text-white mb-2">No Matches Found</h3>
-            <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+            <p className="text-xs text-slate-455 max-w-xs mx-auto leading-relaxed">
               We couldn&apos;t find any media logs matching your search parameters or sorting filters. Try adjusting your timeline indexes.
             </p>
           </motion.div>
@@ -641,20 +654,18 @@ export default function GalleryPage() {
           </motion.div>
         )}
 
-        {/* ================================================= */}
-        {/* BOTTOM SECTION                                    */}
-        {/* ================================================= */}
+        {/* BOTTOM SECTION */}
         <motion.div 
           variants={scrollItemVariants}
           className="space-y-6 pt-12 border-t border-slate-900/60 max-w-3xl mx-auto text-center"
         >
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block font-mono">
             {"// MEMORY_CELL"}
           </span>
-          <h2 className="text-3xl font-black text-white tracking-tight leading-tight">
+          <h2 className="text-3xl font-black text-white tracking-tight leading-tight uppercase">
             BUILDING MEMORIES TOGETHER
           </h2>
-          <p className="text-slate-400 text-sm leading-relaxed max-w-xl mx-auto">
+          <p className="text-slate-450 text-sm leading-relaxed max-w-xl mx-auto">
             Every workshop, meetup, and event leaves behind stories, friendships, and learning experiences that continue shaping our builder community.
           </p>
           
@@ -672,7 +683,6 @@ export default function GalleryPage() {
 
       {/* Floating Action Buttons bottom-right */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-2.5">
-        {/* Search focus */}
         <button
           onClick={() => {
             window.scrollTo({ top: 400, behavior: "smooth" });
@@ -683,7 +693,6 @@ export default function GalleryPage() {
           <Search className="h-4.5 w-4.5" />
         </button>
 
-        {/* Filters panel toggle */}
         <button
           onClick={() => {
             setShowMobileFilters(!showMobileFilters);
@@ -695,7 +704,6 @@ export default function GalleryPage() {
           <Settings className="h-4.5 w-4.5" />
         </button>
 
-        {/* Scroll back to top */}
         <AnimatePresence>
           {showScrollTop && (
             <motion.button
@@ -724,5 +732,13 @@ export default function GalleryPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function GalleryPage() {
+  return (
+    <CMSErrorBoundary>
+      <GalleryPageContent />
+    </CMSErrorBoundary>
   );
 }

@@ -7,6 +7,9 @@ import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
 import { useAuth } from "@/context/AuthContext";
 import { getTeamMembers, saveTeamMember, deleteTeamMember, CMSTeamMember } from "@/lib/cms";
+import { subscribeCmsUpdates } from "@/lib/cmsEvents";
+import { SkeletonRow } from "@/components/console/SkeletonLoader";
+import { CMSErrorBoundary, CMSErrorState } from "@/components/console/CMSErrorBoundary";
 import {
   Users,
   Plus,
@@ -35,9 +38,6 @@ const GitHubIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
   </svg>
 );
 
-// ─── Client-side dedup safety net ────────────────────────────────────────────
-// Even if DB has duplicates, the UI will never show them while the proper
-// DB cleanup is being applied.
 function deduplicateMembers(list: CMSTeamMember[]): CMSTeamMember[] {
   const seen = new Map<string, CMSTeamMember>();
   for (const m of list) {
@@ -49,20 +49,20 @@ function deduplicateMembers(list: CMSTeamMember[]): CMSTeamMember[] {
   return Array.from(seen.values());
 }
 
-export default function ConsoleTeam() {
-  const { user, isSuperAdmin, canManage } = useAuth();
+function ConsoleTeam() {
+  const { user, profile, isSuperAdmin, isOwner, canManage } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [removingDups, setRemovingDups] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // ── useRef guard prevents React Strict Mode double-invocation ────────────
   const hasFetched = useRef(false);
 
   // Lists
   const [members, setMembers] = useState<CMSTeamMember[]>([]);
-  const [dbCount, setDbCount] = useState<number | null>(null); // raw DB row count
+  const [dbCount, setDbCount] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modal State
@@ -91,32 +91,34 @@ export default function ConsoleTeam() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  useEffect(() => {
-    // Guard: only fetch once even in React Strict Mode (which mounts twice in dev)
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    loadTeam();
-  }, []);
-
-  const loadTeam = async () => {
-    setLoading(true);
+  const loadTeam = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const data = await getTeamMembers();
-      // ALWAYS replace, never append
       setMembers(data);
       setDbCount(data.length);
+      setError(null);
     } catch (err: any) {
       console.error("[Team Roster] Load error:", err);
-      showToast("Error loading team members", "error");
+      setError("Failed to load team roster. Please check your network connection.");
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
-  // ── Remove Duplicates (calls DB RPC) ─────────────────────────────────────
+  useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+    loadTeam();
+
+    const unsubscribe = subscribeCmsUpdates("team_members", () => {
+      loadTeam(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleRemoveDuplicates = async () => {
     if (!isSupabaseConfigured || !supabase) {
-      // Sandbox: just dedup localStorage
       const stored = localStorage.getItem("aws_sbg_team");
       if (stored) {
         const raw = JSON.parse(stored);
@@ -130,8 +132,6 @@ export default function ConsoleTeam() {
 
     setRemovingDups(true);
     try {
-      // Approach: fetch all rows, find duplicates by (name, role),
-      // keep the one with the smallest created_at (oldest), delete the rest.
       const { data: allRows, error: fetchErr } = await supabase
         .from("team_members")
         .select("id, name, role, created_at")
@@ -139,7 +139,7 @@ export default function ConsoleTeam() {
 
       if (fetchErr) throw fetchErr;
 
-      const seen = new Map<string, string>(); // key → id to keep
+      const seen = new Map<string, string>();
       const toDelete: string[] = [];
 
       for (const row of allRows || []) {
@@ -165,9 +165,7 @@ export default function ConsoleTeam() {
       if (delErr) throw delErr;
 
       showToast(`${toDelete.length} duplicate record(s) removed successfully.`);
-      hasFetched.current = false; // allow reload
-      await loadTeam();
-      hasFetched.current = true;
+      await loadTeam(true);
     } catch (err: any) {
       console.error("[Remove Duplicates] Error:", err);
       showToast(err.message || "Failed to remove duplicates.", "error");
@@ -229,23 +227,44 @@ export default function ConsoleTeam() {
       .map((item) => item.trim())
       .filter((item) => item !== "");
 
-    try {
-      const payload: Omit<CMSTeamMember, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
-        name, role, branch, specialization, bio, quote,
-        focusAreas, initials, themeColor, photo, linkedin, github, displayOrder,
-        portalRole, email,
-      };
+    const payload: Omit<CMSTeamMember, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
+      name, role, branch, specialization, bio, quote,
+      focusAreas, initials, themeColor, photo, linkedin, github, displayOrder,
+      portalRole, email,
+    };
 
-      await saveTeamMember(editingId, payload, user?.id || null);
+    // Close modal immediately
+    setIsModalOpen(false);
+
+    // Snapshot for rollback
+    const originalMembers = [...members];
+    const tempId = editingId || `optimistic-${Date.now()}`;
+    const optimisticItem: CMSTeamMember = {
+      id: tempId,
+      ...payload,
+      ownerUserId: user?.id || "",
+      createdBy: editingId ? (members.find((m) => m.id === editingId)?.createdBy || "") : (user?.id || ""),
+      updatedBy: user?.id || "",
+    };
+
+    // Optimistic UI state update
+    if (editingId) {
+      setMembers(members.map((m) => (m.id === editingId ? optimisticItem : m)));
+    } else {
+      setMembers([...members, optimisticItem]);
+    }
+
+    try {
+      const saved = await saveTeamMember(editingId, payload, user?.id || null, profile?.name || null);
+      // Replace optimistic entry with DB output
+      setMembers((prev) => prev.map((m) => (m.id === tempId ? saved : m)));
       showToast(editingId ? "Member updated successfully!" : "Member added successfully!");
-      setIsModalOpen(false);
-      hasFetched.current = false;
-      await loadTeam();
-      hasFetched.current = true;
       router.refresh();
     } catch (err: any) {
       console.error("[Save Member]", err);
-      showToast(err.message || "Failed to save member.", "error");
+      // Rollback
+      setMembers(originalMembers);
+      showToast(err.message || "Failed to save member. Rolled back.", "error");
     } finally {
       setSaving(false);
     }
@@ -253,16 +272,21 @@ export default function ConsoleTeam() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Remove this member from the roster permanently?")) return;
+
+    // Snapshot for rollback
+    const originalMembers = [...members];
+    // Optimistic UI state delete
+    setMembers(members.filter((m) => m.id !== id));
+
     try {
-      await deleteTeamMember(id);
+      await deleteTeamMember(id, user?.id || null, profile?.name || null);
       showToast("Member removed.");
-      hasFetched.current = false;
-      await loadTeam();
-      hasFetched.current = true;
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      showToast("Failed to delete member.", "error");
+      // Rollback
+      setMembers(originalMembers);
+      showToast("Failed to delete member. Rolled back.", "error");
     }
   };
 
@@ -270,6 +294,7 @@ export default function ConsoleTeam() {
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= members.length) return;
 
+    const originalMembers = [...members];
     const list = [...members];
     const a = list[index];
     const b = list[targetIndex];
@@ -277,17 +302,21 @@ export default function ConsoleTeam() {
     a.displayOrder = b.displayOrder;
     b.displayOrder = tempOrder;
 
+    // Swap in UI immediately
+    list[index] = b;
+    list[targetIndex] = a;
+    setMembers(list);
+
     try {
-      await saveTeamMember(a.id, a, user?.id || null);
-      await saveTeamMember(b.id, b, user?.id || null);
+      await saveTeamMember(a.id, a, user?.id || null, profile?.name || null);
+      await saveTeamMember(b.id, b, user?.id || null, profile?.name || null);
       showToast("Order updated.");
-      hasFetched.current = false;
-      await loadTeam();
-      hasFetched.current = true;
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      showToast("Failed to update order.", "error");
+      // Rollback
+      setMembers(originalMembers);
+      showToast("Failed to update order. Rolled back.", "error");
     }
   };
 
@@ -318,7 +347,7 @@ export default function ConsoleTeam() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap self-start">
-          {/* Remove Duplicates button — shown when DB has more rows than displayed */}
+          {/* Remove Duplicates button */}
           {hasDuplicatesInDb && (
             <button
               onClick={handleRemoveDuplicates}
@@ -337,7 +366,7 @@ export default function ConsoleTeam() {
 
           {/* Manual refresh */}
           <button
-            onClick={() => { hasFetched.current = false; loadTeam(); hasFetched.current = true; }}
+            onClick={() => { loadTeam(); }}
             disabled={loading}
             className="h-8 w-8 rounded-lg border border-zinc-800 hover:border-zinc-700 flex items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors"
             title="Refresh roster"
@@ -348,7 +377,7 @@ export default function ConsoleTeam() {
           {isSuperAdmin && (
             <button
               onClick={handleOpenAdd}
-              className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+              className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-955 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
             >
               <Plus className="h-4 w-4" />
               Add Member
@@ -404,19 +433,23 @@ export default function ConsoleTeam() {
 
       {/* ── Roster List ────────────────────────────────────── */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader className="h-5 w-5 text-amber-500 animate-spin" />
+        <div className="space-y-2">
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
         </div>
+      ) : error ? (
+        <CMSErrorState message={error} onRetry={() => loadTeam()} />
       ) : filteredMembers.length === 0 ? (
         <div className="text-center py-12 bg-zinc-900/10 border border-zinc-900/50 rounded-xl">
           <p className="text-xs text-zinc-550">No members match your search.</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 animate-fade-in">
           {filteredMembers.map((m, index) => (
             <div
               key={m.id}
-              className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-zinc-900 bg-zinc-950/20 gap-4 hover:border-zinc-800 transition-all"
+              className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-zinc-900 bg-zinc-955/20 gap-4 hover:border-zinc-800 transition-all"
             >
               <div className="flex items-center gap-3.5 min-w-0">
                 {/* Photo / Avatar */}
@@ -430,9 +463,23 @@ export default function ConsoleTeam() {
                 </div>
 
                 <div className="min-w-0">
-                  <div className="flex items-baseline gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-xs font-black text-white truncate">{m.name}</h3>
-                    <span className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold">{m.role}</span>
+                    <span className="text-[10px] text-zinc-550 uppercase tracking-wide font-bold">{m.role}</span>
+                    {m.portalRole === "Super Admin" || m.email?.toLowerCase() === "adityajangra2008@gmail.com" ? (
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide bg-orange-500/10 border border-orange-500/20 text-orange-500 select-none">
+                        Super Admin
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide bg-zinc-800 border border-zinc-700 text-zinc-400 select-none">
+                        Member
+                      </span>
+                    )}
+                    {isOwner(m) && (
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase tracking-wide bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 select-none">
+                        Owner
+                      </span>
+                    )}
                   </div>
                   <p className="text-[10px] text-zinc-500 mt-0.5 truncate">
                     {m.branch} — {m.specialization}
@@ -441,29 +488,27 @@ export default function ConsoleTeam() {
               </div>
 
               <div className="flex items-center justify-between md:justify-end gap-5 border-t md:border-t-0 border-zinc-900/80 pt-3.5 md:pt-0">
-                 {/* Actions / Rls Ownership Warnings */}
+                 {/* Actions */}
                 <div className="flex items-center gap-3.5 flex-grow justify-end">
-                  {canManage(m) ? (
+                  {isSuperAdmin ? (
                     <>
-                      {isSuperAdmin && (
-                        <div className="flex items-center gap-1.5 border-r border-zinc-900 pr-3.5">
-                          <span className="text-[10px] text-zinc-550 mr-1.5 font-mono">Pos: {m.displayOrder}</span>
-                          <button
-                            onClick={() => handleMove(index, "up")}
-                            disabled={index === 0}
-                            className="h-7 w-7 rounded border border-zinc-855 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                          >
-                            <ArrowUp className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleMove(index, "down")}
-                            disabled={index === filteredMembers.length - 1}
-                            className="h-7 w-7 rounded border border-zinc-855 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                          >
-                            <ArrowDown className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1.5 border-r border-zinc-900 pr-3.5">
+                        <span className="text-[10px] text-zinc-550 mr-1.5 font-mono">Pos: {m.displayOrder}</span>
+                        <button
+                          onClick={() => handleMove(index, "up")}
+                          disabled={index === 0}
+                          className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleMove(index, "down")}
+                          disabled={index === filteredMembers.length - 1}
+                          className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-455 hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                       
                       <div className="flex gap-1">
                         <button
@@ -473,22 +518,25 @@ export default function ConsoleTeam() {
                         >
                           <Edit2 className="h-3 w-3" />
                         </button>
-                        {isSuperAdmin && (
-                          <button
-                            onClick={() => handleDelete(m.id)}
-                            className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-450 hover:text-rose-400 transition-colors"
-                            title="Delete Member"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleDelete(m.id)}
+                          className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-455 hover:text-rose-455 transition-colors"
+                          title="Delete Member"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
                       </div>
                     </>
                   ) : (
-                    <span className="text-[10px] text-zinc-500 italic bg-zinc-900/30 border border-zinc-900/60 px-3 py-1.5 rounded-lg flex items-center gap-1.5 max-w-xs text-right">
-                      <Shield className="h-3 w-3 text-zinc-600 shrink-0" />
-                      This profile can only be managed by its owner or an administrator.
-                    </span>
+                    isOwner(m) && (
+                      <button
+                        onClick={() => handleOpenEdit(m)}
+                        className="px-3 py-1.5 rounded-lg border border-orange-500/20 bg-orange-500/5 text-orange-500 hover:bg-orange-500/10 hover:border-orange-500/30 text-[10px] font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                        <span>Manage Profile</span>
+                      </button>
+                    )
                   )}
                 </div>
               </div>
@@ -503,7 +551,7 @@ export default function ConsoleTeam() {
           <div className="w-full max-w-2xl rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative my-8">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-350 p-1"
+              className="absolute right-4 top-4 text-zinc-555 hover:text-zinc-350 p-1"
             >
               <X className="h-4 w-4" />
             </button>
@@ -516,23 +564,25 @@ export default function ConsoleTeam() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Name */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Full Name *</label>
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Full Name *</label>
                   <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Pranav Bansal"
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none focus:border-amber-500/50" />
+                    disabled={!isSuperAdmin}
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none focus:border-amber-500/50 disabled:opacity-50 disabled:cursor-not-allowed" />
                 </div>
 
                 {/* Role */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Roster Role *</label>
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Roster Role *</label>
                   <input type="text" required value={role} onChange={(e) => setRole(e.target.value)}
                     placeholder="e.g. Group Leader"
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-855 text-white focus:outline-none focus:border-amber-500/50" />
+                    disabled={!isSuperAdmin}
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none focus:border-amber-500/50 disabled:opacity-50 disabled:cursor-not-allowed" />
                 </div>
 
                 {/* Branch */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Academic Branch *</label>
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Academic Branch *</label>
                   <input type="text" required value={branch} onChange={(e) => setBranch(e.target.value)}
                     placeholder="e.g. B.Tech CSE"
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
@@ -540,7 +590,7 @@ export default function ConsoleTeam() {
 
                 {/* Specialization */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Specialization *</label>
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Specialization *</label>
                   <input type="text" required value={specialization} onChange={(e) => setSpecialization(e.target.value)}
                     placeholder="e.g. Cybersecurity, AI & ML"
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
@@ -548,19 +598,21 @@ export default function ConsoleTeam() {
 
                 {/* Initials */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Initials *</label>
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Initials *</label>
                   <input type="text" required maxLength={2} value={initials}
                     onChange={(e) => setInitials(e.target.value.toUpperCase())}
                     placeholder="e.g. PB"
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
+                    disabled={!isSuperAdmin}
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed" />
                 </div>
 
                 {/* Display Order */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Display Order</label>
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Display Order</label>
                   <input type="number" value={displayOrder}
                     onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 1)}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
+                    disabled={!isSuperAdmin}
+                    className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed" />
                 </div>
               </div>
 
@@ -572,13 +624,13 @@ export default function ConsoleTeam() {
               {/* Social Links */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">LinkedIn URL</label>
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">LinkedIn URL</label>
                   <input type="text" value={linkedin} onChange={(e) => setLinkedin(e.target.value)}
                     placeholder="https://linkedin.com/in/..."
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">GitHub URL</label>
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">GitHub URL</label>
                   <input type="text" value={github} onChange={(e) => setGithub(e.target.value)}
                     placeholder="https://github.com/..."
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
@@ -589,13 +641,13 @@ export default function ConsoleTeam() {
               {isSuperAdmin && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-zinc-900 pt-4 mt-2">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Email Address (linked Auth account)</label>
+                    <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Email Address (linked Auth account)</label>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                       placeholder="user@sbg-rimt.com"
                       className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Portal Access Role</label>
+                    <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Portal Access Role</label>
                     <select value={portalRole} onChange={(e) => setPortalRole(e.target.value as any)}
                       className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none">
                       <option value="Member">Member</option>
@@ -608,15 +660,15 @@ export default function ConsoleTeam() {
 
               {/* Focus Areas */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Focus Areas (comma-separated)</label>
+                <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Focus Areas (comma-separated)</label>
                 <input type="text" value={focusAreasText} onChange={(e) => setFocusAreasText(e.target.value)}
                   placeholder="e.g. Cloud Security, IAM, Web & Infrastructure"
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-855 text-white focus:outline-none" />
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
               </div>
 
               {/* Quote */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Signature Quote *</label>
+                <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Signature Quote *</label>
                 <input type="text" required value={quote} onChange={(e) => setQuote(e.target.value)}
                   placeholder="e.g. Secure by design — building cloud skills the right way."
                   className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none" />
@@ -624,7 +676,7 @@ export default function ConsoleTeam() {
 
               {/* Bio */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">Biography *</label>
+                <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">Biography *</label>
                 <textarea required rows={4} value={bio} onChange={(e) => setBio(e.target.value)}
                   placeholder="Describe the member's contributions, focus, and cloud objectives…"
                   className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none resize-none" />
@@ -632,7 +684,7 @@ export default function ConsoleTeam() {
 
               <div className="flex justify-end gap-2.5 pt-4 border-t border-zinc-900">
                 <button type="button" onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors">
+                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-450 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors">
                   Cancel
                 </button>
                 <button type="submit" disabled={saving}
@@ -646,5 +698,13 @@ export default function ConsoleTeam() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ConsoleTeamWrapped() {
+  return (
+    <CMSErrorBoundary>
+      <ConsoleTeam />
+    </CMSErrorBoundary>
   );
 }

@@ -5,6 +5,9 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { getAnnouncements, saveAnnouncement, deleteAnnouncement, CMSAnnouncement } from "@/lib/cms";
+import { subscribeCmsUpdates } from "@/lib/cmsEvents";
+import { SkeletonRow } from "@/components/console/SkeletonLoader";
+import { CMSErrorBoundary, CMSErrorState } from "@/components/console/CMSErrorBoundary";
 import {
   Megaphone,
   Plus,
@@ -19,22 +22,12 @@ import {
   Shield,
 } from "lucide-react";
 
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  date: string;
-  active: boolean;
-  button_text?: string | null;
-  destination_url?: string | null;
-  created_at?: string;
-}
-
-export default function ConsoleAnnouncements() {
-  const { user, isSuperAdmin, canManage } = useAuth();
+function ConsoleAnnouncements() {
+  const { user, profile, isSuperAdmin, canManage } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Lists and filters
   const [announcements, setAnnouncements] = useState<CMSAnnouncement[]>([]);
@@ -50,6 +43,7 @@ export default function ConsoleAnnouncements() {
   const [buttonText, setButtonText] = useState("");
   const [destinationUrl, setDestinationUrl] = useState("");
   const [active, setActive] = useState(true);
+  
   const [initialValues, setInitialValues] = useState<{
     title: string;
     date: string;
@@ -64,22 +58,28 @@ export default function ConsoleAnnouncements() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
-    loadAnnouncements();
-  }, []);
-
-  const loadAnnouncements = async () => {
-    setLoading(true);
+  const loadAnnouncements = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const data = await getAnnouncements();
       setAnnouncements(data);
+      setError(null);
     } catch (err: any) {
       console.error(err);
-      showToast("Error loading announcements", "error");
+      setError("Failed to load announcements. Please check your network connection.");
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadAnnouncements();
+    // Centralized update subscriber
+    const unsubscribe = subscribeCmsUpdates("announcements", () => {
+      loadAnnouncements(true);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleOpenAdd = () => {
     const defaultDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -152,37 +152,46 @@ export default function ConsoleAnnouncements() {
     }
     setSaving(true);
 
-    try {
-      const payload: Omit<CMSAnnouncement, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
-        title: trimmedTitle,
-        content: trimmedContent,
-        date: trimmedDate,
-        active,
-        buttonText: buttonText.trim() || undefined,
-        destinationUrl: destinationUrl.trim() || undefined,
-      };
+    const payload: Omit<CMSAnnouncement, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
+      title: trimmedTitle,
+      content: trimmedContent,
+      date: trimmedDate,
+      active,
+      buttonText: buttonText.trim() || undefined,
+      destinationUrl: destinationUrl.trim() || undefined,
+    };
 
-      await saveAnnouncement(editingId, payload, user?.id || null);
-      
-      showToast(
-        editingId
-          ? "✅ Announcement updated successfully"
-          : "✅ Announcement saved successfully"
-      );
-      
-      await loadAnnouncements();
-      
-      setTimeout(() => {
-        setIsModalOpen(false);
-      }, 600);
+    // Close modal immediately
+    setIsModalOpen(false);
+
+    // Snapshot for rollback
+    const originalAnnouncements = [...announcements];
+    const tempId = editingId || `optimistic-${Date.now()}`;
+    const optimisticItem: CMSAnnouncement = {
+      id: tempId,
+      ...payload,
+      ownerUserId: user?.id || "",
+      createdBy: editingId ? (announcements.find((a) => a.id === editingId)?.createdBy || "") : (user?.id || ""),
+      updatedBy: user?.id || "",
+    };
+
+    // Optimistic UI update
+    if (editingId) {
+      setAnnouncements(announcements.map((a) => (a.id === editingId ? optimisticItem : a)));
+    } else {
+      setAnnouncements([optimisticItem, ...announcements]);
+    }
+
+    try {
+      const saved = await saveAnnouncement(editingId, payload, user?.id || null, profile?.name || null);
+      // Replace optimistic entry with database entry
+      setAnnouncements((prev) => prev.map((a) => (a.id === tempId ? saved : a)));
+      showToast(editingId ? "✅ Announcement updated successfully" : "✅ Announcement saved successfully");
     } catch (err: any) {
       console.error("Error saving announcement:", err.message || err);
-      showToast(
-        editingId
-          ? "❌ Failed to update announcement"
-          : "❌ Failed to save announcement. Please try again.",
-        "error"
-      );
+      // Rollback
+      setAnnouncements(originalAnnouncements);
+      showToast(editingId ? "❌ Failed to update announcement. Rolled back." : "❌ Failed to save announcement. Rolled back.", "error");
     } finally {
       setSaving(false);
     }
@@ -191,13 +200,19 @@ export default function ConsoleAnnouncements() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this announcement?")) return;
 
+    // Snapshot for rollback
+    const originalAnnouncements = [...announcements];
+    // Optimistic UI delete
+    setAnnouncements(announcements.filter((a) => a.id !== id));
+
     try {
-      await deleteAnnouncement(id);
+      await deleteAnnouncement(id, user?.id || null, profile?.name || null);
       showToast("Announcement deleted.");
-      await loadAnnouncements();
     } catch (err: any) {
       console.error(err);
-      showToast("Failed to delete announcement", "error");
+      // Rollback
+      setAnnouncements(originalAnnouncements);
+      showToast("Failed to delete announcement. Rolled back.", "error");
     }
   };
 
@@ -258,7 +273,7 @@ export default function ConsoleAnnouncements() {
               key={tab}
               onClick={() => setStatusFilter(tab)}
               className={`px-3 py-1.5 rounded-md font-bold transition-all capitalize text-[10px] ${
-                statusFilter === tab ? "bg-zinc-900 text-zinc-100 border border-zinc-800" : "text-zinc-500 hover:text-zinc-350"
+                statusFilter === tab ? "bg-zinc-900 text-zinc-100 border border-zinc-800" : "text-zinc-500 hover:text-zinc-355"
               }`}
             >
               {tab}
@@ -269,9 +284,13 @@ export default function ConsoleAnnouncements() {
 
       {/* Table grid display */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader className="h-5 w-5 text-amber-500 animate-spin" />
+        <div className="space-y-3">
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
         </div>
+      ) : error ? (
+        <CMSErrorState message={error} onRetry={() => loadAnnouncements()} />
       ) : filteredAnnouncements.length === 0 ? (
         <div className="text-center py-12 bg-zinc-900/10 border border-zinc-900/50 rounded-xl">
           <p className="text-xs text-zinc-550">No announcements match search query or filter.</p>
@@ -291,7 +310,7 @@ export default function ConsoleAnnouncements() {
             </thead>
             <tbody className="divide-y divide-zinc-900/80 text-xs">
               {filteredAnnouncements.map((ann) => (
-                <tr key={ann.id} className="hover:bg-zinc-900/20">
+                <tr key={ann.id} className="hover:bg-zinc-900/20 animate-fade-in">
                   <td className="py-3.5 px-4 font-mono text-zinc-400">{ann.date}</td>
                   <td className="py-3.5 px-4 font-bold text-white max-w-[150px] truncate">{ann.title}</td>
                   <td className="py-3.5 px-4 text-zinc-400 max-w-[280px] truncate">{ann.content}</td>
@@ -326,7 +345,7 @@ export default function ConsoleAnnouncements() {
                           </button>
                         </>
                       ) : (
-                        <span className="text-[10px] text-zinc-600 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
+                        <span className="text-[10px] text-zinc-650 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
                           <Shield className="h-3 w-3 text-zinc-650" />
                           Read-only
                         </span>
@@ -341,7 +360,7 @@ export default function ConsoleAnnouncements() {
           {/* Card view (Mobile) */}
           <div className="md:hidden divide-y divide-zinc-900 bg-zinc-950/20">
             {filteredAnnouncements.map((ann) => (
-              <div key={ann.id} className="p-4 space-y-3">
+              <div key={ann.id} className="p-4 space-y-3 animate-fade-in">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[10px] text-zinc-400">{ann.date}</span>
                   <span
@@ -377,7 +396,7 @@ export default function ConsoleAnnouncements() {
                       </button>
                     </>
                   ) : (
-                    <span className="text-[10px] text-zinc-600 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
+                    <span className="text-[10px] text-zinc-650 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
                       <Shield className="h-3 w-3 text-zinc-650" />
                       Read-only
                     </span>
@@ -395,7 +414,7 @@ export default function ConsoleAnnouncements() {
           <div className="w-full max-w-lg rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative">
             <button
               onClick={handleCloseModal}
-              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-350 p-1"
+              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-355 p-1"
             >
               <X className="h-4 w-4" />
             </button>
@@ -450,7 +469,7 @@ export default function ConsoleAnnouncements() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">
                     Button Text (Optional)
                   </label>
                   <input
@@ -462,7 +481,7 @@ export default function ConsoleAnnouncements() {
                   />
                 </div>
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">
                     Destination URL (Optional)
                   </label>
                   <input
@@ -492,7 +511,7 @@ export default function ConsoleAnnouncements() {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
+                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-450 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -519,5 +538,13 @@ export default function ConsoleAnnouncements() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ConsoleAnnouncementsWrapped() {
+  return (
+    <CMSErrorBoundary>
+      <ConsoleAnnouncements />
+    </CMSErrorBoundary>
   );
 }

@@ -5,6 +5,9 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { useAuth } from "@/context/AuthContext";
 import { getAchievements, saveAchievement, deleteAchievement, CMSAchievement } from "@/lib/cms";
+import { subscribeCmsUpdates } from "@/lib/cmsEvents";
+import { SkeletonRow } from "@/components/console/SkeletonLoader";
+import { CMSErrorBoundary, CMSErrorState } from "@/components/console/CMSErrorBoundary";
 import {
   Trophy,
   Plus,
@@ -19,11 +22,12 @@ import {
   Shield,
 } from "lucide-react";
 
-export default function ConsoleAchievements() {
-  const { user, isSuperAdmin, canManage } = useAuth();
+function ConsoleAchievements() {
+  const { user, profile, isSuperAdmin, canManage } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Lists and filters
   const [achievements, setAchievements] = useState<CMSAchievement[]>([]);
@@ -45,22 +49,28 @@ export default function ConsoleAchievements() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
-    loadAchievements();
-  }, []);
-
-  const loadAchievements = async () => {
-    setLoading(true);
+  const loadAchievements = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const data = await getAchievements();
       setAchievements(data);
+      setError(null);
     } catch (err: any) {
       console.error(err);
-      showToast("Error loading achievements", "error");
+      setError("Failed to load achievements. Please check your network connection.");
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadAchievements();
+    // Centralized CMS update subscription
+    const unsubscribe = subscribeCmsUpdates("achievements", () => {
+      loadAchievements(true);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleOpenAdd = () => {
     setEditingId(null);
@@ -88,21 +98,44 @@ export default function ConsoleAchievements() {
     }
     setSaving(true);
 
-    try {
-      const payload: Omit<CMSAchievement, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
-        title,
-        date,
-        description,
-        badgeType,
-      };
+    const payload: Omit<CMSAchievement, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
+      title,
+      date,
+      description,
+      badgeType,
+    };
 
-      await saveAchievement(editingId, payload, user?.id || null);
+    // Close modal immediately
+    setIsModalOpen(false);
+
+    // Snapshot for rollback
+    const originalAchievements = [...achievements];
+    const tempId = editingId || `optimistic-${Date.now()}`;
+    const optimisticItem: CMSAchievement = {
+      id: tempId,
+      ...payload,
+      ownerUserId: user?.id || "",
+      createdBy: editingId ? (achievements.find((a) => a.id === editingId)?.createdBy || "") : (user?.id || ""),
+      updatedBy: user?.id || "",
+    };
+
+    // Optimistic UI state update
+    if (editingId) {
+      setAchievements(achievements.map((a) => (a.id === editingId ? optimisticItem : a)));
+    } else {
+      setAchievements([optimisticItem, ...achievements]);
+    }
+
+    try {
+      const saved = await saveAchievement(editingId, payload, user?.id || null, profile?.name || null);
+      // Replace optimistic entry with DB entry
+      setAchievements((prev) => prev.map((a) => (a.id === tempId ? saved : a)));
       showToast(editingId ? "Milestone updated successfully!" : "Milestone created successfully!");
-      setIsModalOpen(false);
-      await loadAchievements();
     } catch (err: any) {
       console.error(err);
-      showToast(err.message || "Failed to save achievement.", "error");
+      // Rollback
+      setAchievements(originalAchievements);
+      showToast(err.message || "Failed to save achievement. Rolled back.", "error");
     } finally {
       setSaving(false);
     }
@@ -110,13 +143,20 @@ export default function ConsoleAchievements() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this achievement milestone?")) return;
+
+    // Snapshot for rollback
+    const originalAchievements = [...achievements];
+    // Optimistic UI state delete
+    setAchievements(achievements.filter((a) => a.id !== id));
+
     try {
-      await deleteAchievement(id);
+      await deleteAchievement(id, user?.id || null, profile?.name || null);
       showToast("Deleted milestone.");
-      await loadAchievements();
     } catch (err: any) {
       console.error(err);
-      showToast("Failed to delete achievement", "error");
+      // Rollback
+      setAchievements(originalAchievements);
+      showToast("Failed to delete achievement. Rolled back.", "error");
     }
   };
 
@@ -197,9 +237,13 @@ export default function ConsoleAchievements() {
 
       {/* Roster list */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader className="h-5 w-5 text-amber-500 animate-spin" />
+        <div className="space-y-3">
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
         </div>
+      ) : error ? (
+        <CMSErrorState message={error} onRetry={() => loadAchievements()} />
       ) : filteredAchievements.length === 0 ? (
         <div className="text-center py-12 bg-zinc-900/10 border border-zinc-900/50 rounded-xl">
           <p className="text-xs text-zinc-550">No achievements found.</p>
@@ -209,7 +253,7 @@ export default function ConsoleAchievements() {
           {filteredAchievements.map((ach) => (
             <div
               key={ach.id}
-              className="p-4 border border-zinc-900 bg-zinc-950/20 rounded-xl flex items-start justify-between gap-4 hover:border-zinc-805 transition-all"
+              className="p-4 border border-zinc-900 bg-zinc-950/20 rounded-xl flex items-start justify-between gap-4 hover:border-zinc-805 transition-all animate-fade-in"
             >
               <div className="flex gap-3">
                 <div className="h-8.5 w-8.5 rounded-lg border border-zinc-850 bg-zinc-900/50 flex items-center justify-center text-amber-500 flex-shrink-0">
@@ -242,14 +286,14 @@ export default function ConsoleAchievements() {
                     </button>
                     <button
                       onClick={() => handleDelete(ach.id)}
-                      className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-455 hover:text-rose-400 transition-colors"
+                      className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-455 hover:text-rose-450 transition-colors"
                       title="Delete Achievement"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </>
                 ) : (
-                  <span className="text-[10px] text-zinc-600 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
+                  <span className="text-[10px] text-zinc-650 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
                     <Shield className="h-3 w-3 text-zinc-650" />
                     Read-only
                   </span>
@@ -266,7 +310,7 @@ export default function ConsoleAchievements() {
           <div className="w-full max-w-lg rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-350 p-1"
+              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-355 p-1"
             >
               <X className="h-4 w-4" />
             </button>
@@ -278,7 +322,7 @@ export default function ConsoleAchievements() {
             <form onSubmit={handleSave} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
                     Milestone Title *
                   </label>
                   <input
@@ -292,7 +336,7 @@ export default function ConsoleAchievements() {
                 </div>
 
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">
+                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
                     Achievement Date *
                   </label>
                   <input
@@ -339,7 +383,7 @@ export default function ConsoleAchievements() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-zinc-855 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
+                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-450 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -357,5 +401,13 @@ export default function ConsoleAchievements() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ConsoleAchievementsWrapped() {
+  return (
+    <CMSErrorBoundary>
+      <ConsoleAchievements />
+    </CMSErrorBoundary>
   );
 }

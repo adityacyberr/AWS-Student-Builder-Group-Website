@@ -3,6 +3,7 @@ import { getLocalEvents, saveLocalEvents, EventItem } from "@/data/events";
 import { TEAM_MEMBERS, TeamMember } from "@/data/team";
 import { GALLERY_ITEMS, GalleryItem } from "@/data/gallery";
 import { getLocalAchievements, saveLocalAchievements, AchievementItem } from "@/data/achievements";
+import { emitCmsUpdate } from "./cmsEvents";
 
 export interface CMSAnnouncement {
   id: string;
@@ -60,7 +61,19 @@ const isClient = typeof window !== "undefined";
 // Custom event to trigger real-time updates within the same browser when localStorage is used
 const triggerStorageRefresh = (key: string) => {
   if (isClient) {
-    window.dispatchEvent(new Event("cms-data-updated"));
+    let entity: any = null;
+    if (key === STORAGE_KEYS.EVENTS) entity = "events";
+    else if (key === STORAGE_KEYS.TEAM) entity = "team_members";
+    else if (key === STORAGE_KEYS.GALLERY) entity = "gallery_images";
+    else if (key === STORAGE_KEYS.ACHIEVEMENTS) entity = "achievements";
+    else if (key === STORAGE_KEYS.ANNOUNCEMENTS) entity = "announcements";
+    
+    if (entity) {
+      emitCmsUpdate(entity);
+    } else {
+      window.dispatchEvent(new Event("cms-data-updated"));
+    }
+
     // Also dispatch storage event for multi-tab support
     window.dispatchEvent(
       new StorageEvent("storage", {
@@ -70,6 +83,56 @@ const triggerStorageRefresh = (key: string) => {
     );
   }
 };
+
+// --- STORAGE CLEANUP HELPER ---
+export async function deleteStorageFile(publicUrl: string): Promise<void> {
+  if (!isSupabaseConfigured || !supabase || !publicUrl) return;
+  try {
+    const marker = "/storage/v1/object/public/builder-assets/";
+    const markerIdx = publicUrl.indexOf(marker);
+    if (markerIdx === -1) return;
+    const filePath = publicUrl.substring(markerIdx + marker.length);
+    if (!filePath) return;
+    
+    console.log(`[Storage Cleanup] Deleting: ${filePath}`);
+    const { error } = await supabase.storage.from("builder-assets").remove([filePath]);
+    if (error) {
+      console.warn(`[Storage Cleanup] Error removing file '${filePath}':`, error.message);
+    } else {
+      console.log(`[Storage Cleanup] Successfully removed file '${filePath}'`);
+    }
+  } catch (err: any) {
+    console.warn("[Storage Cleanup] Exception during deletion:", err.message || err);
+  }
+}
+
+export interface ActivityLogParams {
+  userId: string | null;
+  userName?: string | null;
+  action: 'create' | 'update' | 'delete' | 'upload';
+  entityType: 'event' | 'announcement' | 'gallery_image' | 'achievement' | 'team_member' | 'settings';
+  entityId?: string;
+  metadata?: Record<string, any>;
+}
+
+export async function logActivity(params: ActivityLogParams): Promise<void> {
+  if (!isSupabaseConfigured || !supabase || !params.userId) return;
+  try {
+    const { error } = await supabase.from("activity_logs").insert([{
+      user_id: params.userId,
+      user_name: params.userName || "Unknown Admin",
+      action: params.action,
+      entity_type: params.entityType,
+      entity_id: params.entityId || null,
+      metadata: params.metadata || {},
+    }]);
+    if (error) {
+      console.warn("[Activity Log] Failed to insert log entry:", error.message);
+    }
+  } catch (err: any) {
+    console.warn("[Activity Log] Exception during logging:", err.message || err);
+  }
+}
 
 // --- EVENTS ---
 export async function getEvents(): Promise<CMSEvent[]> {
@@ -102,10 +165,32 @@ export async function getEvents(): Promise<CMSEvent[]> {
   }
 }
 
+export async function checkSlugAvailable(slug: string, excludeId?: string): Promise<boolean> {
+  if (!slug) return false;
+  const trimmed = slug.trim().toLowerCase();
+  if (isSupabaseConfigured && supabase) {
+    let query = supabase.from("events").select("id").eq("slug", trimmed);
+    if (excludeId) {
+      query = query.neq("id", excludeId);
+    }
+    const { data, error } = await query;
+    if (error) {
+      console.error("Error checking slug availability:", error);
+      return false;
+    }
+    return (data || []).length === 0;
+  } else {
+    const localEvents = getLocalEvents() as CMSEvent[];
+    const match = localEvents.find((e) => e.slug.trim().toLowerCase() === trimmed && e.id !== excludeId);
+    return !match;
+  }
+}
+
 export async function saveEvent(
   id: string | null,
   eventData: Omit<CMSEvent, "id" | "ownerUserId" | "createdBy" | "updatedBy">,
-  userAuthId: string | null
+  userAuthId: string | null,
+  userName?: string | null
 ): Promise<CMSEvent> {
   const auditFields = {
     owner_user_id: userAuthId,
@@ -139,9 +224,17 @@ export async function saveEvent(
         .single();
       if (error) throw error;
       console.log("Database updated");
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("cms-data-updated"));
-      }
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'update',
+        entityType: 'event',
+        entityId: data.id,
+        metadata: { title: eventData.title, slug: eventData.slug }
+      });
+
+      emitCmsUpdate("events");
       return {
         ...eventData,
         id: data.id,
@@ -157,9 +250,17 @@ export async function saveEvent(
         .single();
       if (error) throw error;
       console.log("Database updated");
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("cms-data-updated"));
-      }
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'create',
+        entityType: 'event',
+        entityId: data.id,
+        metadata: { title: eventData.title, slug: eventData.slug }
+      });
+
+      emitCmsUpdate("events");
       return {
         ...eventData,
         id: data.id,
@@ -192,13 +293,37 @@ export async function saveEvent(
   }
 }
 
-export async function deleteEvent(id: string): Promise<void> {
+export async function deleteEvent(
+  id: string,
+  userAuthId?: string | null,
+  userName?: string | null
+): Promise<void> {
   if (isSupabaseConfigured && supabase) {
+    let imageUrl = "";
+    try {
+      const { data } = await supabase.from("events").select("image_url").eq("id", id).single();
+      if (data) imageUrl = data.image_url || "";
+    } catch (e) {
+      console.warn("Could not fetch event image URL before delete", e);
+    }
+
     const { error } = await supabase.from("events").delete().eq("id", id);
     if (error) throw error;
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("cms-data-updated"));
+
+    if (imageUrl) {
+      await deleteStorageFile(imageUrl);
     }
+
+    await logActivity({
+      userId: userAuthId || null,
+      userName: userName || null,
+      action: 'delete',
+      entityType: 'event',
+      entityId: id,
+      metadata: { imageUrl }
+    });
+
+    emitCmsUpdate("events");
   } else {
     const localEvents = getLocalEvents() as CMSEvent[];
     const filtered = localEvents.filter((e) => e.id !== id);
@@ -250,7 +375,8 @@ export async function getTeamMembers(): Promise<CMSTeamMember[]> {
 export async function saveTeamMember(
   id: string | null,
   memberData: Omit<CMSTeamMember, "id" | "ownerUserId" | "createdBy" | "updatedBy">,
-  userAuthId: string | null
+  userAuthId: string | null,
+  userName?: string | null
 ): Promise<CMSTeamMember> {
   const auditFields = {
     owner_user_id: userAuthId,
@@ -287,6 +413,17 @@ export async function saveTeamMember(
         .single();
       if (error) throw error;
       console.log("Database updated");
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'update',
+        entityType: 'team_member',
+        entityId: data.id,
+        metadata: { name: memberData.name, role: memberData.role }
+      });
+
+      emitCmsUpdate("team_members");
       return {
         ...memberData,
         id: data.id,
@@ -302,6 +439,17 @@ export async function saveTeamMember(
         .single();
       if (error) throw error;
       console.log("Database updated");
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'create',
+        entityType: 'team_member',
+        entityId: data.id,
+        metadata: { name: memberData.name, role: memberData.role }
+      });
+
+      emitCmsUpdate("team_members");
       return {
         ...memberData,
         id: data.id,
@@ -333,10 +481,37 @@ export async function saveTeamMember(
   }
 }
 
-export async function deleteTeamMember(id: string): Promise<void> {
+export async function deleteTeamMember(
+  id: string,
+  userAuthId?: string | null,
+  userName?: string | null
+): Promise<void> {
   if (isSupabaseConfigured && supabase) {
+    let photoUrl = "";
+    try {
+      const { data } = await supabase.from("team_members").select("photo").eq("id", id).single();
+      if (data) photoUrl = data.photo || "";
+    } catch (e) {
+      console.warn("Could not fetch team member photo before delete", e);
+    }
+
     const { error } = await supabase.from("team_members").delete().eq("id", id);
     if (error) throw error;
+
+    if (photoUrl) {
+      await deleteStorageFile(photoUrl);
+    }
+
+    await logActivity({
+      userId: userAuthId || null,
+      userName: userName || null,
+      action: 'delete',
+      entityType: 'team_member',
+      entityId: id,
+      metadata: { photoUrl }
+    });
+
+    emitCmsUpdate("team_members");
   } else {
     const localTeam = await getTeamMembers();
     const filtered = localTeam.filter((t) => t.id !== id);
@@ -384,7 +559,8 @@ export async function getGalleryImages(): Promise<CMSGalleryItem[]> {
 export async function saveGalleryImage(
   id: string | null,
   imageData: Omit<CMSGalleryItem, "id" | "ownerUserId" | "createdBy" | "updatedBy">,
-  userAuthId: string | null
+  userAuthId: string | null,
+  userName?: string | null
 ): Promise<CMSGalleryItem> {
   const auditFields = {
     owner_user_id: userAuthId,
@@ -419,6 +595,17 @@ export async function saveGalleryImage(
         .single();
       if (error) throw error;
       console.log("Database updated");
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'update',
+        entityType: 'gallery_image',
+        entityId: data.id,
+        metadata: { title: imageData.title }
+      });
+
+      emitCmsUpdate("gallery_images");
       return {
         ...imageData,
         id: data.id,
@@ -434,6 +621,17 @@ export async function saveGalleryImage(
         .single();
       if (error) throw error;
       console.log("Database updated");
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'create',
+        entityType: 'gallery_image',
+        entityId: data.id,
+        metadata: { title: imageData.title }
+      });
+
+      emitCmsUpdate("gallery_images");
       return {
         ...imageData,
         id: data.id,
@@ -465,10 +663,37 @@ export async function saveGalleryImage(
   }
 }
 
-export async function deleteGalleryImage(id: string): Promise<void> {
+export async function deleteGalleryImage(
+  id: string,
+  userAuthId?: string | null,
+  userName?: string | null
+): Promise<void> {
   if (isSupabaseConfigured && supabase) {
+    let imageUrl = "";
+    try {
+      const { data } = await supabase.from("gallery_images").select("image_url").eq("id", id).single();
+      if (data) imageUrl = data.image_url || "";
+    } catch (e) {
+      console.warn("Could not fetch gallery image URL before delete", e);
+    }
+
     const { error } = await supabase.from("gallery_images").delete().eq("id", id);
     if (error) throw error;
+
+    if (imageUrl) {
+      await deleteStorageFile(imageUrl);
+    }
+
+    await logActivity({
+      userId: userAuthId || null,
+      userName: userName || null,
+      action: 'delete',
+      entityType: 'gallery_image',
+      entityId: id,
+      metadata: { imageUrl }
+    });
+
+    emitCmsUpdate("gallery_images");
   } else {
     const localGallery = await getGalleryImages();
     const filtered = localGallery.filter((g) => g.id !== id);
@@ -503,7 +728,8 @@ export async function getAchievements(): Promise<CMSAchievement[]> {
 export async function saveAchievement(
   id: string | null,
   achievementData: Omit<CMSAchievement, "id" | "ownerUserId" | "createdBy" | "updatedBy">,
-  userAuthId: string | null
+  userAuthId: string | null,
+  userName?: string | null
 ): Promise<CMSAchievement> {
   const auditFields = {
     owner_user_id: userAuthId,
@@ -529,6 +755,17 @@ export async function saveAchievement(
         .single();
       if (error) throw error;
       console.log("Database updated");
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'update',
+        entityType: 'achievement',
+        entityId: data.id,
+        metadata: { title: achievementData.title }
+      });
+
+      emitCmsUpdate("achievements");
       return {
         ...achievementData,
         id: data.id,
@@ -544,6 +781,17 @@ export async function saveAchievement(
         .single();
       if (error) throw error;
       console.log("Database updated");
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'create',
+        entityType: 'achievement',
+        entityId: data.id,
+        metadata: { title: achievementData.title }
+      });
+
+      emitCmsUpdate("achievements");
       return {
         ...achievementData,
         id: data.id,
@@ -575,10 +823,24 @@ export async function saveAchievement(
   }
 }
 
-export async function deleteAchievement(id: string): Promise<void> {
+export async function deleteAchievement(
+  id: string,
+  userAuthId?: string | null,
+  userName?: string | null
+): Promise<void> {
   if (isSupabaseConfigured && supabase) {
     const { error } = await supabase.from("achievements").delete().eq("id", id);
     if (error) throw error;
+
+    await logActivity({
+      userId: userAuthId || null,
+      userName: userName || null,
+      action: 'delete',
+      entityType: 'achievement',
+      entityId: id
+    });
+
+    emitCmsUpdate("achievements");
   } else {
     const localAchievements = getLocalAchievements() as CMSAchievement[];
     const filtered = localAchievements.filter((a) => a.id !== id);
@@ -635,7 +897,8 @@ export async function getAnnouncements(): Promise<CMSAnnouncement[]> {
 export async function saveAnnouncement(
   id: string | null,
   annData: Omit<CMSAnnouncement, "id" | "ownerUserId" | "createdBy" | "updatedBy">,
-  userAuthId: string | null
+  userAuthId: string | null,
+  userName?: string | null
 ): Promise<CMSAnnouncement> {
   const auditFields = {
     owner_user_id: userAuthId,
@@ -663,9 +926,17 @@ export async function saveAnnouncement(
         .single();
       if (error) throw error;
       console.log("Database updated");
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("cms-data-updated"));
-      }
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'update',
+        entityType: 'announcement',
+        entityId: data.id,
+        metadata: { title: annData.title }
+      });
+
+      emitCmsUpdate("announcements");
       return {
         ...annData,
         id: data.id,
@@ -681,9 +952,17 @@ export async function saveAnnouncement(
         .single();
       if (error) throw error;
       console.log("Database updated");
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("cms-data-updated"));
-      }
+
+      await logActivity({
+        userId: userAuthId,
+        userName,
+        action: 'create',
+        entityType: 'announcement',
+        entityId: data.id,
+        metadata: { title: annData.title }
+      });
+
+      emitCmsUpdate("announcements");
       return {
         ...annData,
         id: data.id,
@@ -715,13 +994,24 @@ export async function saveAnnouncement(
   }
 }
 
-export async function deleteAnnouncement(id: string): Promise<void> {
+export async function deleteAnnouncement(
+  id: string,
+  userAuthId?: string | null,
+  userName?: string | null
+): Promise<void> {
   if (isSupabaseConfigured && supabase) {
     const { error } = await supabase.from("announcements").delete().eq("id", id);
     if (error) throw error;
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("cms-data-updated"));
-    }
+
+    await logActivity({
+      userId: userAuthId || null,
+      userName: userName || null,
+      action: 'delete',
+      entityType: 'announcement',
+      entityId: id
+    });
+
+    emitCmsUpdate("announcements");
   } else {
     const localAnn = await getAnnouncements();
     const filtered = localAnn.filter((a) => a.id !== id);

@@ -8,6 +8,9 @@ import { MediaPicker } from "@/components/console/MediaPicker";
 import { useAuth } from "@/context/AuthContext";
 import { getEvents } from "@/lib/cms";
 import { getGalleryImages, saveGalleryImage, deleteGalleryImage, CMSGalleryItem } from "@/lib/cms";
+import { subscribeCmsUpdates } from "@/lib/cmsEvents";
+import { SkeletonCard } from "@/components/console/SkeletonLoader";
+import { CMSErrorBoundary, CMSErrorState } from "@/components/console/CMSErrorBoundary";
 import {
   Image as ImageIcon,
   Plus,
@@ -22,22 +25,13 @@ import {
   Shield,
 } from "lucide-react";
 
-interface ConsoleGalleryItem {
-  id: string;
-  title: string;
-  date: string;
-  description: string;
-  category: "events" | "workshops" | "labs" | "community" | "celebrations";
-  imageUrl: string;
-  placeholderColor?: string;
-}
-
-export default function ConsoleGallery() {
-  const { user, isSuperAdmin, canManage } = useAuth();
+function ConsoleGallery() {
+  const { user, profile, isSuperAdmin, canManage } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Lists and filters
   const [items, setItems] = useState<CMSGalleryItem[]>([]);
@@ -62,17 +56,13 @@ export default function ConsoleGallery() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
-    loadGallery();
-  }, []);
-
   const isVideo = (url: string) => {
     if (!url) return false;
     return /\.(mp4|webm|mov|avi|mkv|ogg)($|\?)/i.test(url);
   };
 
-  const loadGallery = async () => {
-    setLoading(true);
+  const loadGallery = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const [galleryData, eventsData] = await Promise.all([
         getGalleryImages(),
@@ -81,13 +71,23 @@ export default function ConsoleGallery() {
 
       setItems(galleryData);
       setCompletedEventsCount(eventsData.filter((e) => e.status === "completed").length);
+      setError(null);
     } catch (err: any) {
       console.error(err);
-      showToast("Error loading gallery images", "error");
+      setError("Failed to load gallery images. Please check your network connection.");
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadGallery();
+    // Centrally subscribe to CMS updates
+    const unsubscribe = subscribeCmsUpdates("gallery_images", () => {
+      loadGallery(true);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleOpenAdd = () => {
     setEditingId(null);
@@ -119,27 +119,50 @@ export default function ConsoleGallery() {
     }
     setSaving(true);
 
-    try {
-      const payload: Omit<CMSGalleryItem, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
-        title,
-        date,
-        description,
-        category,
-        imageUrl,
-        placeholderColor,
-        participants: 0,
-        location: "DRI Sandbox, RIMT University",
-        photoCount: 1,
-      };
+    const payload: Omit<CMSGalleryItem, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
+      title,
+      date,
+      description,
+      category,
+      imageUrl,
+      placeholderColor,
+      participants: 0,
+      location: "DRI Sandbox, RIMT University",
+      photoCount: 1,
+    };
 
-      await saveGalleryImage(editingId, payload, user?.id || null);
+    // Close modal immediately
+    setIsModalOpen(false);
+
+    // Snapshot for rollback
+    const originalItems = [...items];
+    const tempId = editingId || `optimistic-${Date.now()}`;
+    const optimisticItem: CMSGalleryItem = {
+      id: tempId,
+      ...payload,
+      ownerUserId: user?.id || "",
+      createdBy: editingId ? (items.find((i) => i.id === editingId)?.createdBy || "") : (user?.id || ""),
+      updatedBy: user?.id || "",
+    };
+
+    // Optimistic state update
+    if (editingId) {
+      setItems(items.map((i) => (i.id === editingId ? optimisticItem : i)));
+    } else {
+      setItems([optimisticItem, ...items]);
+    }
+
+    try {
+      const saved = await saveGalleryImage(editingId, payload, user?.id || null, profile?.name || null);
+      // Replace optimistic entry with DB output
+      setItems((prev) => prev.map((i) => (i.id === tempId ? saved : i)));
       showToast(editingId ? "Gallery image updated successfully!" : "Gallery image published successfully!");
-      setIsModalOpen(false);
-      await loadGallery();
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      showToast(err.message || "Failed to save gallery image.", "error");
+      // Rollback
+      setItems(originalItems);
+      showToast(err.message || "Failed to save gallery image. Rolled back.", "error");
     } finally {
       setSaving(false);
     }
@@ -147,14 +170,21 @@ export default function ConsoleGallery() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this gallery item?")) return;
+
+    // Snapshot for rollback
+    const originalItems = [...items];
+    // Optimistic UI state delete
+    setItems(items.filter((i) => i.id !== id));
+
     try {
-      await deleteGalleryImage(id);
+      await deleteGalleryImage(id, user?.id || null, profile?.name || null);
       showToast("Gallery image deleted.");
-      await loadGallery();
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      showToast("Failed to delete gallery image", "error");
+      // Rollback
+      setItems(originalItems);
+      showToast("Failed to delete gallery image. Rolled back.", "error");
     }
   };
 
@@ -232,7 +262,7 @@ export default function ConsoleGallery() {
               key={tab}
               onClick={() => setCategoryFilter(tab as any)}
               className={`px-3 py-1.5 rounded-md font-bold transition-all capitalize text-[10px] ${
-                categoryFilter === tab ? "bg-zinc-900 text-zinc-100 border border-zinc-800" : "text-zinc-500 hover:text-zinc-350"
+                categoryFilter === tab ? "bg-zinc-900 text-zinc-100 border border-zinc-800" : "text-zinc-500 hover:text-zinc-355"
               }`}
             >
               {tab}
@@ -243,9 +273,13 @@ export default function ConsoleGallery() {
 
       {/* Gallery Cards Grid */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader className="h-5 w-5 text-amber-500 animate-spin" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
+      ) : error ? (
+        <CMSErrorState message={error} onRetry={() => loadGallery()} />
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-12 bg-zinc-900/10 border border-zinc-900/50 rounded-xl">
           <p className="text-xs text-zinc-550">No gallery images found.</p>
@@ -258,7 +292,7 @@ export default function ConsoleGallery() {
               className="border border-zinc-900 bg-zinc-950/20 rounded-xl overflow-hidden hover:border-zinc-800 transition-all flex flex-col justify-between"
             >
               <div>
-                <div className="h-40 relative bg-zinc-900 overflow-hidden flex items-center justify-center border-b border-zinc-905">
+                <div className="h-40 relative bg-zinc-900 overflow-hidden flex items-center justify-center border-b border-zinc-850">
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
@@ -280,7 +314,7 @@ export default function ConsoleGallery() {
                       <span>{item.date}</span>
                     </div>
                   </div>
-                  <p className="text-xs text-zinc-450 line-clamp-2 leading-relaxed">{item.description}</p>
+                  <p className="text-xs text-zinc-455 line-clamp-2 leading-relaxed">{item.description}</p>
                 </div>
               </div>
 
@@ -334,7 +368,7 @@ export default function ConsoleGallery() {
           <div className="w-full max-w-xl rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative my-8">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-350 p-1"
+              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-355 p-1"
             >
               <X className="h-4 w-4" />
             </button>
@@ -346,7 +380,7 @@ export default function ConsoleGallery() {
             <form onSubmit={handleSave} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">
                     Image Title *
                   </label>
                   <input
@@ -360,7 +394,7 @@ export default function ConsoleGallery() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">
                     Session Date *
                   </label>
                   <input
@@ -374,12 +408,12 @@ export default function ConsoleGallery() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">
                     Category *
                   </label>
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as ConsoleGalleryItem["category"])}
+                    onChange={(e) => setCategory(e.target.value as CMSGalleryItem["category"])}
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none"
                   >
                     <option value="workshops" className="bg-zinc-950">Workshops</option>
@@ -389,7 +423,7 @@ export default function ConsoleGallery() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                  <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">
                     Fallback Placeholder Color Theme *
                   </label>
                   <select
@@ -416,7 +450,7 @@ export default function ConsoleGallery() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                <label className="text-[10px] font-bold text-zinc-455 uppercase tracking-wider block">
                   Captioned Description *
                 </label>
                 <textarea
@@ -433,14 +467,14 @@ export default function ConsoleGallery() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
+                  className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-450 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-955 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
                 >
                   {saving ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                   Publish Image
@@ -451,5 +485,13 @@ export default function ConsoleGallery() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ConsoleGalleryWrapped() {
+  return (
+    <CMSErrorBoundary>
+      <ConsoleGallery />
+    </CMSErrorBoundary>
   );
 }

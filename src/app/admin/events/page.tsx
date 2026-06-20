@@ -6,7 +6,10 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { MediaPicker } from "@/components/console/MediaPicker";
 import { useAuth } from "@/context/AuthContext";
-import { getEvents, saveEvent, deleteEvent, CMSEvent } from "@/lib/cms";
+import { getEvents, saveEvent, deleteEvent, checkSlugAvailable, CMSEvent } from "@/lib/cms";
+import { subscribeCmsUpdates } from "@/lib/cmsEvents";
+import { SkeletonCard } from "@/components/console/SkeletonLoader";
+import { CMSErrorBoundary, CMSErrorState } from "@/components/console/CMSErrorBoundary";
 import {
   Calendar,
   Plus,
@@ -23,13 +26,14 @@ import {
   Shield,
 } from "lucide-react";
 
-export default function ConsoleEvents() {
-  const { user, isSuperAdmin, isOwner, canManage } = useAuth();
+function ConsoleEvents() {
+  const { user, profile, isSuperAdmin, isOwner, canManage } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Lists and filters
   const [events, setEvents] = useState<CMSEvent[]>([]);
@@ -53,6 +57,10 @@ export default function ConsoleEvents() {
   const [status, setStatus] = useState<CMSEvent["status"]>("upcoming");
   const [coverPlaceholderColor, setCoverPlaceholderColor] = useState<CMSEvent["coverPlaceholderColor"]>("orange");
   const [imageUrl, setImageUrl] = useState("");
+  
+  // Slug verification state
+  const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "unique" | "taken">("idle");
+
   const [initialValues, setInitialValues] = useState<{
     title: string;
     slug: string;
@@ -73,24 +81,30 @@ export default function ConsoleEvents() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
-  const loadEvents = async () => {
-    setLoading(true);
+  const loadEvents = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const data = await getEvents();
       setEvents(data);
+      setError(null);
     } catch (err: any) {
       console.error(err);
-      showToast("Error loading events", "error");
+      setError("Failed to load events. Please check your network connection.");
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
-  // Generate slug automatically
+  useEffect(() => {
+    loadEvents();
+    // Subscribe to CMS updates centrally
+    const unsubscribe = subscribeCmsUpdates("events", () => {
+      loadEvents(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Slug auto-generation & validation
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle);
     if (!editingId) {
@@ -101,6 +115,25 @@ export default function ConsoleEvents() {
       setSlug(generated);
     }
   };
+
+  useEffect(() => {
+    if (!slug) {
+      setSlugStatus("idle");
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      setSlugStatus("checking");
+      try {
+        const available = await checkSlugAvailable(slug, editingId || undefined);
+        setSlugStatus(available ? "unique" : "taken");
+      } catch (err) {
+        console.error(err);
+        setSlugStatus("idle");
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounce);
+  }, [slug, editingId]);
 
   const handleOpenAdd = () => {
     const defaultTime = "TBA";
@@ -216,9 +249,18 @@ export default function ConsoleEvents() {
       showToast("Please fill in all required fields", "error");
       return;
     }
+
     setSaving(true);
 
     try {
+      // 1. Verify slug uniqueness
+      const isUnique = await checkSlugAvailable(trimmedSlug, editingId || undefined);
+      if (!isUnique) {
+        showToast(`Slug '${trimmedSlug}' is already in use. Please choose a different slug.`, "error");
+        setSaving(false);
+        return;
+      }
+
       const payload: Omit<CMSEvent, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
         title: trimmedTitle,
         slug: trimmedSlug,
@@ -234,28 +276,42 @@ export default function ConsoleEvents() {
         imageUrl: imageUrl.trim() || undefined,
       };
 
-      await saveEvent(editingId, payload, user?.id || null);
-      
-      showToast(
-        editingId 
-          ? "✅ Event updated successfully" 
-          : "✅ Event saved successfully"
-      );
-      
-      await loadEvents();
-      router.refresh();
-      
-      setTimeout(() => {
-        setIsModalOpen(false);
-      }, 600);
+      // Close modal immediately for optimistic feedback
+      setIsModalOpen(false);
+
+      // Snapshot for rollback
+      const originalEvents = [...events];
+      const tempId = editingId || `optimistic-${Date.now()}`;
+      const optimisticItem: CMSEvent = {
+        id: tempId,
+        ...payload,
+        ownerUserId: user?.id || "",
+        createdBy: editingId ? (events.find((e) => e.id === editingId)?.createdBy || "") : (user?.id || ""),
+        updatedBy: user?.id || "",
+      };
+
+      // Optimistic UI update
+      if (editingId) {
+        setEvents(events.map((e) => (e.id === editingId ? optimisticItem : e)));
+      } else {
+        setEvents([optimisticItem, ...events]);
+      }
+
+      // Perform actual DB save
+      try {
+        const saved = await saveEvent(editingId, payload, user?.id || null, profile?.name || null);
+        // Replace optimistic entry with real database entry
+        setEvents((prev) => prev.map((e) => (e.id === tempId ? saved : e)));
+        showToast(editingId ? "✅ Event updated successfully" : "✅ Event saved successfully");
+        router.refresh();
+      } catch (dbErr) {
+        // Rollback on failure
+        setEvents(originalEvents);
+        throw dbErr;
+      }
     } catch (err: any) {
       console.error("Error saving event:", err.message || err);
-      showToast(
-        editingId
-          ? "❌ Failed to update event"
-          : "❌ Failed to save event. Please try again.",
-        "error"
-      );
+      showToast(editingId ? "❌ Failed to update event. Rolled back." : "❌ Failed to save event. Rolled back.", "error");
     } finally {
       setSaving(false);
     }
@@ -264,14 +320,19 @@ export default function ConsoleEvents() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this event? This action is irreversible.")) return;
 
+    const originalEvents = [...events];
+    // Optimistic UI delete
+    setEvents(events.filter((e) => e.id !== id));
+
     try {
-      await deleteEvent(id);
+      await deleteEvent(id, user?.id || null, profile?.name || null);
       showToast("Event deleted successfully.");
-      await loadEvents();
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      showToast("Failed to delete event.", "error");
+      // Rollback
+      setEvents(originalEvents);
+      showToast("Failed to delete event. Rolled back.", "error");
     }
   };
 
@@ -343,9 +404,14 @@ export default function ConsoleEvents() {
 
       {/* Events Grid list */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader className="h-5 w-5 text-amber-500 animate-spin" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
+      ) : error ? (
+        <CMSErrorState message={error} onRetry={() => loadEvents()} />
       ) : filteredEvents.length === 0 ? (
         <div className="text-center py-12 bg-zinc-900/10 border border-zinc-900/50 rounded-xl">
           <p className="text-xs text-zinc-550">No events found.</p>
@@ -374,64 +440,71 @@ export default function ConsoleEvents() {
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-xs font-black text-white leading-tight">{ev.title}</h3>
-                  <p className="text-[10px] text-zinc-500 font-mono tracking-wide">{ev.slug}</p>
+                  <h3 className="text-xs font-bold text-zinc-100 flex items-center gap-1.5 line-clamp-1">
+                    {ev.title}
+                  </h3>
+                  <p className="text-[10px] font-mono text-zinc-550">slug: {ev.slug}</p>
+                  <p className="text-[10px] text-zinc-450 line-clamp-2 leading-relaxed">
+                    {ev.description}
+                  </p>
                 </div>
 
-                <p className="text-xs text-zinc-450 line-clamp-2 leading-relaxed">{ev.description}</p>
-
-                <div className="grid grid-cols-2 gap-2 text-[10px] text-zinc-500 border-t border-zinc-900/80 pt-2.5">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3 text-zinc-550 flex-shrink-0" />
-                    <span className="truncate">{ev.date}</span>
+                <div className="grid grid-cols-2 gap-2 border-t border-zinc-900 pt-2.5 text-[10px] text-zinc-450">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-3 w-3 text-zinc-550" />
+                    <span>{ev.date}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-zinc-550 flex-shrink-0" />
-                    <span className="truncate">{ev.time}</span>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 text-zinc-550" />
+                    <span>{ev.time || "TBA"}</span>
                   </div>
-                  <div className="flex items-center gap-1 col-span-2">
-                    <MapPin className="h-3 w-3 text-zinc-550 flex-shrink-0" />
-                    <span className="truncate">{ev.location}</span>
+                  <div className="flex items-center gap-1.5 col-span-2">
+                    <MapPin className="h-3 w-3 text-zinc-550 shrink-0" />
+                    <span className="line-clamp-1">{ev.location}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-zinc-900/80 pt-3">
-                <a
-                  href={ev.registrationLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-400 hover:text-amber-500 transition-colors"
-                >
-                  Reg Link
-                  <ExternalLink className="h-2.5 w-2.5" />
-                </a>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-zinc-900">
+                {ev.registrationLink ? (
+                  <a
+                    href={ev.registrationLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[10px] text-amber-500 hover:text-amber-400 font-bold"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Registration Link
+                  </a>
+                ) : (
+                  <span className="text-[9px] text-zinc-600">No external link</span>
+                )}
 
-                <div className="flex gap-1">
-                  {canManage(ev) ? (
-                    <>
-                      <button
-                        onClick={() => handleOpenEdit(ev)}
-                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-700 flex items-center justify-center text-zinc-450 hover:text-white transition-colors"
-                        title="Edit Event"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(ev.id)}
-                        className="h-7 w-7 rounded border border-zinc-850 hover:border-zinc-750 hover:bg-rose-500/5 flex items-center justify-center text-zinc-450 hover:text-rose-455 transition-colors"
-                        title="Delete Event"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-[10px] text-zinc-600 font-medium px-2 py-1 flex items-center gap-1 bg-zinc-900/40 rounded border border-zinc-900/60">
-                      <Shield className="h-3 w-3 text-zinc-650" />
-                      Read-only
-                    </span>
-                  )}
-                </div>
+                {canManage(ev) ? (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleOpenEdit(ev)}
+                      disabled={saving}
+                      className="p-1.5 rounded-lg border border-zinc-850 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 transition-colors"
+                      title="Edit event"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(ev.id)}
+                      disabled={saving}
+                      className="p-1.5 rounded-lg border border-zinc-850 hover:border-red-950 hover:bg-red-500/5 text-zinc-400 hover:text-red-400 transition-colors"
+                      title="Delete event"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-[9px] text-zinc-650 flex items-center gap-1 select-none">
+                    <Shield className="h-3 w-3 text-zinc-650" />
+                    Read-only
+                  </span>
+                )}
               </div>
             </div>
           ))}
@@ -470,14 +543,33 @@ export default function ConsoleEvents() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
-                    URL Slug *
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider block">
+                      URL Slug *
+                    </label>
+                    <span className="text-[9px] font-semibold flex items-center gap-1">
+                      {slugStatus === "checking" && (
+                        <span className="text-zinc-500 flex items-center gap-1 animate-pulse">
+                          <Loader className="h-2.5 w-2.5 animate-spin" /> Checking
+                        </span>
+                      )}
+                      {slugStatus === "unique" && (
+                        <span className="text-emerald-500 flex items-center gap-1">
+                          ✓ Available
+                        </span>
+                      )}
+                      {slugStatus === "taken" && (
+                        <span className="text-rose-500 flex items-center gap-1 font-bold">
+                          ✗ Taken
+                        </span>
+                      )}
+                    </span>
+                  </div>
                   <input
                     type="text"
                     required
                     value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
+                    onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                     placeholder="e.g. aws-cloud-computing-workshop"
                     className="w-full px-3 py-2 text-xs rounded-lg bg-zinc-900 border border-zinc-850 text-white focus:outline-none focus:border-amber-500/50 font-mono"
                   />
@@ -635,7 +727,7 @@ export default function ConsoleEvents() {
                 </button>
                 <button
                   type="submit"
-                  disabled={saving || imageUploading}
+                  disabled={saving || imageUploading || slugStatus === "taken"}
                   className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? (
@@ -661,5 +753,13 @@ export default function ConsoleEvents() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ConsoleEventsWrapped() {
+  return (
+    <CMSErrorBoundary>
+      <ConsoleEvents />
+    </CMSErrorBoundary>
   );
 }

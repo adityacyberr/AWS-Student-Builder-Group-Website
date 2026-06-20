@@ -94,6 +94,26 @@ export default function ConsoleLayout({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Intercept navigation if there are unsaved changes
+  useEffect(() => {
+    const handleLinkClick = (e: MouseEvent) => {
+      if (typeof window !== "undefined" && (window as any).__hasUnsavedChanges) {
+        const target = e.target as HTMLElement;
+        const link = target.closest("a");
+        if (link && link.hostname === window.location.hostname && !link.hasAttribute("download")) {
+          const confirmLeave = confirm("You have unsaved changes. Are you sure you want to navigate away?");
+          if (!confirmLeave) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      }
+    };
+    document.addEventListener("click", handleLinkClick, { capture: true });
+    return () => document.removeEventListener("click", handleLinkClick, { capture: true });
+  }, []);
+
+
   // Close mobile menu when navigating
   useEffect(() => {
     setMobileMenuOpen(false);

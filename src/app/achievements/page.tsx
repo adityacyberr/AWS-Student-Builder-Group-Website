@@ -15,6 +15,8 @@ import { RoadmapRadar } from "./components/RoadmapRadar";
 import { MilestoneModal } from "./components/MilestoneModal";
 import { BottomJourney } from "./components/BottomJourney";
 import { Milestone } from "./components/MilestoneCard";
+import { subscribeCmsUpdates } from "@/lib/cmsEvents";
+import { CMSErrorBoundary, CMSErrorState } from "@/components/console/CMSErrorBoundary";
 
 interface DBAchievementRow {
   id: string;
@@ -111,46 +113,81 @@ const scrollItemVariants = {
   },
 };
 
-export default function AchievementsPage() {
-  const [achievements, setAchievements] = useState<Milestone[]>(INITIAL_MILESTONES);
+function AchievementsPageContent() {
+  const [achievements, setAchievements] = useState<Milestone[]>([]);
   const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+  
+  // Loading & error states
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const reducedMotion = useReducedMotion();
 
-  useEffect(() => {
-    async function loadAchievements() {
+  async function loadAchievements(isSilent = false) {
+    if (!isSilent) setLoading(true);
+    try {
       if (isSupabaseConfigured && supabase) {
-        try {
-          const { data, error } = await supabase
-            .from("achievements")
-            .select("*")
-            .order("date", { ascending: false });
-          if (!error && data && data.length > 0) {
-            const dbMilestones: Milestone[] = (data as DBAchievementRow[]).map((d) => ({
+        const { data, error } = await supabase
+          .from("achievements")
+          .select("*")
+          .order("date", { ascending: false });
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          const dbMilestones: Milestone[] = (data as DBAchievementRow[]).map((d) => ({
+            id: d.id,
+            title: d.title,
+            date: d.date,
+            description: d.description,
+            status: "Completed",
+            impactStatement: "Verified milestone achievement logged in chapter database records.",
+            relatedInitiatives: [d.badge_type === "charter" ? "Chapter Foundation" : d.badge_type === "team" ? "Team Development" : "Milestone Update"],
+            iconType: d.badge_type === "charter" ? "rocket" : d.badge_type === "team" ? "team" : "trophy",
+          }));
+          setAchievements(dbMilestones);
+        } else {
+          setAchievements(INITIAL_MILESTONES);
+        }
+      } else {
+        const stored = localStorage.getItem("aws_sbg_achievements");
+        if (stored) {
+          const raw = JSON.parse(stored);
+          if (raw.length > 0) {
+            const dbMilestones: Milestone[] = raw.map((d: any) => ({
               id: d.id,
               title: d.title,
               date: d.date,
               description: d.description,
               status: "Completed",
               impactStatement: "Verified milestone achievement logged in chapter database records.",
-              relatedInitiatives: [d.badge_type === "charter" ? "Chapter Foundation" : d.badge_type === "team" ? "Team Development" : "Milestone Update"],
-              iconType: d.badge_type === "charter" ? "rocket" : d.badge_type === "team" ? "team" : "trophy",
+              relatedInitiatives: [d.badgeType === "charter" ? "Chapter Foundation" : d.badgeType === "team" ? "Team Development" : "Milestone Update"],
+              iconType: d.badgeType === "charter" ? "rocket" : d.badgeType === "team" ? "team" : "trophy",
             }));
-            
-            const merged = [...dbMilestones];
-            INITIAL_MILESTONES.forEach((m) => {
-              if (!merged.some((dbM) => dbM.id === m.id)) {
-                merged.push(m);
-              }
-            });
-            setAchievements(merged);
+            setAchievements(dbMilestones);
+          } else {
+            setAchievements(INITIAL_MILESTONES);
           }
-        } catch (err) {
-          console.warn("Error loading achievements from Supabase:", err);
+        } else {
+          setAchievements(INITIAL_MILESTONES);
         }
       }
+      setError(null);
+    } catch (err: any) {
+      console.error("Error loading achievements:", err);
+      setError("Failed to stream achievement milestones. Falling back to local data.");
+      setAchievements(INITIAL_MILESTONES);
+    } finally {
+      if (!isSilent) setLoading(false);
     }
+  }
 
+  useEffect(() => {
     loadAchievements();
+
+    const unsubscribe = subscribeCmsUpdates("achievements", () => {
+      loadAchievements(true);
+    });
+    return () => unsubscribe();
   }, []);
 
   return (
@@ -170,20 +207,17 @@ export default function AchievementsPage() {
         animate="visible"
         className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 relative z-10 space-y-16"
       >
-        {/* ================================================= */}
-        {/* HERO SECTION                                      */}
-        {/* ================================================= */}
+        {/* HERO SECTION */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center w-full">
-          {/* Left Column: Heading */}
           <motion.div 
             variants={scrollItemVariants} 
             className="lg:col-span-7 text-left space-y-4"
           >
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block font-mono">
               {"// MILESTONES & IMPACT"}
             </span>
             
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-none">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-none font-sans">
               RIMT Milestones<br />
               &amp; <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500 filter drop-shadow-[0_0_20px_rgba(255,140,0,0.25)]">Impact</span>
             </h1>
@@ -193,35 +227,36 @@ export default function AchievementsPage() {
             </p>
           </motion.div>
 
-          {/* Right Column: Holographic Sphere centerpiece */}
           <motion.div variants={scrollItemVariants} className="lg:col-span-5 flex justify-center w-full">
             <HolographicSphere />
           </motion.div>
         </div>
 
-        {/* ================================================= */}
-        {/* COMPACT IMPACT STATS                              */}
-        {/* ================================================= */}
+        {/* COMPACT IMPACT STATS */}
         <motion.div variants={scrollItemVariants} className="w-full">
           <ImpactStats containerVariants={scrollContainerVariants} itemVariants={scrollItemVariants} />
         </motion.div>
 
-        {/* ================================================= */}
-        {/* INTERACTIVE HORIZONTAL TIMELINE                   */}
-        {/* ================================================= */}
+        {/* INTERACTIVE HORIZONTAL TIMELINE */}
         <motion.div 
           variants={scrollItemVariants}
           className="w-full pt-8"
         >
-          <HorizontalTimeline
-            milestones={achievements}
-            onSelect={setSelectedMilestone}
-          />
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <div className="h-8 w-8 text-orange-500 animate-spin border-4 border-t-transparent rounded-full" />
+            </div>
+          ) : error ? (
+            <CMSErrorState message={error} onRetry={() => loadAchievements()} />
+          ) : (
+            <HorizontalTimeline
+              milestones={achievements}
+              onSelect={setSelectedMilestone}
+            />
+          )}
         </motion.div>
 
-        {/* ================================================= */}
-        {/* FUTURE ROADMAP RADAR                              */}
-        {/* ================================================= */}
+        {/* FUTURE ROADMAP RADAR */}
         <motion.div 
           variants={scrollItemVariants}
           className="w-full pt-8"
@@ -229,18 +264,16 @@ export default function AchievementsPage() {
           <RoadmapRadar />
         </motion.div>
 
-        {/* ================================================= */}
-        {/* FINAL CTA SECTION                                 */}
-        {/* ================================================= */}
+        {/* FINAL CTA SECTION */}
         <motion.div 
           variants={scrollItemVariants}
           className="space-y-6 pt-12 border-t border-slate-900/60"
         >
           <div className="text-left">
-            <span className="text-[9px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block mb-3">
+            <span className="text-[9px] font-extrabold uppercase tracking-widest text-orange-400 bg-orange-500/5 border border-orange-500/20 px-3 py-1 rounded-full inline-block mb-3 font-mono">
               {"// JOURNEY"}
             </span>
-            <h3 className="text-2xl font-bold text-white tracking-tight">Our Journey Continues</h3>
+            <h3 className="text-2xl font-bold text-white tracking-tight uppercase">Our Journey Continues</h3>
             <p className="text-slate-500 text-xs sm:text-sm mt-1">Select a route below to explore active community channels.</p>
           </div>
 
@@ -259,5 +292,13 @@ export default function AchievementsPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function AchievementsPage() {
+  return (
+    <CMSErrorBoundary>
+      <AchievementsPageContent />
+    </CMSErrorBoundary>
   );
 }

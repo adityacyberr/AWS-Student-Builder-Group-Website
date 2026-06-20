@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Toast, ToastType } from "@/components/console/Toast";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
@@ -22,7 +23,15 @@ interface DBSettingRow {
 }
 
 export default function AdminSettings() {
+  const router = useRouter();
   const { isSuperAdmin, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !isSuperAdmin) {
+      router.push("/admin");
+    }
+  }, [isSuperAdmin, authLoading, router]);
+
   const [activeTab, setActiveTab] = useState<"general" | "metrics" | "seo" | "danger">("general");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
