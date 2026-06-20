@@ -19,6 +19,53 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- 1b. Ensure audit columns exist on other CMS tables
+DO $$ BEGIN
+  -- gallery_images
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'gallery_images' AND column_name = 'owner_user_id') THEN
+    ALTER TABLE public.gallery_images ADD COLUMN owner_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'gallery_images' AND column_name = 'created_by') THEN
+    ALTER TABLE public.gallery_images ADD COLUMN created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'gallery_images' AND column_name = 'updated_by') THEN
+    ALTER TABLE public.gallery_images ADD COLUMN updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+
+  -- achievements
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'owner_user_id') THEN
+    ALTER TABLE public.achievements ADD COLUMN owner_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'created_by') THEN
+    ALTER TABLE public.achievements ADD COLUMN created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'achievements' AND column_name = 'updated_by') THEN
+    ALTER TABLE public.achievements ADD COLUMN updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+
+  -- events
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'owner_user_id') THEN
+    ALTER TABLE public.events ADD COLUMN owner_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'created_by') THEN
+    ALTER TABLE public.events ADD COLUMN created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'updated_by') THEN
+    ALTER TABLE public.events ADD COLUMN updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+
+  -- announcements
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'announcements' AND column_name = 'owner_user_id') THEN
+    ALTER TABLE public.announcements ADD COLUMN owner_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'announcements' AND column_name = 'created_by') THEN
+    ALTER TABLE public.announcements ADD COLUMN created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'announcements' AND column_name = 'updated_by') THEN
+    ALTER TABLE public.announcements ADD COLUMN updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
 -- 2. Clean up any invalid portal_role values (keep only 'Super Admin' or 'Member')
 UPDATE public.team_members 
 SET portal_role = 'Member' 
