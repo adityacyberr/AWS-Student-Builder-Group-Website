@@ -50,6 +50,14 @@ export default function ConsoleAnnouncements() {
   const [buttonText, setButtonText] = useState("");
   const [destinationUrl, setDestinationUrl] = useState("");
   const [active, setActive] = useState(true);
+  const [initialValues, setInitialValues] = useState<{
+    title: string;
+    date: string;
+    content: string;
+    buttonText: string;
+    destinationUrl: string;
+    active: boolean;
+  } | null>(null);
 
   const showToast = (message: string, type: ToastType = "success") => {
     setToast({ message, type });
@@ -74,52 +82,107 @@ export default function ConsoleAnnouncements() {
   };
 
   const handleOpenAdd = () => {
+    const defaultDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     setEditingId(null);
     setTitle("");
-    setDate(new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
+    setDate(defaultDate);
     setContent("");
     setButtonText("");
     setDestinationUrl("");
     setActive(true);
+    setInitialValues({
+      title: "",
+      date: defaultDate,
+      content: "",
+      buttonText: "",
+      destinationUrl: "",
+      active: true,
+    });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (ann: CMSAnnouncement) => {
+    const initial = {
+      title: ann.title,
+      date: ann.date,
+      content: ann.content,
+      buttonText: ann.buttonText || "",
+      destinationUrl: ann.destinationUrl || "",
+      active: ann.active,
+    };
     setEditingId(ann.id);
-    setTitle(ann.title);
-    setDate(ann.date);
-    setContent(ann.content);
-    setButtonText(ann.buttonText || "");
-    setDestinationUrl(ann.destinationUrl || "");
-    setActive(ann.active);
+    setTitle(initial.title);
+    setDate(initial.date);
+    setContent(initial.content);
+    setButtonText(initial.buttonText);
+    setDestinationUrl(initial.destinationUrl);
+    setActive(initial.active);
+    setInitialValues(initial);
     setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    if (initialValues) {
+      const hasChanges =
+        title !== initialValues.title ||
+        date !== initialValues.date ||
+        content !== initialValues.content ||
+        buttonText !== initialValues.buttonText ||
+        destinationUrl !== initialValues.destinationUrl ||
+        active !== initialValues.active;
+
+      if (hasChanges) {
+        if (!confirm("You have unsaved changes. Are you sure you want to close?")) {
+          return;
+        }
+      }
+    }
+    setIsModalOpen(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !content || !date) {
-      showToast("Please fill all fields", "error");
+    const trimmedTitle = title.trim();
+    const trimmedContent = content.trim();
+    const trimmedDate = date.trim();
+
+    if (!trimmedTitle || !trimmedContent || !trimmedDate) {
+      showToast("Please fill all required fields", "error");
       return;
     }
     setSaving(true);
 
     try {
       const payload: Omit<CMSAnnouncement, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
-        title,
-        content,
-        date,
+        title: trimmedTitle,
+        content: trimmedContent,
+        date: trimmedDate,
         active,
         buttonText: buttonText.trim() || undefined,
         destinationUrl: destinationUrl.trim() || undefined,
       };
 
       await saveAnnouncement(editingId, payload, user?.id || null);
-      showToast(editingId ? "Announcement updated successfully!" : "Announcement published successfully!");
-      setIsModalOpen(false);
+      
+      showToast(
+        editingId
+          ? "✅ Announcement updated successfully"
+          : "✅ Announcement saved successfully"
+      );
+      
       await loadAnnouncements();
+      
+      setTimeout(() => {
+        setIsModalOpen(false);
+      }, 600);
     } catch (err: any) {
-      console.error(err);
-      showToast(err.message || "Failed to save announcement", "error");
+      console.error("Error saving announcement:", err.message || err);
+      showToast(
+        editingId
+          ? "❌ Failed to update announcement"
+          : "❌ Failed to save announcement. Please try again.",
+        "error"
+      );
     } finally {
       setSaving(false);
     }
@@ -331,7 +394,7 @@ export default function ConsoleAnnouncements() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-sm select-none">
           <div className="w-full max-w-lg rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative">
             <button
-              onClick={() => setIsModalOpen(false)}
+              onClick={handleCloseModal}
               className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-350 p-1"
             >
               <X className="h-4 w-4" />
@@ -428,7 +491,7 @@ export default function ConsoleAnnouncements() {
               <div className="flex justify-end gap-2.5 pt-4 border-t border-zinc-900">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCloseModal}
                   className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
                 >
                   Cancel
@@ -436,10 +499,19 @@ export default function ConsoleAnnouncements() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saving ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  Save Announcement
+                  {saving ? (
+                    <>
+                      <Loader className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      <span>{editingId ? "Update Announcement" : "Save Announcement"}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

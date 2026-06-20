@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,21 +66,14 @@ export async function POST(request: NextRequest) {
 
         imageUrl = data.publicUrl;
       } catch (uploadErr) {
-        console.warn("Supabase upload failed, falling back to local storage:", uploadErr);
-        // Fall back to local
-        const uploadDir = path.join(process.cwd(), "public", "uploads");
-        await mkdir(uploadDir, { recursive: true });
-        const localFilePath = path.join(uploadDir, fileName);
-        await writeFile(localFilePath, buffer);
-        imageUrl = `/uploads/${fileName}`;
+        console.warn("Supabase upload failed, falling back to base64 Data URL:", uploadErr);
+        const base64Data = buffer.toString("base64");
+        imageUrl = `data:${file.type};base64,${base64Data}`;
       }
     } else {
-      // Direct local storage
-      const uploadDir = path.join(process.cwd(), "public", "uploads");
-      await mkdir(uploadDir, { recursive: true });
-      const localFilePath = path.join(uploadDir, fileName);
-      await writeFile(localFilePath, buffer);
-      imageUrl = `/uploads/${fileName}`;
+      // Direct Base64 fallback (no fs write)
+      const base64Data = buffer.toString("base64");
+      imageUrl = `data:${file.type};base64,${base64Data}`;
     }
 
     console.log("Database updated");

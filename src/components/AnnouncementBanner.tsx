@@ -13,6 +13,8 @@ interface AnnouncementItem {
   active: boolean;
   button_text?: string | null;
   destination_url?: string | null;
+  buttonText?: string | null;
+  destinationUrl?: string | null;
 }
 
 export default function AnnouncementBanner() {
@@ -92,6 +94,19 @@ export default function AnnouncementBanner() {
     }
 
     loadAnnouncements();
+
+    // Listen for custom updates and storage changes
+    if (typeof window !== "undefined") {
+      window.addEventListener("cms-data-updated", loadAnnouncements);
+      window.addEventListener("storage", loadAnnouncements);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("cms-data-updated", loadAnnouncements);
+        window.removeEventListener("storage", loadAnnouncements);
+      }
+    };
   }, [pathname, isAuthOrPanelPath]);
 
   // If path is auth/admin or there are no announcements, do not render
@@ -100,6 +115,8 @@ export default function AnnouncementBanner() {
   }
 
   const activeAnn = announcements[0];
+  const destinationUrl = activeAnn.destination_url || activeAnn.destinationUrl;
+  const buttonText = activeAnn.button_text || activeAnn.buttonText || "Learn More";
 
   return (
     <AnimatePresence>
@@ -121,16 +138,16 @@ export default function AnnouncementBanner() {
             <span className="text-slate-400 text-[13px] flex-shrink-0">
               {activeAnn.date}
             </span>
-            {activeAnn.destination_url && (
+            {destinationUrl && (
               <>
                 <span className="text-slate-600 flex-shrink-0 select-none">&bull;</span>
                 <a
-                  href={activeAnn.destination_url}
+                  href={destinationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-orange-400 hover:text-orange-350 font-semibold text-[13px] hover:underline flex-shrink-0 cursor-pointer flex items-center gap-0.5"
                 >
-                  {activeAnn.button_text || "Learn More"} →
+                  {buttonText} →
                 </a>
               </>
             )}

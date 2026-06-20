@@ -139,6 +139,9 @@ export async function saveEvent(
         .single();
       if (error) throw error;
       console.log("Database updated");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("cms-data-updated"));
+      }
       return {
         ...eventData,
         id: data.id,
@@ -154,6 +157,9 @@ export async function saveEvent(
         .single();
       if (error) throw error;
       console.log("Database updated");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("cms-data-updated"));
+      }
       return {
         ...eventData,
         id: data.id,
@@ -190,6 +196,9 @@ export async function deleteEvent(id: string): Promise<void> {
   if (isSupabaseConfigured && supabase) {
     const { error } = await supabase.from("events").delete().eq("id", id);
     if (error) throw error;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("cms-data-updated"));
+    }
   } else {
     const localEvents = getLocalEvents() as CMSEvent[];
     const filtered = localEvents.filter((e) => e.id !== id);
@@ -654,6 +663,9 @@ export async function saveAnnouncement(
         .single();
       if (error) throw error;
       console.log("Database updated");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("cms-data-updated"));
+      }
       return {
         ...annData,
         id: data.id,
@@ -669,6 +681,9 @@ export async function saveAnnouncement(
         .single();
       if (error) throw error;
       console.log("Database updated");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("cms-data-updated"));
+      }
       return {
         ...annData,
         id: data.id,
@@ -704,6 +719,9 @@ export async function deleteAnnouncement(id: string): Promise<void> {
   if (isSupabaseConfigured && supabase) {
     const { error } = await supabase.from("announcements").delete().eq("id", id);
     if (error) throw error;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("cms-data-updated"));
+    }
   } else {
     const localAnn = await getAnnouncements();
     const filtered = localAnn.filter((a) => a.id !== id);

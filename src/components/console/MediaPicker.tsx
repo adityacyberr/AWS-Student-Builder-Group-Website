@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Upload, Link as LinkIcon, Image as ImageIcon, CheckCircle, Loader, AlertCircle } from "lucide-react";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 interface MediaPickerProps {
   value: string;
@@ -9,6 +10,9 @@ interface MediaPickerProps {
   folder: "team" | "gallery" | "events";
   placeholder?: string;
   label?: string;
+  onUploadingStateChange?: (uploading: boolean) => void;
+  onUploadSuccess?: () => void;
+  onUploadError?: (error: string) => void;
 }
 
 export function MediaPicker({
@@ -17,10 +21,19 @@ export function MediaPicker({
   folder,
   placeholder = "https://example.com/image.jpg",
   label = "Upload Image or Paste URL",
+  onUploadingStateChange,
+  onUploadSuccess,
+  onUploadError,
 }: MediaPickerProps) {
   const [uploading, setUploading] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const setUploadingState = (val: boolean) => {
+    setUploading(val);
+    onUploadingStateChange?.(val);
+  };
   
   // Input mode toggle between uploading a file and entering a direct URL
   const [inputMode, setInputMode] = useState<"upload" | "url">(
@@ -74,62 +87,165 @@ export function MediaPicker({
     setPreviewUrl(URL.createObjectURL(file));
   };
 
-  // Perform multipart FormData upload to backend
+  // Perform direct client-side upload to Supabase Storage or Base64 fallback in sandbox mode
   const handleUpload = async () => {
     if (!selectedFile) {
       setErrorMsg("No file selected");
       return;
     }
 
-    setUploading(true);
-    setErrorMsg("");
+    if (isSupabaseConfigured && supabase) {
+      try {
+        setUploadingState(true);
+        setErrorMsg("");
+        setUploadProgress(0);
+        setStatusText("Initializing upload session...");
 
-    try {
-      console.log("Uploading...");
-      setStatusText("Uploading...");
+        const sessionResponse = await supabase.auth.getSession();
+        const session = sessionResponse.data.session;
+        if (!session) {
+          throw new Error("No active admin session found. Please log in again.");
+        }
 
-      // Simulate a small transition delay for visually rich processing states
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setStatusText("Processing image...");
+        const fileExt = selectedFile.name.split(".").pop() || "png";
+        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `${folder}/${fileName}`;
 
-      const formData = new FormData();
-      formData.append("image", selectedFile);
-      formData.append("folder", folder);
+        const supabaseUrl = (supabase as any).supabaseUrl;
+        if (!supabaseUrl) {
+          throw new Error("Supabase URL is not configured.");
+        }
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setStatusText("Saving...");
+        const uploadUrl = `${supabaseUrl}/storage/v1/object/builder-assets/${filePath}`;
+        const anonKey = (supabase as any).supabaseKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+        const xhr = new XMLHttpRequest();
 
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(errText || "Upload failed");
+        xhr.upload.addEventListener("progress", (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(percent);
+            if (percent < 100) {
+              setStatusText(`Uploading... ${percent}%`);
+            } else {
+              setStatusText("Finalizing upload...");
+            }
+          }
+        });
+
+        xhr.addEventListener("load", () => {
+          try {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const publicUrl = `${supabaseUrl}/storage/v1/object/public/builder-assets/${filePath}`;
+              setStatusText("Published successfully ✓");
+              onChange(publicUrl);
+              onUploadSuccess?.();
+
+              setTimeout(() => {
+                setSelectedFile(null);
+                setPreviewUrl(null);
+                setStatusText("");
+                setUploadProgress(0);
+                setUploadingState(false);
+              }, 1200);
+            } else {
+              let serverError = "";
+              try {
+                const errData = JSON.parse(xhr.responseText);
+                serverError = errData.message || errData.error || "";
+              } catch {
+                serverError = xhr.responseText;
+              }
+              throw new Error(serverError || `HTTP ${xhr.status} upload failed`);
+            }
+          } catch (err: any) {
+            console.error("Upload failed:", err);
+            setErrorMsg(err.message || "Upload failed. Please try again.");
+            setStatusText("");
+            setUploadProgress(0);
+            setUploadingState(false);
+            onUploadError?.(err.message || "Upload failed");
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          const err = "Network error. Failed to reach the upload server.";
+          setErrorMsg(err);
+          setStatusText("");
+          setUploadProgress(0);
+          setUploadingState(false);
+          onUploadError?.(err);
+        });
+
+        xhr.open("POST", uploadUrl);
+        xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
+        if (anonKey) {
+          xhr.setRequestHeader("apikey", anonKey);
+        }
+        xhr.setRequestHeader("x-upsert", "true");
+        xhr.setRequestHeader("Content-Type", selectedFile.type);
+        xhr.send(selectedFile);
+      } catch (err: any) {
+        console.error("Initiation failed:", err);
+        setErrorMsg(err.message || "Initiation failed.");
+        setStatusText("");
+        setUploadProgress(0);
+        setUploadingState(false);
+        onUploadError?.(err.message || "Upload failed");
       }
+    } else {
+      // Local fallback (Base64 data URL) in Sandbox Mode
+      try {
+        setUploadingState(true);
+        setErrorMsg("");
+        setUploadProgress(0);
+        setStatusText("Processing image...");
 
-      const data = await response.json();
-      console.log("Upload response:", data);
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 25;
+          setUploadProgress(progress);
+          if (progress >= 100) {
+            clearInterval(interval);
+            
+            try {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const base64Data = reader.result as string;
+                setStatusText("Published successfully ✓");
+                onChange(base64Data);
+                onUploadSuccess?.();
 
-      if (!data.url) {
-        throw new Error("Invalid server response schema");
+                setTimeout(() => {
+                  setSelectedFile(null);
+                  setPreviewUrl(null);
+                  setStatusText("");
+                  setUploadProgress(0);
+                  setUploadingState(false);
+                }, 1200);
+              };
+              reader.onerror = () => {
+                throw new Error("FileReader conversion error");
+              };
+              reader.readAsDataURL(selectedFile);
+            } catch (err: any) {
+              setErrorMsg(err.message || "Failed to process sandbox image.");
+              setStatusText("");
+              setUploadProgress(0);
+              setUploadingState(false);
+              onUploadError?.(err.message || "Upload failed");
+            }
+          } else {
+            setStatusText(`Processing... ${progress}%`);
+          }
+        }, 150);
+      } catch (err: any) {
+        setErrorMsg(err.message || "Failed to process sandbox image.");
+        setStatusText("");
+        setUploadProgress(0);
+        setUploadingState(false);
+        onUploadError?.(err.message || "Upload failed");
       }
-
-      setStatusText("Published successfully ✓");
-      onChange(data.url);
-
-      // Keep success state visible briefly, then clear local selections
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      setStatusText("");
-    } catch (error: any) {
-      console.error("Upload failed:", error);
-      setErrorMsg(error.message || "Network error. Failed to reach the upload server.");
-      setStatusText("");
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -213,9 +329,15 @@ export function MediaPicker({
             }`}
           >
             {uploading ? (
-              <div className="space-y-2 py-4 flex flex-col items-center">
+              <div className="space-y-3 py-4 flex flex-col items-center w-full max-w-[240px] mx-auto">
                 <Loader className="h-6 w-6 text-amber-500 animate-spin" />
                 <p className="text-xs font-bold text-amber-400 animate-pulse">{statusText}</p>
+                <div className="w-full bg-zinc-850 rounded-full h-1 overflow-hidden">
+                  <div 
+                    className="bg-amber-500 h-1 rounded-full transition-all duration-300" 
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
               </div>
             ) : previewUrl ? (
               // Selected file preview (before upload)

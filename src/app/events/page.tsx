@@ -32,6 +32,7 @@ interface DBEventRow {
   registration_link: string;
   status: "upcoming" | "completed";
   cover_placeholder_color: "orange" | "blue" | "purple" | "mint" | "amber";
+  image_url?: string | null;
 }
 
 // ─── Animation variants ─────────────────────────────────────────
@@ -134,6 +135,7 @@ export default function EventsPage() {
               registrationLink: d.registration_link,
               status: d.status,
               coverPlaceholderColor: d.cover_placeholder_color,
+              imageUrl: d.image_url || "",
             }));
           }
         } catch (err) {
@@ -143,6 +145,19 @@ export default function EventsPage() {
       setEvents(eventsList);
     }
     loadEvents();
+
+    // Listen for custom updates and storage changes
+    if (typeof window !== "undefined") {
+      window.addEventListener("cms-data-updated", loadEvents);
+      window.addEventListener("storage", loadEvents);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("cms-data-updated", loadEvents);
+        window.removeEventListener("storage", loadEvents);
+      }
+    };
   }, []);
 
   // ─── Filtering ──────────────────────────────────────────────────
@@ -674,77 +689,87 @@ function FeaturedEventCard({
           </Link>
         </div>
 
-        {/* Right - AWS cloud illustration area */}
-        <div className="relative flex items-center justify-center p-8 lg:p-12 overflow-hidden">
-          {/* Background glow */}
-          <div
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              width: 300,
-              height: 300,
-              background: "radial-gradient(circle, rgba(255,140,0,0.08) 0%, transparent 70%)",
-              filter: "blur(30px)",
-              transform: hovered ? "scale(1.15)" : "scale(1)",
-              transition: "transform 0.6s ease",
-            }}
-          />
-
-          {/* Orbit rings */}
-          {!reducedMotion && [100, 150, 200].map((size, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full border border-orange-500/[0.06] pointer-events-none"
-              style={{
-                width: size,
-                height: size,
-                animation: `orbit-spin ${20 + i * 10}s linear infinite`,
-              }}
+        {/* Right - AWS cloud illustration area or Custom Event Image */}
+        <div className="relative min-h-[250px] lg:min-h-full overflow-hidden flex items-center justify-center">
+          {event.imageUrl ? (
+            <img
+              src={event.imageUrl}
+              alt={event.title}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
             />
-          ))}
+          ) : (
+            <>
+              {/* Background glow */}
+              <div
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  width: 300,
+                  height: 300,
+                  background: "radial-gradient(circle, rgba(255,140,0,0.08) 0%, transparent 70%)",
+                  filter: "blur(30px)",
+                  transform: hovered ? "scale(1.15)" : "scale(1)",
+                  transition: "transform 0.6s ease",
+                }}
+              />
 
-          {/* AWS-style cloud icon */}
-          <div
-            className="relative flex items-center justify-center transition-transform duration-500"
-            style={{ transform: hovered ? "scale(1.06)" : "scale(1)" }}
-          >
-            <div className="text-orange-400/50" style={{ filter: "drop-shadow(0 0 20px rgba(255,140,0,0.2))" }}>
-              <svg width="120" height="80" viewBox="0 0 120 80" fill="none" className="text-orange-400/40">
-                <path
-                  d="M97 65H28c-11 0-20-9-20-20s9-20 20-20c1-11 10-20 22-20 10 0 19 7 21 17 3-2 6-3 9-3 8 0 15 7 15 15h2c8 0 14 6 14 14s-6 14-14 14v3z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+              {/* Orbit rings */}
+              {!reducedMotion && [100, 150, 200].map((size, i) => (
+                <div
+                  key={i}
+                  className="absolute rounded-full border border-orange-500/[0.06] pointer-events-none"
+                  style={{
+                    width: size,
+                    height: size,
+                    animation: `orbit-spin ${20 + i * 10}s linear infinite`,
+                  }}
                 />
-              </svg>
-            </div>
-            <span
-              className="absolute text-3xl font-black select-none"
-              style={{
-                color: "rgba(255,140,0,0.35)",
-                textShadow: "0 0 20px rgba(255,140,0,0.15)",
-                letterSpacing: "0.1em",
-              }}
-            >
-              aws
-            </span>
-          </div>
+              ))}
 
-          {/* Particles */}
-          {!reducedMotion && [0, 1, 2, 3].map((i) => (
-            <div
-              key={`fp-${i}`}
-              className="absolute rounded-full bg-orange-500/20"
-              style={{
-                width: 2,
-                height: 2,
-                left: `${30 + i * 15}%`,
-                top: `${40 + i * 8}%`,
-                animation: `solar-float ${10 + i * 3}s linear infinite`,
-                animationDelay: `${i * 2}s`,
-              }}
-            />
-          ))}
+              {/* AWS-style cloud icon */}
+              <div
+                className="relative flex items-center justify-center transition-transform duration-500"
+                style={{ transform: hovered ? "scale(1.06)" : "scale(1)" }}
+              >
+                <div className="text-orange-400/50" style={{ filter: "drop-shadow(0 0 20px rgba(255,140,0,0.2))" }}>
+                  <svg width="120" height="80" viewBox="0 0 120 80" fill="none" className="text-orange-400/40">
+                    <path
+                      d="M97 65H28c-11 0-20-9-20-20s9-20 20-20c1-11 10-20 22-20 10 0 19 7 21 17 3-2 6-3 9-3 8 0 15 7 15 15h2c8 0 14 6 14 14s-6 14-14 14v3z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <span
+                  className="absolute text-3xl font-black select-none"
+                  style={{
+                    color: "rgba(255,140,0,0.35)",
+                    textShadow: "0 0 20px rgba(255,140,0,0.15)",
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  aws
+                </span>
+              </div>
+
+              {/* Particles */}
+              {!reducedMotion && [0, 1, 2, 3].map((i) => (
+                <div
+                  key={`fp-${i}`}
+                  className="absolute rounded-full bg-orange-500/20"
+                  style={{
+                    width: 2,
+                    height: 2,
+                    left: `${30 + i * 15}%`,
+                    top: `${40 + i * 8}%`,
+                    animation: `solar-float ${10 + i * 3}s linear infinite`,
+                    animationDelay: `${i * 2}s`,
+                  }}
+                />
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -781,6 +806,17 @@ function EventCard({
     >
       {/* Top highlight */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500/10 to-transparent pointer-events-none z-10" />
+
+      {/* Event Custom Image banner */}
+      {event.imageUrl && (
+        <div className="h-44 w-full overflow-hidden relative border-b border-slate-900/50">
+          <img
+            src={event.imageUrl}
+            alt={event.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        </div>
+      )}
 
       {/* Glowing planet peek - bottom right */}
       <div

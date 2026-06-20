@@ -28,6 +28,7 @@ export default function ConsoleEvents() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // Lists and filters
@@ -52,6 +53,20 @@ export default function ConsoleEvents() {
   const [status, setStatus] = useState<CMSEvent["status"]>("upcoming");
   const [coverPlaceholderColor, setCoverPlaceholderColor] = useState<CMSEvent["coverPlaceholderColor"]>("orange");
   const [imageUrl, setImageUrl] = useState("");
+  const [initialValues, setInitialValues] = useState<{
+    title: string;
+    slug: string;
+    date: string;
+    time: string;
+    type: CMSEvent["type"];
+    location: string;
+    description: string;
+    longDescription: string;
+    registrationLink: string;
+    status: CMSEvent["status"];
+    coverPlaceholderColor: CMSEvent["coverPlaceholderColor"];
+    imageUrl: string;
+  } | null>(null);
 
   const showToast = (message: string, type: ToastType = "success") => {
     setToast({ message, type });
@@ -88,42 +103,116 @@ export default function ConsoleEvents() {
   };
 
   const handleOpenAdd = () => {
+    const defaultTime = "TBA";
+    const defaultLocation = "RIMT University Campus";
+    const defaultRegLink = "https://www.meetup.com/aws-sbg-at-rimt-university/";
+    const defaultType = "Workshop";
+    const defaultStatus = "upcoming";
+    const defaultCover = "orange";
+
     setEditingId(null);
     setTitle("");
     setSlug("");
     setDate("");
-    setTime("TBA");
-    setType("Workshop");
-    setLocation("RIMT University Campus");
+    setTime(defaultTime);
+    setType(defaultType);
+    setLocation(defaultLocation);
     setDescription("");
     setLongDescription("");
-    setRegistrationLink("https://www.meetup.com/aws-sbg-at-rimt-university/");
-    setStatus("upcoming");
-    setCoverPlaceholderColor("orange");
+    setRegistrationLink(defaultRegLink);
+    setStatus(defaultStatus);
+    setCoverPlaceholderColor(defaultCover);
     setImageUrl("");
+
+    setInitialValues({
+      title: "",
+      slug: "",
+      date: "",
+      time: defaultTime,
+      type: defaultType,
+      location: defaultLocation,
+      description: "",
+      longDescription: "",
+      registrationLink: defaultRegLink,
+      status: defaultStatus,
+      coverPlaceholderColor: defaultCover,
+      imageUrl: "",
+    });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (ev: CMSEvent) => {
+    const initial = {
+      title: ev.title,
+      slug: ev.slug,
+      date: ev.date,
+      time: ev.time || "",
+      type: ev.type,
+      location: ev.location,
+      description: ev.description,
+      longDescription: ev.longDescription || "",
+      registrationLink: ev.registrationLink,
+      status: ev.status,
+      coverPlaceholderColor: ev.coverPlaceholderColor,
+      imageUrl: ev.imageUrl || "",
+    };
+
     setEditingId(ev.id);
-    setTitle(ev.title);
-    setSlug(ev.slug);
-    setDate(ev.date);
-    setTime(ev.time || "");
-    setType(ev.type);
-    setLocation(ev.location);
-    setDescription(ev.description);
-    setLongDescription(ev.longDescription || "");
-    setRegistrationLink(ev.registrationLink);
-    setStatus(ev.status);
-    setCoverPlaceholderColor(ev.coverPlaceholderColor);
-    setImageUrl(ev.imageUrl || "");
+    setTitle(initial.title);
+    setSlug(initial.slug);
+    setDate(initial.date);
+    setTime(initial.time);
+    setType(initial.type);
+    setLocation(initial.location);
+    setDescription(initial.description);
+    setLongDescription(initial.longDescription);
+    setRegistrationLink(initial.registrationLink);
+    setStatus(initial.status);
+    setCoverPlaceholderColor(initial.coverPlaceholderColor);
+    setImageUrl(initial.imageUrl);
+
+    setInitialValues(initial);
     setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    if (initialValues) {
+      const hasChanges =
+        title !== initialValues.title ||
+        slug !== initialValues.slug ||
+        date !== initialValues.date ||
+        time !== initialValues.time ||
+        type !== initialValues.type ||
+        location !== initialValues.location ||
+        description !== initialValues.description ||
+        longDescription !== initialValues.longDescription ||
+        registrationLink !== initialValues.registrationLink ||
+        status !== initialValues.status ||
+        coverPlaceholderColor !== initialValues.coverPlaceholderColor ||
+        imageUrl !== initialValues.imageUrl;
+
+      if (hasChanges) {
+        if (!confirm("You have unsaved changes. Are you sure you want to close?")) {
+          return;
+        }
+      }
+    }
+    setIsModalOpen(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !slug || !date || !location || !description) {
+    if (imageUploading) {
+      showToast("Please wait for the banner image to finish uploading.", "error");
+      return;
+    }
+    const trimmedTitle = title.trim();
+    const trimmedSlug = slug.trim();
+    const trimmedDate = date.trim();
+    const trimmedLocation = location.trim();
+    const trimmedDescription = description.trim();
+
+    if (!trimmedTitle || !trimmedSlug || !trimmedDate || !trimmedLocation || !trimmedDescription) {
       showToast("Please fill in all required fields", "error");
       return;
     }
@@ -131,28 +220,42 @@ export default function ConsoleEvents() {
 
     try {
       const payload: Omit<CMSEvent, "id" | "ownerUserId" | "createdBy" | "updatedBy"> = {
-        title,
-        slug,
-        date,
-        time,
+        title: trimmedTitle,
+        slug: trimmedSlug,
+        date: trimmedDate,
+        time: time.trim(),
         type,
-        location,
-        description,
-        longDescription,
-        registrationLink,
+        location: trimmedLocation,
+        description: trimmedDescription,
+        longDescription: longDescription.trim(),
+        registrationLink: registrationLink.trim(),
         status,
         coverPlaceholderColor,
-        imageUrl,
+        imageUrl: imageUrl.trim() || undefined,
       };
 
       await saveEvent(editingId, payload, user?.id || null);
-      showToast(editingId ? "Event updated successfully!" : "Event created successfully!");
-      setIsModalOpen(false);
+      
+      showToast(
+        editingId 
+          ? "✅ Event updated successfully" 
+          : "✅ Event saved successfully"
+      );
+      
       await loadEvents();
       router.refresh();
+      
+      setTimeout(() => {
+        setIsModalOpen(false);
+      }, 600);
     } catch (err: any) {
-      console.error(err);
-      showToast(err.message || "Failed to save event.", "error");
+      console.error("Error saving event:", err.message || err);
+      showToast(
+        editingId
+          ? "❌ Failed to update event"
+          : "❌ Failed to save event. Please try again.",
+        "error"
+      );
     } finally {
       setSaving(false);
     }
@@ -340,8 +443,8 @@ export default function ConsoleEvents() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-sm select-none overflow-y-auto">
           <div className="w-full max-w-2xl rounded-xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl relative my-8">
             <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-350 p-1"
+              onClick={handleCloseModal}
+              className="absolute right-4 top-4 text-zinc-550 hover:text-zinc-355 p-1"
             >
               <X className="h-4 w-4" />
             </button>
@@ -488,6 +591,9 @@ export default function ConsoleEvents() {
                   onChange={setImageUrl}
                   folder="events"
                   label="Upload Event Banner or Cover Image"
+                  onUploadingStateChange={setImageUploading}
+                  onUploadSuccess={() => showToast("Banner uploaded successfully.", "success")}
+                  onUploadError={() => showToast("Failed to upload banner image.", "error")}
                 />
               </div>
 
@@ -522,18 +628,32 @@ export default function ConsoleEvents() {
               <div className="flex justify-end gap-2.5 pt-4 border-t border-zinc-900">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={handleCloseModal}
                   className="px-4 py-2 border border-zinc-850 hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                  disabled={saving || imageUploading}
+                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saving ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  Save Event
+                  {saving ? (
+                    <>
+                      <Loader className="h-3.5 w-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : imageUploading ? (
+                    <>
+                      <Loader className="h-3.5 w-3.5 animate-spin" />
+                      <span>Uploading Banner...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      <span>{editingId ? "Update Event" : "Save Event"}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

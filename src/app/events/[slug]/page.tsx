@@ -38,6 +38,7 @@ export default function EventDetailPage() {
               registrationLink: data.registration_link,
               status: data.status,
               coverPlaceholderColor: data.cover_placeholder_color,
+              imageUrl: data.image_url,
             };
           }
         } catch (err) {
@@ -105,11 +106,22 @@ export default function EventDetailPage() {
 
         {/* Hero Card */}
         <div className="relative overflow-hidden rounded-2xl border border-slate-900 bg-slate-950/80 shadow-xl mb-8">
-          <div className={`h-60 bg-gradient-to-br ${getPlaceholderBg(event.coverPlaceholderColor)} relative flex items-center justify-center p-8 text-center border-b border-slate-900`}>
-            <div className="absolute top-6 left-6 bg-slate-950/80 px-2.5 py-0.5 rounded border border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          <div 
+            className={`h-60 relative flex items-center justify-center p-8 text-center border-b border-slate-900 overflow-hidden ${
+              !event.imageUrl ? `bg-gradient-to-br ${getPlaceholderBg(event.coverPlaceholderColor)}` : ""
+            }`}
+          >
+            {event.imageUrl && (
+              <img
+                src={event.imageUrl}
+                alt={event.title}
+                className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
+              />
+            )}
+            <div className="absolute top-6 left-6 bg-slate-950/80 px-2.5 py-0.5 rounded border border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest z-10">
               {event.type}
             </div>
-            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md">
+            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md z-10">
               {event.title}
             </h1>
           </div>
