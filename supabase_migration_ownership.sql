@@ -43,15 +43,22 @@ WHERE lower(email) = 'adityajangra2008@gmail.com';
 DO $$
 DECLARE
   user_id uuid;
+  member_id uuid;
 BEGIN
   SELECT id INTO user_id FROM auth.users WHERE lower(email) = 'adityajangra2008@gmail.com';
   IF user_id IS NOT NULL THEN
-    INSERT INTO public.team_members (name, role, branch, specialization, bio, quote, initials, email, portal_role, owner_user_id)
-    VALUES ('Aditya', 'Technical Head', 'B.Tech CSE', 'Cybersecurity', 'Super Admin for AWS SBG Chapter.', 'Building secure and scalable cloud architectures.', 'AJ', 'adityajangra2008@gmail.com', 'Super Admin', user_id)
-    ON CONFLICT (name, role) DO UPDATE SET
-      portal_role = 'Super Admin',
-      owner_user_id = user_id,
-      email = 'adityajangra2008@gmail.com';
+    -- Check if record already exists by name and role
+    SELECT id INTO member_id FROM public.team_members WHERE lower(name) = 'aditya' AND lower(role) = 'technical head';
+    IF member_id IS NOT NULL THEN
+      UPDATE public.team_members
+      SET portal_role = 'Super Admin',
+          owner_user_id = user_id,
+          email = 'adityajangra2008@gmail.com'
+      WHERE id = member_id;
+    ELSE
+      INSERT INTO public.team_members (name, role, branch, specialization, bio, quote, initials, email, portal_role, owner_user_id)
+      VALUES ('Aditya', 'Technical Head', 'B.Tech CSE', 'Cybersecurity', 'Super Admin for AWS SBG Chapter.', 'Building secure and scalable cloud architectures.', 'AJ', 'adityajangra2008@gmail.com', 'Super Admin', user_id);
+    END IF;
   END IF;
 END $$;
 
