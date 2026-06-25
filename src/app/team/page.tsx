@@ -218,7 +218,7 @@ export default function TeamPage() {
   }, [selectedIndex, sortedMembers]);
 
   return (
-    <div className="relative min-h-screen bg-[#050816] bg-grid-pattern overflow-hidden text-slate-300">
+    <div className="relative min-h-screen bg-[#050816] bg-grid-pattern overflow-x-clip text-slate-300">
       {/* Shared living background */}
       <SolarBackground reducedMotion={reducedMotion} />
 
@@ -372,7 +372,10 @@ export default function TeamPage() {
         {/* OUR ORBIT. OUR STRENGTH.                                */}
         {/* ====================================================== */}
         <motion.div
-          variants={scrollItemVariants}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
           id="orbit-strength"
           className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8"
         >

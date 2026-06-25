@@ -82,7 +82,7 @@ html, body {
   background-color: #070a13;
   color: #f8fafc;
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Light Theme selective styles */

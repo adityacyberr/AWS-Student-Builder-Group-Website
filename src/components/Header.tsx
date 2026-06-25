@@ -93,22 +93,20 @@ export default function Header() {
               </div>
             </Link>
 
-            {/* Compact Institutional Partners Section (Exactly 24px spacing via ml-6) */}
-            <div className="hidden xl:flex items-center gap-2 select-none flex-shrink-0 ml-6">
-
-
-              {/* Institutional logos sized to match the main logo height (h-10 / 40px) */}
+            {/* Compact Institutional Partners Section (Visible on all viewports) */}
+            <div className="flex items-center gap-2 select-none flex-shrink-0 ml-3 sm:ml-6">
+              {/* Institutional logos sized to match the main logo height (h-8 on mobile, h-10 / 40px on desktop) */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <img
                   src="/brand/rimt-university.jpg"
                   alt="RIMT"
-                  className="h-10 w-auto object-contain rounded bg-white px-1"
+                  className="h-8 w-auto sm:h-10 object-contain rounded bg-white px-0.5 sm:px-1"
                   title="RIMT University"
                 />
                 <img
                   src="/brand/dri-lab.png"
                   alt="DRI"
-                  className="h-10 w-auto object-contain rounded bg-white px-1"
+                  className="h-8 w-auto sm:h-10 object-contain rounded bg-white px-0.5 sm:px-1"
                   title="DRI – Department of Research, Innovations and Incubations"
                 />
               </div>
@@ -284,19 +282,19 @@ export default function Header() {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <div className="flex items-center justify-center h-8.5 w-11 bg-white p-1 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
                       <img
-                        src="/brand/dri-lab.png"
-                        alt="DRI – Department of Research, Innovations and Incubations"
+                        src="/brand/rimt-university.jpg"
+                        alt="RIMT University"
                         className="max-h-full max-w-full object-contain"
-                        title="DRI – Department of Research, Innovations and Incubations"
+                        title="RIMT University"
                       />
                     </div>
                     <div className="h-5 w-px bg-slate-850" />
                     <div className="flex items-center justify-center h-8.5 w-11 bg-white p-1 rounded-md border border-slate-200 shadow-sm flex-shrink-0">
                       <img
-                        src="/brand/rimt-university.jpg"
-                        alt="RIMT University"
+                        src="/brand/dri-lab.png"
+                        alt="DRI – Department of Research, Innovations and Incubations"
                         className="max-h-full max-w-full object-contain"
-                        title="RIMT University"
+                        title="DRI – Department of Research, Innovations and Incubations"
                       />
                     </div>
                   </div>

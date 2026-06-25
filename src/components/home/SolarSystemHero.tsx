@@ -665,7 +665,7 @@ export function SolarSystemHero() {
               >
                 {[
                   { value: "50+", label: "Members" },
-                  { value: String(upcomingEventsCount).padStart(2, "0"), label: "Upcoming Event" },
+                  { value: String(upcomingEventsCount).padStart(2, "0"), label: "Upcoming Events" },
                   { value: "100%", label: "Student Led" },
                 ].map((stat, idx) => (
                   <div
