@@ -11,10 +11,11 @@ export const KIROVERSE_JSON = {
   ],
   speakers: [
     {
-      name: "Aditya Cyberr",
-      role: "Lead AWS SBG Advisor & Tech Innovator",
-      company: "RIMT University",
-      bio: "Experienced cloud developer and AI enthusiast, leading student initiatives and building next-gen developer solutions."
+      name: "Bhoomi Raut",
+      role: "AWS Cloud Club Captain & AWS Academy Graduate",
+      company: "AWS Cloud Club",
+      bio: "B.Tech Computer Science graduate, MBA learner, and AWS Cloud Club Captain specializing in serverless workflows and responsible AI.",
+      linkedin: "https://www.linkedin.com/in/bhoomi-ganesh-raut"
     }
   ],
   faqs: [
