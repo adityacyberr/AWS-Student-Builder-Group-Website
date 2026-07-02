@@ -610,21 +610,6 @@ export default function EventDetailPage() {
           )}
         </div>
 
-        {/* Structured details: What you will learn */}
-        {structured?.whatYouWillLearn && structured.whatYouWillLearn.length > 0 && (
-          <div className="p-8 rounded-2xl border border-slate-900 bg-[#0a0f1e]/50 backdrop-blur-sm space-y-4">
-            <h2 className="text-xl font-bold text-white tracking-tight">What You&apos;ll Learn</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              {structured.whatYouWillLearn.map((item, idx) => (
-                <div key={idx} className="flex items-start gap-2.5 text-sm text-slate-400 leading-relaxed">
-                  <CheckCircle2 className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Structured details: Speakers */}
         {(() => {
           const speakers = structured?.speakers || [];
@@ -672,6 +657,21 @@ export default function EventDetailPage() {
             </div>
           );
         })()}
+
+        {/* Structured details: What you will learn */}
+        {structured?.whatYouWillLearn && structured.whatYouWillLearn.length > 0 && (
+          <div className="p-8 rounded-2xl border border-slate-900 bg-[#0a0f1e]/50 backdrop-blur-sm space-y-4">
+            <h2 className="text-xl font-bold text-white tracking-tight">What You&apos;ll Learn</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              {structured.whatYouWillLearn.map((item, idx) => (
+                <div key={idx} className="flex items-start gap-2.5 text-sm text-slate-400 leading-relaxed">
+                  <CheckCircle2 className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Organizer info block */}
         <div className="p-6 rounded-2xl border border-slate-900 bg-[#0a0f1e]/50 backdrop-blur-sm grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
