@@ -402,12 +402,12 @@ export default function EventDetailPage() {
           Back to Events
         </Link>
 
-        {/* Mission Details Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-slate-900 bg-[#080c16]/95 shadow-2xl p-6 sm:p-10 flex flex-col gap-8 min-h-fit">
+        {/* Mission Details Widescreen Card */}
+        <div className="relative overflow-hidden rounded-3xl border border-slate-900 bg-[#080c16]/95 shadow-2xl p-6 sm:p-10 flex flex-col lg:grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 min-h-[460px]">
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-slate-950/40 via-purple-950/5 to-slate-950/40" />
 
-          {/* Event details & meta */}
-          <div className="relative z-10 flex flex-col justify-between space-y-6">
+          {/* Left Column: Event details & meta */}
+          <div className="relative z-10 flex flex-col justify-between h-full space-y-6 lg:space-y-0">
             <div className="space-y-6">
               {/* Logos row */}
               <div className="flex items-center gap-4">
@@ -432,7 +432,7 @@ export default function EventDetailPage() {
               </div>
 
               {/* Short Description */}
-              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-2xl">
+              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-lg">
                 {shortDesc}
               </p>
             </div>
@@ -463,10 +463,38 @@ export default function EventDetailPage() {
                 </div>
                 <div>
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider leading-none">Venue</p>
-                  <p className="text-xs font-bold text-slate-200 mt-1 truncate" title={event.location}>{event.location}</p>
+                  <p className="text-xs font-bold text-slate-200 mt-1 truncate max-w-[130px]" title={event.location}>{event.location}</p>
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Right Column: Meetup Poster Display */}
+          <div className="relative z-10 flex items-center justify-center overflow-hidden rounded-2xl border border-slate-900 bg-slate-950/60 aspect-[4/3] sm:aspect-video lg:aspect-auto h-full min-h-[250px] lg:min-h-full">
+            {event.imageUrl ? (
+              <a 
+                href={event.registrationLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-full block group relative overflow-hidden"
+              >
+                <img 
+                  src={event.imageUrl} 
+                  alt={event.title} 
+                  className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.01]"
+                />
+                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="bg-orange-600/90 text-white font-extrabold text-xs uppercase tracking-widest px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-lg">
+                    <span>View on Meetup</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </div>
+                </div>
+              </a>
+            ) : (
+              <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getPlaceholderBg(event.coverPlaceholderColor)} text-slate-500`}>
+                <Cpu className="h-10 w-10 text-slate-400" />
+              </div>
+            )}
           </div>
         </div>
 
