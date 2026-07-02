@@ -71,6 +71,8 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [isStickyEnabled, setIsStickyEnabled] = useState(false);
+  const isScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const checkHeight = () => {
@@ -85,6 +87,7 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
     if (!isStickyEnabled) return;
 
     const handleScroll = () => {
+      if (isScrollingRef.current) return;
       if (!containerRef.current) return;
       
       const rect = containerRef.current.getBoundingClientRect();
@@ -126,28 +129,40 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
   }, [members.length]);
 
   const handleCardClick = useCallback((index: number) => {
+    setActiveIndex(index);
     if (isStickyEnabled) {
+      isScrollingRef.current = true;
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
       scrollToMember(index);
-    } else {
-      setActiveIndex(index);
+      scrollTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 800);
     }
   }, [isStickyEnabled, scrollToMember]);
 
   const goNext = useCallback(() => {
     const nextIndex = (activeIndex + 1) % members.length;
+    setActiveIndex(nextIndex);
     if (isStickyEnabled) {
+      isScrollingRef.current = true;
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
       scrollToMember(nextIndex);
-    } else {
-      setActiveIndex(nextIndex);
+      scrollTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 800);
     }
   }, [activeIndex, members.length, isStickyEnabled, scrollToMember]);
 
   const goPrev = useCallback(() => {
     const prevIndex = (activeIndex - 1 + members.length) % members.length;
+    setActiveIndex(prevIndex);
     if (isStickyEnabled) {
+      isScrollingRef.current = true;
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
       scrollToMember(prevIndex);
-    } else {
-      setActiveIndex(prevIndex);
+      scrollTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 800);
     }
   }, [activeIndex, members.length, isStickyEnabled, scrollToMember]);
 
