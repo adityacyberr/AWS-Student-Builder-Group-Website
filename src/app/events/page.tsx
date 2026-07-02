@@ -728,12 +728,12 @@ function FeaturedEventCard({
         </div>
 
         {/* Right - AWS cloud illustration area or Custom Event Image */}
-        <div className="relative min-h-[250px] lg:min-h-full overflow-hidden flex items-center justify-center">
+        <div className="relative min-h-[300px] lg:min-h-full overflow-hidden flex items-center justify-center bg-slate-950/45 border-t lg:border-t-0 lg:border-l border-slate-900/60">
           {event.imageUrl ? (
             <img
               src={event.imageUrl}
               alt={event.title}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
+              className="absolute inset-0 w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-[1.01]"
             />
           ) : (
             <>
