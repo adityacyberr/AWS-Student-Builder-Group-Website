@@ -70,101 +70,19 @@ export function OrbitStrengthSection({ members, reducedMotion }: OrbitStrengthSe
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [isStickyEnabled, setIsStickyEnabled] = useState(false);
-  const isScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    const checkHeight = () => {
-      setIsStickyEnabled(window.innerHeight >= 650);
-    };
-    checkHeight();
-    window.addEventListener("resize", checkHeight);
-    return () => window.removeEventListener("resize", checkHeight);
-  }, []);
-
-  useEffect(() => {
-    if (!isStickyEnabled) return;
-
-    const handleScroll = () => {
-      if (isScrollingRef.current) return;
-      if (!containerRef.current) return;
-      
-      const rect = containerRef.current.getBoundingClientRect();
-      const elementHeight = rect.height;
-      const viewportHeight = window.innerHeight;
-      
-      const scrollableDistance = elementHeight - viewportHeight + 80;
-      const scrolled = -rect.top + 80;
-      
-      const progress = Math.max(0, Math.min(1, scrolled / scrollableDistance));
-      
-      const n = members.length;
-      const index = Math.min(Math.floor(progress * n), n - 1);
-      setActiveIndex(index);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [isStickyEnabled, members.length]);
-
-  const scrollToMember = useCallback((index: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const absoluteTop = rect.top + window.scrollY;
-    const totalHeight = rect.height;
-    const viewportHeight = window.innerHeight;
-    const scrollable = totalHeight - viewportHeight;
-    
-    const progress = (index + 0.5) / members.length;
-    
-    window.scrollTo({
-      top: absoluteTop + progress * scrollable,
-      behavior: "smooth"
-    });
-  }, [members.length]);
+  const isStickyEnabled = false;
 
   const handleCardClick = useCallback((index: number) => {
     setActiveIndex(index);
-    if (isStickyEnabled) {
-      isScrollingRef.current = true;
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      scrollToMember(index);
-      scrollTimeoutRef.current = setTimeout(() => {
-        isScrollingRef.current = false;
-      }, 800);
-    }
-  }, [isStickyEnabled, scrollToMember]);
+  }, []);
 
   const goNext = useCallback(() => {
-    const nextIndex = (activeIndex + 1) % members.length;
-    setActiveIndex(nextIndex);
-    if (isStickyEnabled) {
-      isScrollingRef.current = true;
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      scrollToMember(nextIndex);
-      scrollTimeoutRef.current = setTimeout(() => {
-        isScrollingRef.current = false;
-      }, 800);
-    }
-  }, [activeIndex, members.length, isStickyEnabled, scrollToMember]);
+    setActiveIndex((prev) => (prev + 1) % members.length);
+  }, [members.length]);
 
   const goPrev = useCallback(() => {
-    const prevIndex = (activeIndex - 1 + members.length) % members.length;
-    setActiveIndex(prevIndex);
-    if (isStickyEnabled) {
-      isScrollingRef.current = true;
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      scrollToMember(prevIndex);
-      scrollTimeoutRef.current = setTimeout(() => {
-        isScrollingRef.current = false;
-      }, 800);
-    }
-  }, [activeIndex, members.length, isStickyEnabled, scrollToMember]);
+    setActiveIndex((prev) => (prev - 1 + members.length) % members.length);
+  }, [members.length]);
 
   useEffect(() => {
     if (buttonRefs.current[activeIndex]) {
