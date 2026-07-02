@@ -402,7 +402,7 @@ export default function EventDetailPage() {
           Back to Events
         </Link>
 
-        {/* Mission Countdown Widescreen Card */}
+        {/* Mission Details Widescreen Card */}
         <div className="relative overflow-hidden rounded-3xl border border-slate-900 bg-[#080c16]/95 shadow-2xl p-6 sm:p-10 flex flex-col lg:grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 min-h-[460px]">
           {/* Background image & gradient overlay */}
           {event.imageUrl && (
@@ -476,80 +476,111 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* Right Column: Glassmorphic Countdown Area */}
-          <div className="relative z-10 flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-950/45 border border-purple-500/10 backdrop-blur-md shadow-inner shadow-purple-500/5 min-h-[320px] relative overflow-hidden">
-            {/* AWS Logo inside background */}
-            <div className="absolute top-4 right-6 text-slate-400 select-none flex flex-col items-end">
-              <span className="text-sm font-bold tracking-tight text-slate-200 leading-none">aws</span>
-              <svg width="20" height="6" viewBox="0 0 24 8" fill="none" className="text-orange-500 mt-[-1px]">
-                <path d="M2 2C6 5.5 12 7 22 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M22 2L20.5 4.5M22 2L19.5 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
-            </div>
-
-            {/* Core countdown components */}
-            <div className="w-full flex flex-col items-center space-y-6 text-center">
-              <h3 className="text-[11px] font-extrabold text-slate-400 tracking-[0.2em] uppercase">
-                {timerTitle}
-              </h3>
-
-              {showTimer && timeLeft ? (
-                <div className="flex items-center gap-2 sm:gap-3">
-                  {/* Days */}
-                  <div className={`flex flex-col items-center justify-center px-4 py-3 bg-slate-950/80 border ${accent.border} rounded-2xl min-w-[65px] sm:min-w-[70px] ${accent.glow} ${accent.pulse}`}>
-                    <span className="text-2xl font-black text-white leading-none font-mono">{String(timeLeft.days).padStart(2, '0')}</span>
-                    <span className="text-[8px] uppercase tracking-widest text-slate-500 font-bold mt-1.5">Days</span>
-                  </div>
-                  {/* Hours */}
-                  <div className={`flex flex-col items-center justify-center px-4 py-3 bg-slate-950/80 border ${accent.border} rounded-2xl min-w-[65px] sm:min-w-[70px] ${accent.glow} ${accent.pulse}`}>
-                    <span className="text-2xl font-black text-white leading-none font-mono">{String(timeLeft.hours).padStart(2, '0')}</span>
-                    <span className="text-[8px] uppercase tracking-widest text-slate-500 font-bold mt-1.5">Hrs</span>
-                  </div>
-                  {/* Minutes */}
-                  <div className={`flex flex-col items-center justify-center px-4 py-3 bg-slate-950/80 border ${accent.border} rounded-2xl min-w-[65px] sm:min-w-[70px] ${accent.glow} ${accent.pulse}`}>
-                    <span className="text-2xl font-black text-white leading-none font-mono">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                    <span className="text-[8px] uppercase tracking-widest text-slate-500 font-bold mt-1.5">Min</span>
-                  </div>
-                  {/* Seconds */}
-                  <div className={`flex flex-col items-center justify-center px-4 py-3 bg-slate-950/80 border ${accent.border} rounded-2xl min-w-[65px] sm:min-w-[70px] ${accent.glow} ${accent.pulse}`}>
-                    <span className="text-2xl font-black text-white leading-none font-mono">{String(timeLeft.seconds).padStart(2, '0')}</span>
-                    <span className="text-[8px] uppercase tracking-widest text-slate-500 font-bold mt-1.5">Sec</span>
-                  </div>
-                </div>
-              ) : showLiveBanner ? (
-                <div className="px-6 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold tracking-widest uppercase animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.15)] flex items-center gap-2">
-                  <span>🚀 Event is Live</span>
-                </div>
-              ) : (
-                <div className="px-6 py-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-500 font-extrabold tracking-widest uppercase shadow-sm flex items-center gap-2">
-                  <span>Event Ended</span>
-                </div>
-              )}
-
-              <p className="text-xs font-semibold text-slate-400">
-                {timerSubtitle}
-              </p>
-
-              {/* Action Button */}
-              <a
+          {/* Right Column: Meetup Poster Display */}
+          <div className="relative z-10 flex items-center justify-center overflow-hidden rounded-2xl border border-slate-900 bg-slate-950/60 aspect-[4/3] sm:aspect-video lg:aspect-auto h-full min-h-[250px] lg:min-h-full">
+            {event.imageUrl ? (
+              <a 
                 href={event.registrationLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`w-full max-w-[220px] py-3.5 rounded-xl text-center font-extrabold text-xs uppercase tracking-widest transition-all duration-300 transform active:scale-98 ${
-                  isUpcoming 
-                    ? `${accent.bg} text-white shadow-lg` 
-                    : 'bg-slate-900/60 border border-slate-800 text-slate-600 cursor-not-allowed pointer-events-none'
-                }`}
+                className="w-full h-full block group relative overflow-hidden"
               >
-                {isUpcoming ? 'Find your launch event' : 'Registration Closed'}
+                <img 
+                  src={event.imageUrl} 
+                  alt={event.title} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                />
+                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="bg-orange-600/90 text-white font-extrabold text-xs uppercase tracking-widest px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-lg">
+                    <span>View on Meetup</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </div>
+                </div>
               </a>
-            </div>
+            ) : (
+              <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${getPlaceholderBg(event.coverPlaceholderColor)} text-slate-500`}>
+                <Cpu className="h-10 w-10 text-slate-400" />
+              </div>
+            )}
+          </div>
+        </div>
 
-            {/* Bottom branding (bottom-right text) */}
-            <div className="absolute bottom-4 right-6 flex items-center gap-1.5 text-slate-600">
-              <Cpu className="h-3 w-3 text-purple-500/50" />
-              <span className="text-[8px] font-bold uppercase tracking-wider">AWS SBG RIMT</span>
+        {/* Standalone Mission Countdown Card (Now below the header, above the overview) */}
+        <div className="relative overflow-hidden rounded-3xl border border-purple-500/10 bg-[#080c16]/85 backdrop-blur-md p-8 sm:p-10 shadow-2xl flex flex-col items-center justify-center text-center space-y-6">
+          {/* Subtle background glow */}
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-slate-950/40 via-purple-950/10 to-slate-950/40" />
+
+          {/* AWS Logo top right */}
+          <div className="absolute top-6 right-8 text-slate-400 select-none flex flex-col items-end">
+            <span className="text-sm font-bold tracking-tight text-slate-200 leading-none">aws</span>
+            <svg width="20" height="6" viewBox="0 0 24 8" fill="none" className="text-orange-500 mt-[-1px]">
+              <path d="M2 2C6 5.5 12 7 22 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <path d="M22 2L20.5 4.5M22 2L19.5 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          </div>
+
+          {/* Header Title */}
+          <h3 className={`text-xs font-black tracking-[0.25em] uppercase ${accent.text}`}>
+            {timerTitle}
+          </h3>
+
+          {/* Countdown timer numbers (glowing grid) */}
+          {showTimer && timeLeft ? (
+            <div className="flex items-center justify-center gap-4 sm:gap-6">
+              {/* Days */}
+              <div className={`flex flex-col items-center justify-center px-6 py-4 bg-slate-950/90 border-2 ${accent.border} rounded-2xl min-w-[85px] sm:min-w-[95px] ${accent.glow} ${accent.pulse}`}>
+                <span className="text-3xl sm:text-4xl font-black text-white leading-none font-mono">{String(timeLeft.days).padStart(2, '0')}</span>
+                <span className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mt-2">Days</span>
+              </div>
+              {/* Hours */}
+              <div className={`flex flex-col items-center justify-center px-6 py-4 bg-slate-950/90 border-2 ${accent.border} rounded-2xl min-w-[85px] sm:min-w-[95px] ${accent.glow} ${accent.pulse}`}>
+                <span className="text-3xl sm:text-4xl font-black text-white leading-none font-mono">{String(timeLeft.hours).padStart(2, '0')}</span>
+                <span className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mt-2">Hrs</span>
+              </div>
+              {/* Minutes */}
+              <div className={`flex flex-col items-center justify-center px-6 py-4 bg-slate-950/90 border-2 ${accent.border} rounded-2xl min-w-[85px] sm:min-w-[95px] ${accent.glow} ${accent.pulse}`}>
+                <span className="text-3xl sm:text-4xl font-black text-white leading-none font-mono">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                <span className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mt-2">Min</span>
+              </div>
+              {/* Seconds */}
+              <div className={`flex flex-col items-center justify-center px-6 py-4 bg-slate-950/90 border-2 ${accent.border} rounded-2xl min-w-[85px] sm:min-w-[95px] ${accent.glow} ${accent.pulse}`}>
+                <span className="text-3xl sm:text-4xl font-black text-white leading-none font-mono">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                <span className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mt-2">Sec</span>
+              </div>
             </div>
+          ) : showLiveBanner ? (
+            <div className="px-8 py-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold tracking-widest text-sm uppercase animate-pulse shadow-[0_0_25px_rgba(16,185,129,0.25)] flex items-center gap-2">
+              <span>🚀 Event is Live</span>
+            </div>
+          ) : (
+            <div className="px-8 py-5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-500 font-extrabold tracking-widest text-sm uppercase shadow-sm flex items-center gap-2">
+              <span>Event Ended</span>
+            </div>
+          )}
+
+          {/* Subtitle */}
+          <p className="text-xs sm:text-sm font-semibold text-slate-400">
+            {timerSubtitle}
+          </p>
+
+          {/* CTA Button */}
+          <a
+            href={event.registrationLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`w-full max-w-[260px] py-4 rounded-xl text-center font-extrabold text-xs uppercase tracking-widest transition-all duration-300 transform active:scale-98 ${
+              isUpcoming 
+                ? `${accent.bg} text-white shadow-lg` 
+                : 'bg-slate-900/60 border border-slate-800 text-slate-600 cursor-not-allowed pointer-events-none'
+            }`}
+          >
+            {isUpcoming ? 'Find your launch event' : 'Registration Closed'}
+          </a>
+
+          {/* Bottom branding (bottom-right text) */}
+          <div className="absolute bottom-4 right-6 flex items-center gap-1.5 text-slate-600 select-none">
+            <Cpu className="h-3 w-3 text-purple-500/50" />
+            <span className="text-[8px] font-bold uppercase tracking-wider">AWS SBG RIMT</span>
           </div>
         </div>
 
