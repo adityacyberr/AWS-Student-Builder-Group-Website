@@ -16,7 +16,7 @@ export const KIROVERSE_JSON = {
       company: "AWS Cloud Club",
       bio: "B.Tech Computer Science graduate, MBA learner, and AWS Cloud Club Captain specializing in serverless workflows and responsible AI.",
       linkedin: "https://www.linkedin.com/in/bhoomi-ganesh-raut",
-      image: "/events/bhoomi-raut.jpg"
+      image: "/events/bhoomi-raut.png"
     }
   ],
   faqs: [
