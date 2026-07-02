@@ -577,32 +577,6 @@ export default function EventDetailPage() {
           </div>
         </div>
 
-        {/* Event Overview Section */}
-        <div className="p-8 rounded-3xl border border-slate-900 bg-[#0a0f1e]/50 backdrop-blur-sm space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-white tracking-tight font-display">Event Overview</h2>
-            <p className="text-slate-400 text-sm whitespace-pre-line leading-relaxed">
-              {structured?.description || event.longDescription || event.description}
-            </p>
-          </div>
-
-          {/* Calendar integration for upcoming events */}
-          {isUpcoming && dateInfo && (
-            <div className="pt-6 border-t border-slate-900/60 flex items-center justify-between gap-4">
-              <span className="text-xs text-slate-500 font-medium">Registrations are currently open:</span>
-              <a
-                href={gCalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-xs font-bold text-orange-400 hover:text-white transition-colors"
-              >
-                <Calendar className="h-4 w-4" />
-                Add to Google Calendar
-              </a>
-            </div>
-          )}
-        </div>
-
         {/* Structured details: Speakers */}
         {(() => {
           const speakers = structured?.speakers || [];
@@ -650,6 +624,32 @@ export default function EventDetailPage() {
             </div>
           );
         })()}
+
+        {/* Event Overview Section */}
+        <div className="p-8 rounded-3xl border border-slate-900 bg-[#0a0f1e]/50 backdrop-blur-sm space-y-6">
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-white tracking-tight font-display">Event Overview</h2>
+            <p className="text-slate-400 text-sm whitespace-pre-line leading-relaxed">
+              {structured?.description || event.longDescription || event.description}
+            </p>
+          </div>
+
+          {/* Calendar integration for upcoming events */}
+          {isUpcoming && dateInfo && (
+            <div className="pt-6 border-t border-slate-900/60 flex items-center justify-between gap-4">
+              <span className="text-xs text-slate-500 font-medium">Registrations are currently open:</span>
+              <a
+                href={gCalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-bold text-orange-400 hover:text-white transition-colors"
+              >
+                <Calendar className="h-4 w-4" />
+                Add to Google Calendar
+              </a>
+            </div>
+          )}
+        </div>
 
         {/* Structured details: What you will learn */}
         {structured?.whatYouWillLearn && structured.whatYouWillLearn.length > 0 && (
