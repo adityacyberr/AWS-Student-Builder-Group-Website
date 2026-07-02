@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { motion } from "framer-motion";
+import { enrichEvent } from "@/lib/eventEnricher";
 
 interface DBEventRow {
   id: string;
@@ -104,6 +105,37 @@ function useReducedMotion() {
   return reduced;
 }
 
+// Helper to calculate status dynamically based on current date
+function calculateEventStatus(dateStr: string, dbStatus: string): "upcoming" | "completed" {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let parsed = Date.parse(dateStr);
+    if (isNaN(parsed)) {
+      // Handle rearranging "31 July 2026" to "July 31, 2026"
+      const parts = dateStr.trim().split(/\s+/);
+      if (parts.length === 3) {
+        if (!isNaN(parseInt(parts[0])) && isNaN(parseInt(parts[1]))) {
+          const rearranged = `${parts[1]} ${parts[0]}, ${parts[2]}`;
+          const reParsed = Date.parse(rearranged);
+          if (!isNaN(reParsed)) {
+            const eventDate = new Date(reParsed);
+            eventDate.setHours(23, 59, 59, 999);
+            return eventDate.getTime() < today.getTime() ? "completed" : "upcoming";
+          }
+        }
+      }
+      return dbStatus as "upcoming" | "completed";
+    }
+    const eventDate = new Date(parsed);
+    eventDate.setHours(23, 59, 59, 999);
+    return eventDate.getTime() < today.getTime() ? "completed" : "upcoming";
+  } catch (e) {
+    return dbStatus as "upcoming" | "completed";
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────
 // MAIN PAGE
 // ─────────────────────────────────────────────────────────────────
@@ -122,7 +154,7 @@ export default function EventsPage() {
             .select("*")
             .order("date", { ascending: false });
           if (!error && data) {
-            eventsList = (data as DBEventRow[]).map((d) => ({
+            eventsList = (data as DBEventRow[]).map((d) => enrichEvent({
               id: d.id,
               title: d.title,
               slug: d.slug,
@@ -133,7 +165,7 @@ export default function EventsPage() {
               description: d.description,
               longDescription: d.long_description || "",
               registrationLink: d.registration_link,
-              status: d.status,
+              status: calculateEventStatus(d.date, d.status),
               coverPlaceholderColor: d.cover_placeholder_color,
               imageUrl: d.image_url || "",
             }));
@@ -141,6 +173,12 @@ export default function EventsPage() {
         } catch (err) {
           console.warn("Error loading events from Supabase:", err);
         }
+      } else {
+        // Map local events status dynamically
+        eventsList = eventsList.map((ev) => enrichEvent({
+          ...ev,
+          status: calculateEventStatus(ev.date, ev.status),
+        }));
       }
       setEvents(eventsList);
     }
@@ -618,8 +656,9 @@ function FeaturedEventCard({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <div
-      className="group relative rounded-3xl border overflow-hidden transition-all duration-400"
+    <Link
+      href={`/events/${event.slug}`}
+      className="group relative rounded-3xl border overflow-hidden transition-all duration-400 block cursor-pointer"
       style={{
         background: "linear-gradient(135deg, rgba(10,15,30,0.9), rgba(10,15,30,0.7))",
         borderColor: hovered ? "rgba(255,140,0,0.3)" : "rgba(30,41,59,0.6)",
@@ -673,8 +712,7 @@ function FeaturedEventCard({
             {event.description}
           </p>
 
-          <Link
-            href={`/events/${event.slug}`}
+          <div
             className="group/btn relative inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold overflow-hidden transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
             style={{
               background: "linear-gradient(135deg, rgba(255,140,0,0.15), rgba(255,140,0,0.08))",
@@ -686,7 +724,7 @@ function FeaturedEventCard({
               Register Now
             </span>
             <ArrowRight className="h-4 w-4 text-orange-400 group-hover/btn:text-white group-hover/btn:translate-x-1 transition-all" />
-          </Link>
+          </div>
         </div>
 
         {/* Right - AWS cloud illustration area or Custom Event Image */}
@@ -772,7 +810,7 @@ function FeaturedEventCard({
           )}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -790,8 +828,9 @@ function EventCard({
   const isUpcoming = event.status === "upcoming";
 
   return (
-    <div
-      className="group relative rounded-2xl border overflow-hidden flex flex-col transition-all"
+    <Link
+      href={`/events/${event.slug}`}
+      className="group relative rounded-2xl border overflow-hidden flex flex-col transition-all cursor-pointer"
       style={{
         background: "rgba(10,15,30,0.8)",
         borderColor: hovered ? "rgba(255,140,0,0.25)" : "rgba(30,41,59,0.5)",
@@ -870,13 +909,12 @@ function EventCard({
         </div>
 
         {/* CTA */}
-        <Link
-          href={`/events/${event.slug}`}
-          className="w-full text-center py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 border border-orange-500/30 bg-orange-500/10 text-orange-400 hover:bg-orange-500/25 hover:text-white flex items-center justify-center gap-1.5 mt-2 h-11"
+        <div
+          className="w-full text-center py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 border border-orange-500/30 bg-orange-500/10 text-orange-400 group-hover:bg-orange-500/25 group-hover:text-white flex items-center justify-center gap-1.5 mt-2 h-11"
         >
           <span>{isUpcoming ? "Register Now" : "View Details"}</span>
           <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </Link>
+        </div>
       </div>
 
       {/* Hover particles */}
@@ -905,7 +943,7 @@ function EventCard({
           100% { transform: translateY(-60px) scale(0); opacity: 0; }
         }
       `}</style>
-    </div>
+    </Link>
   );
 }
 

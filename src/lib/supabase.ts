@@ -17,12 +17,14 @@ export const supabase = isSupabaseConfigured
 // Synchronize Supabase auth session with a cookie for middleware / server-side protection
 if (typeof window !== "undefined" && supabase) {
   supabase.auth.onAuthStateChange((event, session) => {
+    const isSecure = window.location.protocol === "https:";
+    const secureFlag = isSecure ? "; Secure" : "";
     if (session) {
       // Store full session JSON containing access_token
-      document.cookie = `sb-session=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=604800; SameSite=Lax; Secure`;
+      document.cookie = `sb-session=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
     } else {
       // Delete cookie
-      document.cookie = "sb-session=; path=/; max-age=0; SameSite=Lax; Secure";
+      document.cookie = `sb-session=; path=/; max-age=0; SameSite=Lax${secureFlag}`;
     }
   });
 }

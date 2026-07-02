@@ -44,11 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Helper to synchronize cookie
   const syncCookie = (session: Session | null) => {
+    const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+    const secureFlag = isSecure ? "; Secure" : "";
     if (session) {
       // Set session cookie (default max-age 2 hours or 7 days based on Remember Me, handle here or client-side default 7 days)
-      document.cookie = `sb-session=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=604800; SameSite=Lax; Secure`;
+      document.cookie = `sb-session=${encodeURIComponent(JSON.stringify(session))}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
     } else {
-      document.cookie = "sb-session=; path=/; max-age=0; SameSite=Lax; Secure";
+      document.cookie = `sb-session=; path=/; max-age=0; SameSite=Lax${secureFlag}`;
     }
   };
 
@@ -160,7 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data?.session) {
         // Adjust cookie duration based on Remember Me
         const maxAge = rememberMe ? 604800 * 4 : 604800; // 4 weeks vs 1 week
-        document.cookie = `sb-session=${encodeURIComponent(JSON.stringify(data.session))}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+        const isSecure = typeof window !== "undefined" && window.location.protocol === "https:";
+        const secureFlag = isSecure ? "; Secure" : "";
+        document.cookie = `sb-session=${encodeURIComponent(JSON.stringify(data.session))}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
         setUser(data.user);
         const p = await getCurrentUserProfile();
         setProfile(p);
