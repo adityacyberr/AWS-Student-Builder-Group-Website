@@ -39,7 +39,7 @@ export function enrichEvent(event: EventItem): EventItem {
   if (event.slug === "kiroverse") {
     return {
       ...event,
-      imageUrl: event.imageUrl || "/events/kiroverse-poster.png",
+      imageUrl: event.imageUrl || "/events/kiroverse-poster.png?v=2",
       longDescription: event.longDescription && event.longDescription.trim().startsWith('{')
         ? event.longDescription
         : JSON.stringify(KIROVERSE_JSON)
