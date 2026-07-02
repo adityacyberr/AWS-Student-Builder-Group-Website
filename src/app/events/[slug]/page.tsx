@@ -626,45 +626,52 @@ export default function EventDetailPage() {
         )}
 
         {/* Structured details: Speakers */}
-        {structured?.speakers && structured.speakers.length > 0 && (
-          <div className="p-8 rounded-2xl border border-slate-900 bg-[#0a0f1e]/50 backdrop-blur-sm space-y-6">
-            <h2 className="text-xl font-bold text-white tracking-tight">Speakers & Facilitators</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              {structured.speakers.map((speaker, idx) => (
-                <div key={idx} className="flex gap-4 p-4 rounded-xl border border-slate-900 bg-slate-950/60 items-start">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-orange-500/10 border border-orange-500/20 text-orange-400 font-extrabold flex items-center justify-center text-sm flex-shrink-0">
-                    {speaker.image ? (
-                      <img src={speaker.image} alt={speaker.name} className="w-full h-full object-cover" />
-                    ) : (
-                      speaker.name.split(" ").map(n => n[0]).join("")
-                    )}
-                  </div>
-                  <div className="space-y-1 w-full">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-sm font-bold text-white leading-none">{speaker.name}</h4>
-                      {speaker.linkedin && (
-                        <a 
-                          href={speaker.linkedin} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-slate-500 hover:text-blue-400 transition-colors"
-                          title={`${speaker.name}'s LinkedIn`}
-                        >
-                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                          </svg>
-                        </a>
-                      )}
+        {(() => {
+          const speakers = structured?.speakers || [];
+          if (speakers.length === 0) return null;
+          return (
+            <div className="p-8 rounded-2xl border border-slate-900 bg-[#0a0f1e]/50 backdrop-blur-sm space-y-6">
+              <h2 className="text-xl font-bold text-white tracking-tight font-display">Speakers & Facilitators</h2>
+              <div className={`grid grid-cols-1 ${speakers.length > 1 ? 'md:grid-cols-2' : ''} gap-6 pt-2`}>
+                {speakers.map((speaker, idx) => {
+                  const isSingle = speakers.length === 1;
+                  return (
+                    <div key={idx} className={`flex gap-6 p-6 rounded-xl border border-slate-900 bg-slate-950/60 items-start ${isSingle ? 'col-span-full' : ''}`}>
+                      <div className={`${isSingle ? 'w-20 h-20' : 'w-12 h-12'} rounded-full overflow-hidden bg-orange-500/10 border border-orange-500/20 text-orange-400 font-extrabold flex items-center justify-center text-sm flex-shrink-0`}>
+                        {speaker.image ? (
+                          <img src={speaker.image} alt={speaker.name} className="w-full h-full object-cover" />
+                        ) : (
+                          speaker.name.split(" ").map(n => n[0]).join("")
+                        )}
+                      </div>
+                      <div className="space-y-1.5 w-full">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className={`${isSingle ? 'text-lg' : 'text-sm'} font-bold text-white leading-none`}>{speaker.name}</h4>
+                          {speaker.linkedin && (
+                            <a 
+                              href={speaker.linkedin} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-slate-500 hover:text-blue-400 transition-colors"
+                              title={`${speaker.name}'s LinkedIn`}
+                            >
+                              <svg className={`${isSingle ? 'h-5 w-5' : 'h-4 w-4'}`} fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                        <p className={`${isSingle ? 'text-xs' : 'text-[11px]'} text-orange-400 font-semibold`}>{speaker.role}</p>
+                        <p className={`${isSingle ? 'text-xs' : 'text-[10px]'} text-slate-500`}>{speaker.company}</p>
+                        <p className={`${isSingle ? 'text-sm' : 'text-xs'} text-slate-400 leading-relaxed pt-1.5`}>{speaker.bio}</p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-orange-400 font-semibold">{speaker.role}</p>
-                    <p className="text-[10px] text-slate-500">{speaker.company}</p>
-                    <p className="text-xs text-slate-400 leading-relaxed pt-1.5">{speaker.bio}</p>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Organizer info block */}
         <div className="p-6 rounded-2xl border border-slate-900 bg-[#0a0f1e]/50 backdrop-blur-sm grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
