@@ -632,8 +632,12 @@ export default function EventDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               {structured.speakers.map((speaker, idx) => (
                 <div key={idx} className="flex gap-4 p-4 rounded-xl border border-slate-900 bg-slate-950/60 items-start">
-                  <div className="w-12 h-12 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 font-extrabold flex items-center justify-center text-sm flex-shrink-0">
-                    {speaker.name.split(" ").map(n => n[0]).join("")}
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-orange-500/10 border border-orange-500/20 text-orange-400 font-extrabold flex items-center justify-center text-sm flex-shrink-0">
+                    {speaker.image ? (
+                      <img src={speaker.image} alt={speaker.name} className="w-full h-full object-cover" />
+                    ) : (
+                      speaker.name.split(" ").map(n => n[0]).join("")
+                    )}
                   </div>
                   <div className="space-y-1 w-full">
                     <div className="flex items-center justify-between gap-2">
