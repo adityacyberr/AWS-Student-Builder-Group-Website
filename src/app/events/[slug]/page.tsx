@@ -567,7 +567,7 @@ export default function EventDetailPage() {
                 : 'bg-slate-900/60 border border-slate-800 text-slate-600 cursor-not-allowed pointer-events-none'
             }`}
           >
-            {isUpcoming ? 'Find your launch event' : 'Registration Closed'}
+            {isUpcoming ? 'Register Now' : 'Registration Closed'}
           </a>
 
           {/* Bottom branding (bottom-right text) */}
