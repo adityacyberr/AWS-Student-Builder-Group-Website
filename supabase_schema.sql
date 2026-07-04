@@ -527,3 +527,48 @@ create policy "Allow super admins and owners to manage announcements" on public.
     (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
   );
 
+-- ============================================================
+-- Speakers Table and RLS Policies
+-- ============================================================
+
+-- Speakers Table
+create table if not exists public.speakers (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  title text not null,
+  bio text not null,
+  image_url text,
+  achievements text[] not null default '{}',
+  social_links jsonb not null default '{}'::jsonb, -- linkedin, twitter, website
+  event_id uuid references public.events(id) on delete set null,
+  is_featured boolean not null default false,
+  sort_order integer not null default 0,
+  quote text,
+  owner_user_id uuid references auth.users(id) on delete set null,
+  created_by uuid references auth.users(id) on delete set null,
+  updated_by uuid references auth.users(id) on delete set null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS
+alter table public.speakers enable row level security;
+
+-- RLS Policies
+drop policy if exists "Allow public read speakers" on public.speakers;
+create policy "Allow public read speakers" on public.speakers
+  for select using (true);
+
+drop policy if exists "Allow super admins and owners to manage speakers" on public.speakers;
+create policy "Allow super admins and owners to manage speakers" on public.speakers
+  for all to authenticated
+  using (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  )
+  with check (
+    auth.uid() = owner_user_id or 
+    (select portal_role from public.team_members where email = auth.jwt()->>'email') = 'Super Admin'
+  );
+
+

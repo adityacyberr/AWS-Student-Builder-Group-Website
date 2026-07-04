@@ -1,4 +1,4 @@
-export type CmsEntity = 'announcements' | 'events' | 'gallery_images' | 'achievements' | 'team_members';
+export type CmsEntity = 'announcements' | 'events' | 'gallery_images' | 'achievements' | 'team_members' | 'speakers';
 
 let debounceTimer: any = null;
 const pendingEntities = new Set<CmsEntity>();

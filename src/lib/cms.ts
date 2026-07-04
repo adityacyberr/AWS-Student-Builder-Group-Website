@@ -3,6 +3,7 @@ import { getLocalEvents, saveLocalEvents, EventItem } from "@/data/events";
 import { TEAM_MEMBERS, TeamMember } from "@/data/team";
 import { GALLERY_ITEMS, GalleryItem } from "@/data/gallery";
 import { getLocalAchievements, saveLocalAchievements, AchievementItem } from "@/data/achievements";
+import { getLocalSpeakers, saveLocalSpeakers, SpeakerItem } from "@/data/speakers";
 import { emitCmsUpdate } from "./cmsEvents";
 
 export interface CMSAnnouncement {
@@ -53,6 +54,7 @@ const STORAGE_KEYS = {
   ACHIEVEMENTS: "aws_sbg_achievements",
   ANNOUNCEMENTS: "aws_sbg_announcements",
   SETTINGS: "aws_sbg_settings",
+  SPEAKERS: "aws_sbg_speakers",
 };
 
 // Helper to check window
@@ -67,6 +69,7 @@ const triggerStorageRefresh = (key: string) => {
     else if (key === STORAGE_KEYS.GALLERY) entity = "gallery_images";
     else if (key === STORAGE_KEYS.ACHIEVEMENTS) entity = "achievements";
     else if (key === STORAGE_KEYS.ANNOUNCEMENTS) entity = "announcements";
+    else if (key === STORAGE_KEYS.SPEAKERS) entity = "speakers";
     
     if (entity) {
       emitCmsUpdate(entity);
@@ -110,7 +113,7 @@ export interface ActivityLogParams {
   userId: string | null;
   userName?: string | null;
   action: 'create' | 'update' | 'delete' | 'upload';
-  entityType: 'event' | 'announcement' | 'gallery_image' | 'achievement' | 'team_member' | 'settings';
+  entityType: 'event' | 'announcement' | 'gallery_image' | 'achievement' | 'team_member' | 'settings' | 'speaker';
   entityId?: string;
   metadata?: Record<string, any>;
 }
@@ -1016,5 +1019,181 @@ export async function deleteAnnouncement(
     const filtered = localAnn.filter((a) => a.id !== id);
     localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(filtered));
     triggerStorageRefresh(STORAGE_KEYS.ANNOUNCEMENTS);
+  }
+}
+
+// --- SPEAKERS VIEW & ACTIONS ---
+
+export interface CMSSpeaker extends SpeakerItem {
+  ownerUserId?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
+export async function getSpeakers(): Promise<CMSSpeaker[]> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("speakers")
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      if (data) {
+        return (data as any[]).map((d) => ({
+          id: d.id,
+          name: d.name,
+          title: d.title,
+          bio: d.bio,
+          imageUrl: d.image_url || "",
+          achievements: d.achievements || [],
+          socialLinks: {
+            linkedin: d.social_links?.linkedin || "",
+            twitter: d.social_links?.twitter || "",
+            website: d.social_links?.website || ""
+          },
+          eventId: d.event_id || "",
+          isFeatured: d.is_featured,
+          sortOrder: d.sort_order,
+          quote: d.quote || "",
+          ownerUserId: d.owner_user_id,
+          createdBy: d.created_by,
+          updatedBy: d.updated_by
+        }));
+      }
+    } catch (err) {
+      console.warn("Error fetching speakers from Supabase, falling back to local:", err);
+    }
+  }
+  
+  // LocalStorage / static fallback
+  const local = getLocalSpeakers();
+  return local.map(s => ({
+    ...s,
+    ownerUserId: "sandbox-id",
+    createdBy: "sandbox-id",
+    updatedBy: "sandbox-id"
+  }));
+}
+
+export async function saveSpeaker(
+  speakerData: Omit<SpeakerItem, "id">,
+  id?: string,
+  userAuthId?: string | null,
+  userName?: string | null
+): Promise<CMSSpeaker> {
+  const dbRow = {
+    name: speakerData.name,
+    title: speakerData.title,
+    bio: speakerData.bio,
+    image_url: speakerData.imageUrl || null,
+    achievements: speakerData.achievements || [],
+    social_links: speakerData.socialLinks || {},
+    event_id: speakerData.eventId || null,
+    is_featured: speakerData.isFeatured || false,
+    sort_order: speakerData.sortOrder || 0,
+    quote: speakerData.quote || null,
+    updated_by: userAuthId || null
+  };
+
+  if (isSupabaseConfigured && supabase) {
+    if (id) {
+      const { data, error } = await supabase
+        .from("speakers")
+        .update(dbRow)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      
+      await logActivity({
+        userId: userAuthId || null,
+        userName: userName || null,
+        action: 'update',
+        entityType: 'speaker',
+        entityId: id,
+        metadata: { name: speakerData.name }
+      });
+
+      emitCmsUpdate("speakers");
+      return {
+        ...speakerData,
+        id: data.id,
+        ownerUserId: data.owner_user_id,
+        createdBy: data.created_by,
+        updatedBy: data.updated_by
+      };
+    } else {
+      const { data, error } = await supabase
+        .from("speakers")
+        .insert([{ ...dbRow, owner_user_id: userAuthId || null, created_by: userAuthId || null }])
+        .select()
+        .single();
+      if (error) throw error;
+      
+      await logActivity({
+        userId: userAuthId || null,
+        userName: userName || null,
+        action: 'create',
+        entityType: 'speaker',
+        entityId: data.id,
+        metadata: { name: speakerData.name }
+      });
+
+      emitCmsUpdate("speakers");
+      return {
+        ...speakerData,
+        id: data.id,
+        ownerUserId: data.owner_user_id,
+        createdBy: data.created_by,
+        updatedBy: data.updated_by
+      };
+    }
+  } else {
+    // LocalStorage Fallback
+    const local = getLocalSpeakers();
+    const item: CMSSpeaker = {
+      ...speakerData,
+      id: id || Math.random().toString(36).substring(2, 9),
+      ownerUserId: userAuthId || "sandbox-id",
+      createdBy: id ? ((local.find((s) => s.id === id) as any)?.createdBy || "sandbox-id") : (userAuthId || "sandbox-id"),
+      updatedBy: userAuthId || "sandbox-id",
+    };
+
+    let updatedList: CMSSpeaker[];
+    if (id) {
+      updatedList = local.map((s) => (s.id === id ? item : s));
+    } else {
+      updatedList = [item, ...local];
+    }
+    saveLocalSpeakers(updatedList);
+    triggerStorageRefresh(STORAGE_KEYS.SPEAKERS);
+    console.log("Database updated");
+    return item;
+  }
+}
+
+export async function deleteSpeaker(
+  id: string,
+  userAuthId?: string | null,
+  userName?: string | null
+): Promise<void> {
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from("speakers").delete().eq("id", id);
+    if (error) throw error;
+
+    await logActivity({
+      userId: userAuthId || null,
+      userName: userName || null,
+      action: 'delete',
+      entityType: 'speaker',
+      entityId: id
+    });
+
+    emitCmsUpdate("speakers");
+  } else {
+    const local = getLocalSpeakers();
+    const filtered = local.filter((s) => s.id !== id);
+    saveLocalSpeakers(filtered);
+    triggerStorageRefresh(STORAGE_KEYS.SPEAKERS);
   }
 }

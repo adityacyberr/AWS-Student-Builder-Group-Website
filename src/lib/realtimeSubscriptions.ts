@@ -7,7 +7,8 @@ const tables: { name: string; entity: CmsEntity }[] = [
   { name: 'events', entity: 'events' },
   { name: 'gallery_images', entity: 'gallery_images' },
   { name: 'achievements', entity: 'achievements' },
-  { name: 'team_members', entity: 'team_members' }
+  { name: 'team_members', entity: 'team_members' },
+  { name: 'speakers', entity: 'speakers' }
 ];
 
 /**
