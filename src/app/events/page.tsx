@@ -143,9 +143,11 @@ export default function EventsPage() {
   const reducedMotion = useReducedMotion();
   const [filter, setFilter] = useState<FilterType>("all");
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadEvents() {
+      setLoading(true);
       let eventsList = getLocalEvents();
       if (isSupabaseConfigured && supabase) {
         try {
@@ -181,6 +183,7 @@ export default function EventsPage() {
         }));
       }
       setEvents(eventsList);
+      setLoading(false);
     }
     loadEvents();
 
@@ -367,11 +370,19 @@ export default function EventsPage() {
           ) : null}
 
           {/* Empty state */}
-          {events.length === 0 && (
+          {!loading && events.length === 0 && (
             <EmptyState />
           )}
 
-          {filteredEvents.length === 0 && events.length > 0 && (
+          {/* Loading state */}
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="h-10 w-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin mb-4" />
+              <p className="text-slate-500 text-sm font-bold uppercase tracking-wider animate-pulse">Loading Missions...</p>
+            </div>
+          )}
+
+          {filteredEvents.length === 0 && events.length > 0 && !loading && (
             <div className="text-center py-16 rounded-2xl border border-slate-800/40 bg-[#0a0f1e]/40">
               <p className="text-slate-500 text-sm">No events found in this category.</p>
             </div>

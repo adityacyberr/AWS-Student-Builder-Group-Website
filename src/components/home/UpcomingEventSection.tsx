@@ -3,6 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Calendar, MapPin, Clock, ArrowRight, Star } from "lucide-react";
+
+const LinkedInIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+  </svg>
+);
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { getLocalEvents, EventItem } from "@/data/events";
 import { enrichEvent } from "@/lib/eventEnricher";
@@ -356,6 +362,65 @@ export function UpcomingEventSection() {
             </div>
           </div>
         </Link>
+
+        {/* Guest Speaker Section */}
+        {nearestEvent.slug === "kiroverse" && (
+          <div className="mt-16 pt-16 border-t border-slate-900/60 max-w-[800px] mx-auto space-y-8">
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                <Star className="h-3 w-3 animate-pulse" />
+                Featured Speaker
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                Meet Our First Event Guest
+              </h3>
+            </div>
+
+            <div 
+              className="relative overflow-hidden rounded-2xl border bg-slate-950/40 backdrop-blur-sm p-6 sm:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-8 max-w-2xl mx-auto transition-colors duration-300"
+              style={{
+                borderColor: "rgba(168,85,247,0.15)",
+                boxShadow: "0 0 30px rgba(168,85,247,0.02)",
+              }}
+            >
+              {/* Volumetric glow */}
+              <div className="absolute -top-12 -left-12 w-24 h-24 rounded-full bg-purple-500/5 blur-xl pointer-events-none" />
+
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border border-purple-500/20 flex-shrink-0 bg-purple-500/10 shadow-lg relative">
+                <img 
+                  src="/events/bhoomi-raut.png" 
+                  alt="Bhoomi Raut" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="space-y-3 text-center md:text-left flex-grow">
+                <div>
+                  <h4 className="text-lg font-bold text-white leading-tight">Bhoomi Raut</h4>
+                  <p className="text-xs text-purple-400 font-semibold mt-1 font-mono">
+                    AWS Cloud Club Captain & AWS Academy Graduate
+                  </p>
+                </div>
+
+                <p className="text-xs text-slate-400 leading-relaxed max-w-md">
+                  B.Tech Computer Science graduate, MBA learner, and AWS Cloud Club Captain specializing in serverless workflows and responsible AI.
+                </p>
+
+                <div className="pt-1">
+                  <a 
+                    href="https://www.linkedin.com/in/bhoomi-ganesh-raut" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition-all bg-slate-900 border border-slate-800 hover:border-purple-500/30"
+                  >
+                    <LinkedInIcon className="h-3.5 w-3.5 text-purple-400" />
+                    <span>Connect on LinkedIn</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
