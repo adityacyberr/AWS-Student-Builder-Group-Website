@@ -28,8 +28,14 @@ export function MeetOurSpeakerSection() {
   const [speakers, setSpeakers] = useState<CMSSpeaker[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     async function fetchSpeakers() {
       try {
         const data = await getSpeakers();
@@ -43,9 +49,9 @@ export function MeetOurSpeakerSection() {
       }
     }
     fetchSpeakers();
-  }, []);
+  }, [mounted]);
 
-  if (loading || speakers.length === 0) return null;
+  if (!mounted || loading || speakers.length === 0) return null;
 
   const currentSpeaker = speakers[activeIndex];
 

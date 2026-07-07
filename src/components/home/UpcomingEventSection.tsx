@@ -165,6 +165,7 @@ function CountdownSeparator() {
 }
 
 export function UpcomingEventSection() {
+  const [mounted, setMounted] = useState(false);
   const [nearestEvent, setNearestEvent] = useState<EventItem | null>(null);
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
   const [hovered, setHovered] = useState(false);
@@ -173,21 +174,28 @@ export function UpcomingEventSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const speakerRef = useRef<HTMLDivElement>(null);
 
+  // Set mounted true on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Animate in immediately when the site opens so it "pops up" as requested
   useEffect(() => {
+    if (!mounted) return;
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [mounted]);
 
   // Animate speaker section in immediately
   useEffect(() => {
+    if (!mounted) return;
     const timer = setTimeout(() => {
       setSpeakerVisible(true);
     }, 200);
     return () => clearTimeout(timer);
-  }, [nearestEvent]);
+  }, [nearestEvent, mounted]);
 
   useEffect(() => {
     // Helper to set the nearest upcoming event from a list
@@ -288,7 +296,7 @@ export function UpcomingEventSection() {
     return () => clearInterval(interval);
   }, [nearestEvent]);
 
-  if (!nearestEvent) return null;
+  if (!mounted || !nearestEvent) return null;
 
   return (
     <section

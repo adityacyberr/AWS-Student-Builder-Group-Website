@@ -1033,10 +1033,16 @@ export interface CMSSpeaker extends SpeakerItem {
 export async function getSpeakers(): Promise<CMSSpeaker[]> {
   if (isSupabaseConfigured && supabase) {
     try {
-      const { data, error } = await supabase
+      const fetchPromise = supabase
         .from("speakers")
         .select("*")
         .order("sort_order", { ascending: true });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Speakers fetch timeout")), 5000)
+      );
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
       if (error) throw error;
       if (data) {
         return (data as any[]).map((d) => ({
@@ -1061,7 +1067,7 @@ export async function getSpeakers(): Promise<CMSSpeaker[]> {
         }));
       }
     } catch (err) {
-      console.warn("Error fetching speakers from Supabase, falling back to local:", err);
+      console.warn("Error fetching speakers from Supabase (using local fallback):", err);
     }
   }
   
