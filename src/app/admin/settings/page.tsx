@@ -43,7 +43,7 @@ export default function AdminSettings() {
   const [meetupUrl, setMeetupUrl] = useState("https://www.meetup.com/aws-sbg-at-rimt-university/");
   const [contactEmail, setContactEmail] = useState("sbg.rimt@gmail.com");
   const [linkedinUrl, setLinkedinUrl] = useState("https://www.linkedin.com/company/awsrimt/");
-  const [instagramUrl, setInstagramUrl] = useState("https://www.instagram.com/aws.rimt/");
+  const [instagramUrl, setInstagramUrl] = useState("https://www.instagram.com/aws.rimt?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==");
   const [githubUrl, setGithubUrl] = useState("");
   const [xUrl, setXUrl] = useState("");
 

@@ -38,6 +38,87 @@ export interface GalleryItem {
 
 export const GALLERY_ITEMS: GalleryItem[] = [
   {
+    id: "intro-pranav-bansal",
+    title: "Introducing Group Leader — Pranav Bansal",
+    date: "April 2026",
+    description: "AWS Student Builder Group introduces Pranav Bansal as our Group Leader. Learn • Build • Lead.",
+    category: "community",
+    placeholderColor: "purple",
+    imageUrl: "/gallery/intro-pranav-bansal.png"
+  },
+  {
+    id: "intro-aditya-kumar",
+    title: "Introducing Technical Head — Aditya Kumar",
+    date: "April 2026",
+    description: "AWS Student Builder Group introduces Aditya Kumar as our Technical Head. Learn • Build • Lead.",
+    category: "community",
+    placeholderColor: "blue",
+    imageUrl: "/gallery/intro-aditya-kumar.png"
+  },
+  {
+    id: "intro-amisha",
+    title: "Introducing Marketing Head — Amisha",
+    date: "April 2026",
+    description: "AWS Student Builder Group introduces Amisha as our Marketing Head. Learn • Build • Lead.",
+    category: "community",
+    placeholderColor: "orange",
+    imageUrl: "/gallery/intro-amisha.png"
+  },
+  {
+    id: "intro-rinku-bhalotiya",
+    title: "Introducing Event Head — Rinku Bhalotiya",
+    date: "April 2026",
+    description: "AWS Student Builder Group introduces Rinku Bhalotiya as our Event Head. Learn • Build • Lead.",
+    category: "community",
+    placeholderColor: "mint",
+    imageUrl: "/gallery/intro-rinku-bhalotiya.png"
+  },
+  {
+    id: "intro-amber-prashar",
+    title: "Introducing Treasurer — Amber Prashar",
+    date: "April 2026",
+    description: "AWS Student Builder Group introduces Amber Prashar as our Treasurer. Learn • Build • Lead.",
+    category: "community",
+    placeholderColor: "orange",
+    imageUrl: "/gallery/intro-amber-prashar.png"
+  },
+  {
+    id: "intro-rohan-verma",
+    title: "Introducing Director of Photography — Rohan Verma",
+    date: "April 2026",
+    description: "AWS Student Builder Group introduces Rohan Verma as our Director of Photography. Learn • Build • Lead.",
+    category: "community",
+    placeholderColor: "blue",
+    imageUrl: "/gallery/intro-rohan-verma.png"
+  },
+  {
+    id: "rimt-welcomes-aws-sbg",
+    title: "RIMT University Welcomes AWS SBG",
+    date: "April 2026",
+    description: "Official announcement poster welcoming the AWS Student Builder Group at RIMT University under RIMT DRI.",
+    category: "community",
+    placeholderColor: "blue",
+    imageUrl: "/gallery/rimt-welcomes-aws-sbg.jpg"
+  },
+  {
+    id: "kiroverse-event-poster",
+    title: "KIROverse — Build Smarter. Ship Faster.",
+    date: "July 2026",
+    description: "AWS Community Session featuring Bhoomi Raut on Kiro — the AI-powered IDE.",
+    category: "events",
+    placeholderColor: "purple",
+    imageUrl: "/gallery/kiroverse-poster.jpg"
+  },
+  {
+    id: "we-are-launching",
+    title: "We Are Launching — A Community, Countless Possibilities",
+    date: "April 2026",
+    description: "Grand launch poster of AWS Student Builder Group. Learn. Build. Innovate. Together.",
+    category: "community",
+    placeholderColor: "blue",
+    imageUrl: "/gallery/we-are-launching.jpg"
+  },
+  {
     id: "launch-agenda",
     title: "Official Launch & Agenda",
     date: "June 2026",

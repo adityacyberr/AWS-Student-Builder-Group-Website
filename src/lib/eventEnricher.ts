@@ -12,9 +12,9 @@ export const KIROVERSE_JSON = {
   speakers: [
     {
       name: "Bhoomi Raut",
-      role: "AWS Cloud Club Captain & AWS Academy Graduate",
-      company: "AWS Cloud Club",
-      bio: "B.Tech Computer Science graduate, MBA learner, and AWS Cloud Club Captain specializing in serverless workflows and responsible AI.",
+      role: "AWS Community Builder & Former AWS Cloud Club Captain",
+      company: "AWS Community Builder",
+      bio: "AWS Community Builder (AI Engineering), AWS 3x Certified, Udemy Instructor. Founder & Former AWS Cloud Club Captain at Sanjivani College of Engineering, specializing in serverless workflows and responsible AI.",
       linkedin: "https://www.linkedin.com/in/bhoomi-ganesh-raut",
       image: "/events/bhoomi-raut.png"
     }

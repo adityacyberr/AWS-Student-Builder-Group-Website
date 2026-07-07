@@ -112,8 +112,8 @@ export default function ContactPage() {
 
           {/* Card 2 — Phone */}
           <motion.a
-            href="tel:+919876543210"
-            aria-label="Call AWS Student Builder Group at +91 98765 43210"
+            href="tel:+919517960225"
+            aria-label="Call AWS Student Builder Group at +91 9517960225"
             variants={fadinVariants}
             className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 hover:-translate-y-[2px] transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_10px_30px_rgba(255,153,0,0.04)] backdrop-blur-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           >
@@ -127,7 +127,7 @@ export default function ContactPage() {
               </div>
             </div>
             <span className="text-[11px] sm:text-xs font-bold text-[#FF9900] group-hover:underline mt-4">
-              +91 98765 43210
+              +91 95179 60225
             </span>
           </motion.a>
 
@@ -301,7 +301,7 @@ export default function ContactPage() {
           >
             {/* LinkedIn */}
             <a
-              href="https://www.linkedin.com/company/aws-sbg-rimt-university"
+              href="https://www.linkedin.com/company/awsrimt/"
               target="_blank"
               rel="noopener noreferrer"
               className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-5 flex items-center justify-between hover:border-orange-500/35 hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_25px_rgba(0,0,0,0.3)] hover:shadow-[0_10px_25px_rgba(255,153,0,0.03)] backdrop-blur-md cursor-pointer"
@@ -325,7 +325,7 @@ export default function ContactPage() {
 
             {/* Instagram */}
             <a
-              href="https://www.instagram.com/aws.sbg.rimt"
+              href="https://www.instagram.com/aws.rimt?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
               target="_blank"
               rel="noopener noreferrer"
               className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-5 flex items-center justify-between hover:border-orange-500/35 hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_25px_rgba(0,0,0,0.3)] hover:shadow-[0_10px_25px_rgba(255,153,0,0.03)] backdrop-blur-md cursor-pointer"

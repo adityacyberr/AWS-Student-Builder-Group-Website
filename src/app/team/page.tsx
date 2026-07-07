@@ -129,53 +129,59 @@ export default function TeamPage() {
   }, []);
 
   useEffect(() => {
-    async function loadTeam() {
-      if (isSupabaseConfigured && supabase) {
-        try {
-          const { data, error } = await supabase
-            .from("team_members")
-            .select("*")
-            .order("display_order", { ascending: true });
-          if (!error && data && data.length > 0) {
-            const dbMembers = (data as DBTeamMemberRow[]).map((d) => ({
-              id: d.id,
-              name: d.name,
-              role: d.role,
-              branch: d.branch,
-              specialization: d.specialization,
-              bio: d.bio,
-              quote: d.quote,
-              focusAreas: d.focus_areas,
-              initials: d.initials,
-              themeColor: d.theme_color,
-              photo: d.photo || "",
-              linkedin: d.linkedin,
-              github: d.github,
-              displayOrder: d.display_order,
-            }));
-            setMembers(dbMembers);
-            return;
-          }
-        } catch (err) {
-          console.warn("Error loading team from Supabase:", err);
-        }
+    // Load local data IMMEDIATELY so it never shows empty
+    const unique = new Map<string, TeamMember>();
+    TEAM_MEMBERS.forEach((member) => {
+      const key = `${member.name.toLowerCase()}-${member.role.toLowerCase()}`;
+      if (!unique.has(key)) {
+        unique.set(key, member);
       }
+    });
+    setMembers(Array.from(unique.values()));
 
-      // Fallback: use static data only if Supabase is not configured or returned nothing
-      const unique = new Map<string, TeamMember>();
-      TEAM_MEMBERS.forEach((member) => {
-        const key = `${member.name.toLowerCase()}-${member.role.toLowerCase()}`;
-        if (!unique.has(key)) {
-          unique.set(key, member);
+    // Then try Supabase in background with a timeout
+    async function trySupabase() {
+      if (!isSupabaseConfigured || !supabase) return;
+      try {
+        const fetchPromise = supabase
+          .from("team_members")
+          .select("*")
+          .order("display_order", { ascending: true });
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Team fetch timeout")), 5000)
+        );
+
+        const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
+        if (!error && data && data.length > 0) {
+          const dbMembers = (data as DBTeamMemberRow[]).map((d) => ({
+            id: d.id,
+            name: d.name,
+            role: d.role,
+            branch: d.branch,
+            specialization: d.specialization,
+            bio: d.bio,
+            quote: d.quote,
+            focusAreas: d.focus_areas,
+            initials: d.initials,
+            themeColor: d.theme_color,
+            photo: d.photo || "",
+            linkedin: d.linkedin,
+            github: d.github,
+            displayOrder: d.display_order,
+          }));
+          setMembers(dbMembers);
         }
-      });
-      setMembers(Array.from(unique.values()));
+      } catch (err) {
+        console.warn("Error loading team from Supabase (using local fallback):", err);
+      }
     }
 
-    loadTeam();
+    trySupabase();
 
     // Listen for CMS data updates (same-tab from admin portal)
-    const handleUpdate = () => { loadTeam(); };
+    const handleUpdate = () => { trySupabase(); };
     window.addEventListener("cms-data-updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
     return () => {

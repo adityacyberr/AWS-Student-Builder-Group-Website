@@ -82,7 +82,7 @@ const CardContainer = ({
   }, []);
 
   const handleClick = () => {
-    const instagramUrl = item.instagramUrl || "https://www.instagram.com/aws.rimt/";
+    const instagramUrl = item.instagramUrl || "https://www.instagram.com/aws.rimt?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==";
     window.open(instagramUrl, "_blank");
   };
 
@@ -153,7 +153,7 @@ const CardContainer = ({
       {/* View on Instagram Button */}
       <div className="relative z-10 pt-3.5 mt-3 border-t border-slate-900/60 flex justify-center">
         <a 
-          href={item.instagramUrl || "https://www.instagram.com/aws.rimt/"}
+          href={item.instagramUrl || "https://www.instagram.com/aws.rimt?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}

@@ -253,3 +253,100 @@ html.light .glow-amber {
 .animate-pulse-slow {
   animation: pulse-slow 8s ease-in-out infinite;
 }
+
+/* ─── Countdown Timer Styles ─── */
+.countdown-digit-wrapper {
+  position: relative;
+}
+
+.countdown-digit {
+  position: relative;
+  width: 56px;
+  height: 68px;
+  background: linear-gradient(180deg, #0f1629 0%, #0a0f1e 50%, #0d1222 100%);
+  border: 1px solid rgba(251, 146, 60, 0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: transform 0.15s ease;
+}
+
+@media (min-width: 640px) {
+  .countdown-digit {
+    width: 72px;
+    height: 84px;
+    border-radius: 14px;
+  }
+}
+
+.countdown-digit-value {
+  font-size: 28px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, #fb923c 0%, #f97316 40%, #ea580c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 12px rgba(251, 146, 60, 0.4));
+  letter-spacing: 0.02em;
+}
+
+@media (min-width: 640px) {
+  .countdown-digit-value {
+    font-size: 36px;
+  }
+}
+
+.countdown-digit-divider {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  height: 1px;
+  background: rgba(251, 146, 60, 0.08);
+}
+
+.countdown-digit-glow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 12px;
+  background: radial-gradient(ellipse, rgba(251, 146, 60, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.countdown-flip {
+  animation: digitFlip 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes digitFlip {
+  0% { transform: scaleY(1); }
+  25% { transform: scaleY(0.85); }
+  50% { transform: scaleY(1.03); }
+  100% { transform: scaleY(1); }
+}
+
+.countdown-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.countdown-progress {
+  animation: progressPulse 2s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}

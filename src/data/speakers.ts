@@ -20,14 +20,16 @@ export const SPEAKERS: SpeakerItem[] = [
   {
     id: "bhoomi-raut-speaker-id",
     name: "Bhoomi Raut",
-    title: "AWS Community Builder | AWS 3X Certified | Public Speaker",
-    bio: "B.Tech Computer Science graduate and MBA learner, building my career at the intersection of technology, management, and applied learning. Passionate about cloud, AI, and developer community building.",
+    title: "AWS Community Builder & Former AWS Cloud Club Captain",
+    bio: "AWS Community Builder (AI Engineering), AWS 3x Certified professional, AWS New Voices 2025 & 2026, Udemy Instructor and technology community leader. Founder & Former AWS Cloud Club Captain at Sanjivani College of Engineering. Delivered 11+ talks across AWS Community Days, AWS Global Community Gatherings, and AWS Student Community Days. Passionate about empowering rural youth and building communities that create meaningful learning opportunities.",
     imageUrl: "/events/bhoomi-raut.png",
     achievements: [
-      "AWS Community Builder",
-      "AWS 3X Certified",
+      "AWS Community Builder (AI Engineering)",
+      "AWS 3x Certified",
       "AWS New Voices 2025 & 2026",
-      "AWS UG Pune"
+      "Former AWS Cloud Club Captain",
+      "11+ Talks & Workshops",
+      "Udemy Instructor"
     ],
     socialLinks: {
       linkedin: "https://www.linkedin.com/in/bhoomi-ganesh-raut",

@@ -148,14 +148,26 @@ export default function EventsPage() {
   useEffect(() => {
     async function loadEvents() {
       setLoading(true);
-      let eventsList = getLocalEvents();
+      let eventsList = getLocalEvents().map((ev) => enrichEvent({
+        ...ev,
+        status: calculateEventStatus(ev.date, ev.status),
+      }));
+
       if (isSupabaseConfigured && supabase) {
         try {
-          const { data, error } = await supabase
+          // Add a 5-second timeout so it doesn't hang forever
+          const fetchPromise = supabase
             .from("events")
             .select("*")
             .order("date", { ascending: false });
-          if (!error && data) {
+          
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Supabase fetch timeout")), 5000)
+          );
+
+          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
+          if (!error && data && data.length > 0) {
             eventsList = (data as DBEventRow[]).map((d) => enrichEvent({
               id: d.id,
               title: d.title,
@@ -173,15 +185,10 @@ export default function EventsPage() {
             }));
           }
         } catch (err) {
-          console.warn("Error loading events from Supabase:", err);
+          console.warn("Error loading events from Supabase (using local fallback):", err);
         }
-      } else {
-        // Map local events status dynamically
-        eventsList = eventsList.map((ev) => enrichEvent({
-          ...ev,
-          status: calculateEventStatus(ev.date, ev.status),
-        }));
       }
+
       setEvents(eventsList);
       setLoading(false);
     }

@@ -144,7 +144,7 @@ export default function Footer() {
                 <span>
                   Instagram:{" "}
                   <a
-                    href="https://www.instagram.com/aws.rimt/"
+                    href="https://www.instagram.com/aws.rimt?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-orange-400/90 hover:text-orange-400 hover:underline font-mono"

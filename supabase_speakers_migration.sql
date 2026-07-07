@@ -74,10 +74,10 @@ begin
       updated_by
     ) values (
       'Bhoomi Raut',
-      'AWS Community Builder | AWS 3X Certified | Public Speaker',
-      'B.Tech Computer Science graduate and MBA learner, building my career at the intersection of technology, management, and applied learning. Passionate about cloud, AI, and developer community building.',
+      'AWS Community Builder & Former AWS Cloud Club Captain',
+      'AWS Community Builder (AI Engineering), AWS 3x Certified professional, AWS New Voices 2025 & 2026, Udemy Instructor and technology community leader. Founder & Former AWS Cloud Club Captain at Sanjivani College of Engineering. Delivered 11+ talks across AWS Community Days, AWS Global Community Gatherings, and AWS Student Community Days.',
       '/events/bhoomi-raut.png',
-      array['AWS Community Builder', 'AWS 3X Certified', 'AWS New Voices 2025 & 2026', 'AWS UG Pune'],
+      array['AWS Community Builder (AI Engineering)', 'AWS 3x Certified', 'AWS New Voices 2025 & 2026', 'Former AWS Cloud Club Captain', '11+ Talks & Workshops', 'Udemy Instructor'],
       '{"linkedin": "https://www.linkedin.com/in/bhoomi-ganesh-raut", "twitter": "", "website": ""}'::jsonb,
       k_event_id,
       true,

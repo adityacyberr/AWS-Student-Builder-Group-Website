@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import CountdownStrip from "@/components/CountdownStrip";
 import { headers } from "next/headers";
 
 const amazonEmberDisplay = localFont({
@@ -118,6 +119,7 @@ export default async function RootLayout({
           <ThemeProvider>
             {!isConsole && <Header />}
             {!isConsole && <AnnouncementBanner />}
+            {!isConsole && <CountdownStrip />}
             <main className="flex-grow flex flex-col">{children}</main>
             {!isConsole && <Footer />}
           </ThemeProvider>
