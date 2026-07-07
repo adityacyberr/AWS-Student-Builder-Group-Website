@@ -173,34 +173,20 @@ export function UpcomingEventSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const speakerRef = useRef<HTMLDivElement>(null);
 
-  // Intersection Observer for entrance animation
+  // Animate in immediately when the site opens so it "pops up" as requested
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 }
-    );
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Intersection Observer for speaker section
+  // Animate speaker section in immediately
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setSpeakerVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-    if (speakerRef.current) observer.observe(speakerRef.current);
-    return () => observer.disconnect();
+    const timer = setTimeout(() => {
+      setSpeakerVisible(true);
+    }, 200);
+    return () => clearTimeout(timer);
   }, [nearestEvent]);
 
   useEffect(() => {
