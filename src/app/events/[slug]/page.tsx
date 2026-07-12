@@ -682,8 +682,8 @@ export default function EventDetailPage() {
           </div>
           <div className="flex flex-col gap-2 text-xs text-slate-400 md:items-end">
             <p>Questions? Contact the organizer at:</p>
-            <a href="mailto:sbg.rimt@gmail.com" className="text-orange-400 hover:text-white font-bold transition-colors">
-              sbg.rimt@gmail.com
+            <a href="mailto:awsstudentbuildergrouprimt@gmail.com" className="text-orange-400 hover:text-white font-bold transition-colors">
+              awsstudentbuildergrouprimt@gmail.com
             </a>
           </div>
         </div>

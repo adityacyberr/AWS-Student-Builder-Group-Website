@@ -49,7 +49,7 @@ const SOCIAL_ITEMS: SocialItem[] = [
     id: "email",
     name: "Email",
     description: "Reach us directly anytime",
-    href: "mailto:sbg.rimt@gmail.com",
+    href: "mailto:awsstudentbuildergrouprimt@gmail.com",
     icon: <Mail className="h-5 w-5" />,
     colorClass: "text-[#ff9900] bg-[#ff9900]/10 border-[#ff9900]/20",
     hoverBorder: "hover:border-[#ff9900]/40",

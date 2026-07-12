@@ -91,8 +91,8 @@ export default function ContactPage() {
         >
           {/* Card 1 — Email */}
           <motion.a
-            href="mailto:sbg.rimt@gmail.com"
-            aria-label="Email AWS Student Builder Group at sbg.rimt@gmail.com"
+            href="mailto:awsstudentbuildergrouprimt@gmail.com"
+            aria-label="Email AWS Student Builder Group at awsstudentbuildergrouprimt@gmail.com"
             variants={fadinVariants}
             className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-6 flex flex-col justify-between hover:border-orange-500/35 hover:-translate-y-[2px] transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_10px_30px_rgba(255,153,0,0.04)] backdrop-blur-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           >
@@ -106,7 +106,7 @@ export default function ContactPage() {
               </div>
             </div>
             <span className="text-[11px] sm:text-xs font-bold text-[#FF9900] group-hover:underline mt-4 break-words">
-              sbg.rimt@gmail.com
+              awsstudentbuildergrouprimt@gmail.com
             </span>
           </motion.a>
 
@@ -379,7 +379,7 @@ export default function ContactPage() {
 
             {/* Email Us */}
             <a
-              href="mailto:sbg.rimt@gmail.com"
+              href="mailto:awsstudentbuildergrouprimt@gmail.com"
               className="group relative rounded-2xl bg-zinc-950/40 border border-zinc-900 p-5 flex items-center justify-between hover:border-orange-500/35 hover:-translate-y-1 transition-all duration-300 shadow-[0_4px_25px_rgba(0,0,0,0.3)] hover:shadow-[0_10px_25px_rgba(255,153,0,0.03)] backdrop-blur-md cursor-pointer"
             >
               <div className="flex items-center gap-3.5">
@@ -388,7 +388,7 @@ export default function ContactPage() {
                 </div>
                 <div className="text-left space-y-0.5">
                   <h4 className="text-xs font-bold text-white">Email Us</h4>
-                  <p className="text-[10px] text-zinc-550 font-medium">Reach us directly anytime</p>
+                  <p className="text-[10px] text-zinc-555 font-medium">Reach us directly anytime</p>
                 </div>
               </div>
               <ArrowUpRight className="h-4 w-4 text-zinc-650 group-hover:text-[#FF9900] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
@@ -455,7 +455,7 @@ export default function ContactPage() {
 
           {/* Right Side: Partnership Action button */}
           <a
-            href="mailto:sbg.rimt@gmail.com?subject=Collaboration%20Proposal"
+            href="mailto:awsstudentbuildergrouprimt@gmail.com?subject=Collaboration%20Proposal"
             className="flex-shrink-0 inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#FF9900] text-zinc-950 text-xs font-black shadow-lg shadow-orange-500/15 hover:shadow-[0_0_25px_rgba(255,153,0,0.3)] hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer"
           >
             Explore Partnerships →

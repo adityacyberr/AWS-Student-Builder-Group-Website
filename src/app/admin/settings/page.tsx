@@ -41,7 +41,7 @@ export default function AdminSettings() {
   const [siteName, setSiteName] = useState("AWS Student Builder Group");
   const [siteTagline, setSiteTagline] = useState("RIMT University Campus Chapter");
   const [meetupUrl, setMeetupUrl] = useState("https://www.meetup.com/aws-sbg-at-rimt-university/");
-  const [contactEmail, setContactEmail] = useState("sbg.rimt@gmail.com");
+  const [contactEmail, setContactEmail] = useState("awsstudentbuildergrouprimt@gmail.com");
   const [linkedinUrl, setLinkedinUrl] = useState("https://www.linkedin.com/company/awsrimt/");
   const [instagramUrl, setInstagramUrl] = useState("https://www.instagram.com/aws.rimt?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==");
   const [githubUrl, setGithubUrl] = useState("");
@@ -107,7 +107,7 @@ export default function AdminSettings() {
         // Fallback Local Storage Load
         if (typeof window !== "undefined") {
           setMeetupUrl(localStorage.getItem("aws_sbg_meetup_url") || "https://www.meetup.com/aws-sbg-at-rimt-university/");
-          setContactEmail(localStorage.getItem("aws_sbg_contact_email") || "sbg.rimt@gmail.com");
+          setContactEmail(localStorage.getItem("aws_sbg_contact_email") || "awsstudentbuildergrouprimt@gmail.com");
           
           const storedStats = localStorage.getItem("aws_sbg_home_stats");
           if (storedStats) {

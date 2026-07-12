@@ -23,13 +23,13 @@ export default function Footer() {
   if (isAuthOrPanelPath) return null;
 
   const [meetupUrl, setMeetupUrl] = useState("https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups");
-  const [contactEmail, setContactEmail] = useState("sbg.rimt@gmail.com");
+  const [contactEmail, setContactEmail] = useState("awsstudentbuildergrouprimt@gmail.com");
 
   useEffect(() => {
     async function loadSettings() {
       if (typeof window !== "undefined") {
         setMeetupUrl(localStorage.getItem("aws_sbg_meetup_url") || "https://www.meetup.com/aws-sbg-at-rimt-university/?eventOrigin=your_groups");
-        setContactEmail(localStorage.getItem("aws_sbg_contact_email") || "sbg.rimt@gmail.com");
+        setContactEmail(localStorage.getItem("aws_sbg_contact_email") || "awsstudentbuildergrouprimt@gmail.com");
       }
 
       if (isSupabaseConfigured && supabase) {
