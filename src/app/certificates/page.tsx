@@ -23,6 +23,7 @@ import {
   downloadBlob,
   CertificateConfig,
 } from "@/lib/certificateGenerator";
+import { MemeRewardModal } from "@/components/MemeRewardModal";
 
 interface CertEvent {
   id: string;
@@ -69,6 +70,7 @@ export default function CertificatesPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [eventsLoading, setEventsLoading] = useState(true);
   const [issuedCount, setIssuedCount] = useState<string>("50+");
+  const [isMemeModalOpen, setIsMemeModalOpen] = useState(false);
   
   // Preview Data
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -186,8 +188,15 @@ export default function CertificatesPage() {
     try {
       const blob = await generateCertificatePDF(templateUrl, participantName, certConfig);
       const fileName = `${participantName.replace(/\s+/g, "_")}_AWS_Certificate.pdf`;
+      
+      // 1. Download PDF immediately without any delay
       downloadBlob(blob, fileName);
       setStep("success");
+
+      // 2. Wait 600ms, then trigger Secret Meme Reward Modal
+      setTimeout(() => {
+        setIsMemeModalOpen(true);
+      }, 600);
     } catch (err) {
       console.error("PDF download error:", err);
       setErrorMessage("Failed to download PDF. Please try again.");
@@ -477,6 +486,13 @@ export default function CertificatesPage() {
           </span>
         </motion.div>
       </div>
+
+      {/* Secret Meme Reward Modal Surprise */}
+      <MemeRewardModal
+        isOpen={isMemeModalOpen}
+        onClose={() => setIsMemeModalOpen(false)}
+        participantName={participantName}
+      />
     </div>
   );
 }
