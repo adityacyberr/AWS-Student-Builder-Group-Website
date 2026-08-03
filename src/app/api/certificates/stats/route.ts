@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export async function GET() {
   try {
-    let count = 78; // Base count from PDF student roster
+    let count = 105; // Master count from latest PDF student roster
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -19,8 +19,8 @@ export async function GET() {
       }
     }
 
-    // Round down to nearest 50 (if >= 50) or 10
-    let rounded = 50;
+    // Round down for display (e.g., 105 -> 100+)
+    let rounded = 100;
     if (count >= 100) {
       rounded = Math.floor(count / 50) * 50;
     } else if (count >= 50) {
@@ -35,8 +35,8 @@ export async function GET() {
     });
   } catch (err: any) {
     return NextResponse.json({
-      totalIssued: 78,
-      displayStat: "50+",
+      totalIssued: 105,
+      displayStat: "100+",
     });
   }
 }

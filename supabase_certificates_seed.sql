@@ -1,5 +1,5 @@
 -- ============================================================
--- Seed Certificate Event & Participants from PDF Table
+-- Seed Certificate Event & Participants from Latest PDF Document
 -- Run in Supabase SQL Editor to populate all student records.
 -- ============================================================
 
@@ -19,7 +19,7 @@ values (
 )
 on conflict (slug) do update set is_published = true;
 
--- 2. Insert All Students from PDF List (Demo roll numbers removed)
+-- 2. Insert All 100+ Students from Latest PDF List
 with kiro_event as (
   select id from public.certificate_events where slug = 'kiroverse' limit 1
 )
@@ -44,6 +44,7 @@ from kiro_event, (values
   ('25BCSEAIML028', 'ASHUTOSH KUMAR'),
   ('25BCSEAIML001', 'AARYAN TRIPATHI'),
   ('25BCSEAIML012', 'ANKIT KUMAR YADAV'),
+  ('25BCSEAIML029', 'AVINASH KUMAR'),
   ('25BCSEAIML018', 'ANUSHKA KUMARI'),
   ('25BCSEAIML045', 'JASHANPREET KAUR'),
   ('25BCSEAIML101', 'ROSHNI'),
@@ -103,6 +104,39 @@ from kiro_event, (values
   ('25BCSE017', 'SAPNA KUMARI'),
   ('24BCSEAIML014', 'DHEERAJ GARG'),
   ('24BCSEAIML009', 'ANURAG KUMAR'),
-  ('25BCSE009', 'MANJOT KAUR')
+  ('24BCSEAIM010', 'DEEP SHIKHA'),
+  ('25BCSE009', 'MANJOT KAUR'),
+  ('25BECEAIML001', 'PRANAV BANSAL'),
+  ('25BCSE015', 'RINKU BHALOTIYA'),
+  ('25CEAIML002', 'ROHAN VERMA'),
+  ('25BCSEAIML009', 'AMISHA'),
+  ('25BCSEAIML008', 'AMBER PRASHAR'),
+  ('25BCSECBRS001', 'ADITYA KUMAR'),
+  ('25BCSEAIML010', 'AMRINDER SINGH'),
+  ('25BCSEAIML021', 'ARJAN SINGH'),
+  ('25BCSEAIML019', 'ARASHVIR GILL'),
+  ('25BCSEAIML003', 'ADITYA JASWAL'),
+  ('25BCSEAIML047', 'JASNEET SINGH'),
+  ('RIMT261100', 'SAGAR'),
+  ('25BCSEAIML089', 'PRATIKSHA'),
+  ('25BCSEAIML111', 'SHIVANI'),
+  ('25BCSEAIML136', 'APURVA SHARMA'),
+  ('25BCSEAIML121', 'TANIA SHARMA'),
+  ('25BCSEAIML106', 'SEJAL'),
+  ('25BCSEAIML096', 'RAVINDER KAUR'),
+  ('25BCSEDS006', 'SIMRANPREET KAUR'),
+  ('25BCSECBRS008', 'AKSHARA SHARMA'),
+  ('25BCSECBRS007', 'YATI SINGLA'),
+  ('25BCSEAIML052', 'KARAN'),
+  ('25BCSEAIML134', 'SHEM'),
+  ('25BCSEAIML081', 'PARVEEN KAUR'),
+  ('25BCSEAIML085', 'PRABHNOOR KAUR'),
+  ('25BCSEAIML025', 'ARVIND KUMAR'),
+  ('25BCSEAIML048', 'JASPREET SINGH'),
+  ('25BCSEAIML055', 'KHUSHI KUMARI'),
+  ('25BCSEAIML056', 'KHUSHI SHUKLA'),
+  ('25BCE002', 'RITIKA'),
+  ('24BCSEAIML055', 'SHIVANI YADAV'),
+  ('25BCSEAIML098', 'ROHIT')
 ) as p(roll_number, participant_name)
 on conflict (event_id, roll_number) do update set participant_name = excluded.participant_name;

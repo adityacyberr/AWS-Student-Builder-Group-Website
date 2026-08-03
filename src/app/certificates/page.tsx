@@ -461,13 +461,15 @@ export default function CertificatesPage() {
           transition={{ delay: 0.3 }}
           className="mt-6 flex flex-col items-center gap-2 text-center"
         >
-          <Link
-            href="/contact"
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-orange-400 transition-colors"
+          <a
+            href="https://wa.me/919517960225?text=Hi%2C%20I%20need%20help%20finding%20my%20AWS%20certificate."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-400 transition-colors group"
           >
-            <HelpCircle className="h-3.5 w-3.5" />
-            Trouble finding your certificate? Contact Support
-          </Link>
+            <HelpCircle className="h-3.5 w-3.5 group-hover:text-emerald-400 transition-colors" />
+            Trouble finding your certificate? <span className="underline decoration-emerald-500/40 text-emerald-400 font-medium">Contact Support on WhatsApp</span>
+          </a>
           <span className="flex items-center gap-1 text-[10px] text-slate-600 uppercase tracking-widest font-semibold select-none">
             <Lock className="h-3 w-3" /> Secure Verification &bull; AWS Student Builder Group
           </span>
