@@ -328,7 +328,7 @@ export default function CertificatesPage() {
                           setRollNumber(e.target.value);
                           if (errorMessage) setErrorMessage("");
                         }}
-                        placeholder="e.g. 25BCSE014"
+                        placeholder="e.g. 25BCSECBRS001"
                         className={`w-full rounded-xl border bg-slate-950/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-600 font-mono tracking-wider focus:outline-none transition-all ${
                           errorMessage
                             ? "border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500/30"
