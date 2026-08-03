@@ -1,6 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import crypto from "crypto";
 
+// In-memory sliding window rate limiter
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+  lockoutUntil: number;
+  distinctRolls: Set<string>;
+}
+
+const rateLimitMap = new Map<string, RateLimitEntry>();
+
+// Clean up expired rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap.entries()) {
+    if (now > entry.resetTime && now > entry.lockoutUntil) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
+const SECRET = process.env.SUPABASE_SERVICE_ROLE_KEY || "aws-sbg-cert-secret-token-key-2026";
+
+/**
+ * Generate a short-lived signed download token valid for 5 minutes.
+ */
+function createDownloadToken(rollNumber: string, eventId: string): string {
+  const expiresAt = Date.now() + 5 * 60 * 1000;
+  const payload = `${rollNumber}:${eventId}:${expiresAt}`;
+  const hmac = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+  return Buffer.from(JSON.stringify({ payload, hmac })).toString("base64url");
+}
+
+/**
+ * PDF Student Roster Map (case-insensitive keys)
+ */
 function formatRollNumberToName(roll: string): string | null {
   const cleanKey = roll.trim().toUpperCase();
   const knownMap: Record<string, string> = {
@@ -88,47 +124,88 @@ function formatRollNumberToName(roll: string): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+             request.headers.get("x-real-ip") || "127.0.0.1";
+  const now = Date.now();
+
+  // ── 1. RATE LIMITER CHECK ──
+  let rateEntry = rateLimitMap.get(ip);
+  if (!rateEntry) {
+    rateEntry = { count: 0, resetTime: now + 60 * 1000, lockoutUntil: 0, distinctRolls: new Set() };
+    rateLimitMap.set(ip, rateEntry);
+  }
+
+  // Check lockout
+  if (now < rateEntry.lockoutUntil) {
+    const remainingSecs = Math.ceil((rateEntry.lockoutUntil - now) / 1000);
+    return NextResponse.json(
+      { found: false, error: `Too many requests. Please try again in ${remainingSecs} seconds.` },
+      { status: 429, headers: { "Retry-After": String(remainingSecs) } }
+    );
+  }
+
+  // Reset window if expired
+  if (now > rateEntry.resetTime) {
+    rateEntry.count = 0;
+    rateEntry.resetTime = now + 60 * 1000;
+    rateEntry.distinctRolls.clear();
+  }
+
+  rateEntry.count += 1;
+
+  // Rate limit trigger: max 5 requests per minute
+  if (rateEntry.count > 5) {
+    rateEntry.lockoutUntil = now + 60 * 1000; // 1 min lockout
+    return NextResponse.json(
+      { found: false, error: "Too many requests. Please slow down and try again in 60 seconds." },
+      { status: 429, headers: { "Retry-After": "60" } }
+    );
+  }
+
   try {
     const body = await request.json();
-    const { eventId, rollNumber } = body;
+    const { eventId, rollNumber, hp } = body;
 
-    // Input validation
-    if (!eventId || typeof eventId !== "string") {
-      return NextResponse.json(
-        { found: false, error: "A valid event is required." },
-        { status: 400 }
-      );
+    // ── 2. BOT CHECK / HONEYPOT ──
+    if (hp && typeof hp === "string" && hp.trim().length > 0) {
+      // Honeypot filled by bot -> return generic not found silently
+      return NextResponse.json({ found: false }, { status: 200 });
     }
 
-    if (!rollNumber || typeof rollNumber !== "string") {
-      return NextResponse.json(
-        { found: false, error: "A valid roll number is required." },
-        { status: 400 }
-      );
+    // ── 3. STRICT INPUT VALIDATION ──
+    if (!eventId || typeof eventId !== "string" || !rollNumber || typeof rollNumber !== "string") {
+      return NextResponse.json({ found: false }, { status: 200 }); // Anti-enumeration: identical response
     }
 
     const cleanRoll = rollNumber.trim().toUpperCase();
 
-    if (cleanRoll.length < 3 || cleanRoll.length > 30) {
-      return NextResponse.json(
-        { found: false, error: "Roll number format is invalid." },
-        { status: 400 }
-      );
+    // Regex check: letters and numbers only, 3 to 25 chars
+    if (!/^[A-Z0-9]{3,25}$/.test(cleanRoll)) {
+      return NextResponse.json({ found: false }, { status: 200 }); // Anti-enumeration
     }
 
-    // ── Supabase Mode ──
+    rateEntry.distinctRolls.add(cleanRoll);
+
+    // ── 4. ANOMALY LOGGING ──
+    if (rateEntry.distinctRolls.size > 8) {
+      console.warn(`[SECURITY ANOMALY] IP ${ip} queried ${rateEntry.distinctRolls.size} distinct roll numbers in 1 minute.`);
+    }
+
+    // ── 5. DATABASE QUERY (SUPABASE) ──
     if (isSupabaseConfigured && supabase) {
-      // Check if querying default-kiroverse or database event
       if (eventId === "default-kiroverse") {
         const mappedName = formatRollNumberToName(cleanRoll);
         if (!mappedName) {
           return NextResponse.json({ found: false }, { status: 200 });
         }
 
+        const downloadToken = createDownloadToken(cleanRoll, eventId);
+
         return NextResponse.json({
           found: true,
           participantName: mappedName,
           templateUrl: "/certificates/default-template.png",
+          downloadToken,
           config: {
             nameX: 73.8,
             nameY: 61.5,
@@ -141,7 +218,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // First verify the event exists and is published
+      // Parameterized query using Supabase client
       const { data: eventData, error: eventError } = await supabase
         .from("certificate_events")
         .select("id, title, template_url, name_x, name_y, font_family, font_size, font_weight, text_color, text_align, is_published")
@@ -150,7 +227,6 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!eventError && eventData) {
-        // Case-insensitive lookup using .ilike
         const { data: participant, error: participantError } = await supabase
           .from("certificate_participants")
           .select("id, participant_name, roll_number")
@@ -159,18 +235,20 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (participant && !participantError) {
-          // Log the download
-          const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+          // Log download audit
           await supabase.from("certificate_downloads").insert({
             participant_id: participant.id,
             event_id: eventId,
-            ip_address: ip.split(",")[0].trim(),
+            ip_address: ip,
           });
+
+          const downloadToken = createDownloadToken(cleanRoll, eventId);
 
           return NextResponse.json({
             found: true,
             participantName: participant.participant_name,
             templateUrl: eventData.template_url || "/certificates/default-template.png",
+            downloadToken,
             config: {
               nameX: eventData.name_x,
               nameY: eventData.name_y,
@@ -185,16 +263,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Sandbox / Default Event Fallback ──
+    // ── 6. LOCAL DATASET FALLBACK ──
     const fallbackName = formatRollNumberToName(cleanRoll);
     if (!fallbackName) {
       return NextResponse.json({ found: false }, { status: 200 });
     }
 
+    const downloadToken = createDownloadToken(cleanRoll, eventId);
+
     return NextResponse.json({
       found: true,
       participantName: fallbackName,
       templateUrl: "/certificates/default-template.png",
+      downloadToken,
       config: {
         nameX: 73.8,
         nameY: 61.5,
@@ -207,9 +288,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error("Certificate lookup error:", err);
-    return NextResponse.json(
-      { found: false, error: "An internal error occurred. Please try again." },
-      { status: 500 }
-    );
+    // Anti-enumeration: return identical generic response on internal error
+    return NextResponse.json({ found: false }, { status: 200 });
   }
 }
