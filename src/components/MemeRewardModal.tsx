@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RefreshCw, Share2, Sparkles, Loader } from "lucide-react";
+import { X, RefreshCw, Share2, Sparkles, CheckCircle2 } from "lucide-react";
 
 interface MemeRewardModalProps {
   isOpen: boolean;
@@ -10,282 +10,146 @@ interface MemeRewardModalProps {
   participantName?: string;
 }
 
-// 150+ Simple, Relatable, Wholesome College Captions
-const CAPTIONS = [
-  "Time to update LinkedIn before anyone else.",
-  "Certificate downloaded. Now go show your parents 😂",
-  "One more PDF. Infinite happiness.",
-  "This certificate deserves a LinkedIn post.",
-  "Your Downloads folder is getting stronger.",
-  "Mom: Phone pe hi rehta hai. Me: Certificate dekho 😎",
-  "Today's mission completed.",
-  "Attendance finally paid off.",
-  "Congratulations. You officially have proof you were there.",
-  "Now nobody can say you skipped it.",
-  "Bro came. Bro learned. Bro got the certificate.",
-  "The workshop is over. The flex begins.",
-  "Screenshot this before closing.",
-  "LinkedIn is calling...",
-  "Achievement unlocked: Certificate Collector.",
-  "One more reason to update your resume.",
-  "Today's productivity: 100%.",
-  "This PDF carries emotional value.",
-  "One click. Lifetime memories.",
-  "Now don't lose this file.",
-  "That smile was worth it.",
-  "You've earned this.",
-  "Bro actually finished the workshop.",
-  "Small win. Big feeling.",
-  "The certificate looks good on you.",
-  "Time to send this to the family group.",
-  "Grandparents won't understand, but they'll still be proud.",
-  "Your future self approves.",
-  "Another day. Another achievement.",
-  "Go celebrate. Even if it's with Maggi.",
-  "Your hard work just became a PDF.",
-  "This deserves a screenshot.",
-  "Core memory unlocked.",
-  "One more achievement. Many more to come.",
-  "You survived. Respect.",
-  "This wasn't just attendance. It was commitment.",
-  "This one's staying forever in Downloads.",
-  "You did the work. Now enjoy the reward.",
-  "Today's main character moment.",
-  "Nobody can say 'tu kuch karta hi nahi.'",
-  "Now post it before your friends do.",
-  "This certificate has +100 confidence.",
-  "Proof that you showed up.",
-  "Not bad. Not bad at all.",
-  "You've unlocked bragging rights.",
-  "Future you says thank you.",
-  "You earned this one.",
-  "Today's W.",
-  "Another achievement. Keep collecting them.",
-  "This is just the beginning.",
-  "Go make your parents smile.",
-  "Tiny win. Huge motivation.",
-  "Save it somewhere safe 😭",
-  "Don't rename it 'New Document (2).pdf'",
-  "Please don't lose this in Downloads.",
-  "One more memory unlocked.",
-  "Certified workshop survivor.",
-  "This PDF hits different.",
-  "Well deserved.",
-  "Good job. Seriously.",
-  "Now go touch some grass 🌱",
-  "Coffee tastes better after achievements.",
-  "One step closer.",
-  "Keep going.",
-  "We're proud of you.",
-  "Now chase the next one.",
-  "Tea & samosa well earned today.",
-  "Hard work looks good in PDF format.",
-  "Your attendance record is glowing.",
-  "Mom's WhatsApp status material right here.",
-  "Folder name: 'Important Certificates (Do Not Delete)'",
-  "First step to the dream job.",
-  "Aura jumped +1000 points today.",
-  "College memories +1.",
-  "Certificate secured. Smile activated.",
-  "Another proof that you're built different.",
-  "Family WhatsApp group is about to be so proud.",
-  "From sitting in class to collecting wins.",
-  "One more badge for your journey.",
-  "You showed up and you conquered.",
-  "This moment is officially documented.",
-  "Clean win for the day.",
-  "Bragging rights successfully downloaded.",
-  "Proof that 2 hours were well spent.",
-  "Your efforts just paid off.",
-  "Another milestone unlocked.",
-  "Frame it or post it, you earned it.",
-  "One PDF, endless pride.",
-  "Future HR is going to love this.",
-  "Proof of attendance level: Master.",
-  "Bro turned up and won.",
-  "This hits the happiness spot.",
-  "Smiles all around today.",
-  "College life peak moment.",
-  "You're making progress every single day.",
-  "Hard work + time = this moment.",
-  "Screenshot saved to camera roll.",
-  "Big proud moment.",
-  "Keep this energy going forever.",
-  "Zero regrets, full certificate.",
-  "Every small step counts.",
-  "The effort was real, the result is here.",
-  "One more reason to smile today.",
-  "You didn't give up. Respect.",
-  "Your resume just got prettier.",
-  "That feeling when the PDF opens perfectly.",
-  "Another victory for the books.",
-  "You're building your future step by step.",
-  "Class of legends.",
-  "One certificate, infinite vibes.",
-  "Proof that you're leveling up.",
-  "Your dedication paid off.",
-  "Saved straight to the heart.",
-  "High five! You did it.",
-  "One more golden memory.",
-  "Nothing beats a fresh certificate.",
-  "Confidence level: Maximum.",
-  "You make this look easy.",
-  "One step closer to your dreams.",
-  "This is what hard work looks like.",
-  "PDF saved. Mood boosted.",
-  "Shining bright today.",
-  "Another chapter of success.",
-  "Today was a good day.",
-  "Proud of your commitment.",
-  "That feeling of accomplishment.",
-  "Keep collecting these moments.",
-  "Your story is just getting started.",
-  "W after W.",
-  "Respect the hustle.",
-  "Greatness in progress.",
-  "You're doing amazing.",
-  "Celebration time!",
-  "Always keep growing.",
-  "Your future is bright.",
-  "Keep shining!",
-  "Unstoppable energy.",
-  "Victory is sweet.",
-  "One more step forward.",
-  "Mastery unlocked.",
-  "You're on the right path.",
-  "Cherish this moment.",
-  "Never stop learning.",
-  "Built with dedication.",
-  "Keep believing in yourself.",
-  "Success looks good on you.",
-  "Another goal crushed.",
-  "Every effort matters.",
-  "Keep rising!",
-  "Proud moment secured.",
-  "Shine on!",
-  "Pure happiness in PDF format."
+// Multi-type Card Pool (😂 Funny, 🎯 Motivation, 💡 Fun Fact, ✨ Inspiring Quote)
+const REWARD_CARDS = [
+  "😂 Your Downloads folder just got promoted.",
+  "😂 One more certificate. Zero regrets.",
+  "😂 Parents: \"Phone hi chalata rehta hai.\" Me: Certificate dekho 😎",
+  "😂 Time to pretend this was easy.",
+  "😂 Certificate downloaded. Now go show your parents 😂",
+  "😂 One more PDF. Infinite happiness.",
+  "😂 This certificate deserves a LinkedIn post.",
+  "😂 Attendance finally paid off.",
+  "😂 Bro came. Bro learned. Bro got the certificate.",
+  "😂 The workshop is over. The flex begins.",
+  "😂 Bro actually finished the workshop.",
+  "😂 Grandparents won't understand, but they'll still be proud.",
+  "😂 Go celebrate. Even if it's with Maggi.",
+  "😂 Nobody can say 'tu kuch karta hi nahi.'",
+  "😂 Save it somewhere safe 😭",
+  "😂 Don't rename it 'New Document (2).pdf'",
+  "😂 Mom's WhatsApp status material right here.",
+  "😂 Folder name: 'Important Certificates (Do Not Delete)'",
+  "😂 Tea & samosa well earned today.",
+  "🎯 Achievement Unlocked: Workshop Survivor",
+  "🎯 +100 Confidence",
+  "🎯 Resume upgraded.",
+  "🎯 Core memory unlocked.",
+  "🎯 Today's mission completed.",
+  "🎯 One step closer to your dreams.",
+  "🎯 Clean win for the day.",
+  "🎯 Bragging rights successfully downloaded.",
+  "🎯 Proof of attendance level: Master.",
+  "🎯 Another milestone unlocked.",
+  "🎯 Victory Royale!",
+  "💡 Fun fact: You'll probably forget where you saved this PDF.",
+  "💡 Your future self says thanks.",
+  "💡 Hard work looks good in PDF format.",
+  "💡 This PDF carries emotional value.",
+  "💡 Proof that 2 hours were well spent.",
+  "💡 Your attendance record is glowing.",
+  "💡 You showed up and you conquered.",
+  "✨ Small wins become big careers.",
+  "✨ Today's certificate. Tomorrow's opportunity.",
+  "✨ Hard work looks good on you.",
+  "✨ Small win. Big feeling.",
+  "✨ Every small step counts.",
+  "✨ The effort was real, the result is here.",
+  "✨ Keep this energy going forever.",
+  "✨ Pure happiness in PDF format."
 ];
 
-// Simple, Fun, Relatable Loading Messages
-const ANOTHER_MEME_LOADING_MESSAGES = [
-  "Choosing your reward...",
-  "Looking for something funny...",
-  "Finding today's meme...",
-  "Almost there...",
-  "Trust us, this one's good.",
-  "Stealing from the meme vault...",
-  "Cooking something...",
-  "One second...",
-  "Loading happiness...",
-  "This better make you laugh...",
+// Playful, light text loading messages (No spinners!)
+const PLAYFUL_LOADING_MESSAGES = [
+  "Choosing another one...",
+  "Hold up 😂",
+  "This one's better...",
   "Finding peak comedy...",
-  "Opening the secret folder...",
-  "Hold on...",
-  "Worth the wait...",
-  "Incoming...",
-  "One more second...",
-  "Randomizing fun...",
-  "Choosing wisely...",
+  "Trust the process...",
+  "One sec...",
   "Rolling the meme dice...",
-  "Done 😎"
-];
-
-const INITIAL_LOADING_MESSAGES = [
-  "Choosing your reward...",
-  "Looking for something funny...",
-  "Finding today's meme...",
-  "Almost there...",
-  "Done 😎",
+  "Loading happiness...",
+  "Picking today's winner...",
+  "Searching the vault...",
+  "Hold tight...",
+  "Worth the wait..."
 ];
 
 export function MemeRewardModal({ isOpen, onClose, participantName }: MemeRewardModalProps) {
-  const [caption, setCaption] = useState<string>("");
-  const [loadingStep, setLoadingStep] = useState<number>(0);
+  const [cardText, setCardText] = useState<string>("");
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
   const [headerStep, setHeaderStep] = useState<number>(0);
   
-  // Loot box "Another Meme" loading animation state
-  const [isSwapping, setIsSwapping] = useState<boolean>(false);
-  const [swapMessage, setSwapMessage] = useState<string>("");
+  // Playful transition state (no spinner)
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  const [transitionMsg, setTransitionMsg] = useState<string>("");
 
-  const previousCaptionRef = useRef<string>("");
-  const previousLoadingMsgRef = useRef<string>("");
+  const previousCardRef = useRef<string>("");
+  const previousMsgRef = useRef<string>("");
 
   // Handle sequence animation on modal initial open
   useEffect(() => {
     if (!isOpen) {
       setIsRevealed(false);
-      setIsSwapping(false);
-      setLoadingStep(0);
+      setIsTransitioning(false);
       setHeaderStep(0);
       return;
     }
 
-    // 1. Header sequence
-    const h1Timer = setTimeout(() => setHeaderStep(1), 100);
-    const h2Timer = setTimeout(() => setHeaderStep(2), 500);
+    // 1. Header line-by-line reveal
+    const h1Timer = setTimeout(() => setHeaderStep(1), 120);
+    const h2Timer = setTimeout(() => setHeaderStep(2), 480);
+    const revealTimer = setTimeout(() => setIsRevealed(true), 600);
 
-    // 2. Initial loading messages cycle (400ms intervals)
-    let stepCount = 0;
-    const loadingInterval = setInterval(() => {
-      stepCount++;
-      if (stepCount < INITIAL_LOADING_MESSAGES.length) {
-        setLoadingStep(stepCount);
-      } else {
-        clearInterval(loadingInterval);
-        setIsRevealed(true);
-      }
-    }, 450);
-
-    // Select initial caption
-    pickRandomCaption();
+    // Select initial card
+    pickRandomCard();
 
     return () => {
       clearTimeout(h1Timer);
       clearTimeout(h2Timer);
-      clearInterval(loadingInterval);
+      clearTimeout(revealTimer);
     };
   }, [isOpen]);
 
-  // Pick random caption avoiding consecutive duplicate
-  const getRandomCaption = (): string => {
-    let next = CAPTIONS[Math.floor(Math.random() * CAPTIONS.length)];
-    if (CAPTIONS.length > 1 && next === previousCaptionRef.current) {
-      const filtered = CAPTIONS.filter((c) => c !== previousCaptionRef.current);
+  // Pick random card avoiding consecutive duplicate
+  const getRandomCard = (): string => {
+    let next = REWARD_CARDS[Math.floor(Math.random() * REWARD_CARDS.length)];
+    if (REWARD_CARDS.length > 1 && next === previousCardRef.current) {
+      const filtered = REWARD_CARDS.filter((c) => c !== previousCardRef.current);
       next = filtered[Math.floor(Math.random() * filtered.length)];
     }
-    previousCaptionRef.current = next;
+    previousCardRef.current = next;
     return next;
   };
 
-  // Pick random loading message avoiding consecutive duplicate
-  const getRandomSwapMessage = (): string => {
-    let next = ANOTHER_MEME_LOADING_MESSAGES[Math.floor(Math.random() * ANOTHER_MEME_LOADING_MESSAGES.length)];
-    if (ANOTHER_MEME_LOADING_MESSAGES.length > 1 && next === previousLoadingMsgRef.current) {
-      const filtered = ANOTHER_MEME_LOADING_MESSAGES.filter((m) => m !== previousLoadingMsgRef.current);
+  // Pick random transition message avoiding consecutive duplicate
+  const getRandomTransitionMessage = (): string => {
+    let next = PLAYFUL_LOADING_MESSAGES[Math.floor(Math.random() * PLAYFUL_LOADING_MESSAGES.length)];
+    if (PLAYFUL_LOADING_MESSAGES.length > 1 && next === previousMsgRef.current) {
+      const filtered = PLAYFUL_LOADING_MESSAGES.filter((m) => m !== previousMsgRef.current);
       next = filtered[Math.floor(Math.random() * filtered.length)];
     }
-    previousLoadingMsgRef.current = next;
+    previousMsgRef.current = next;
     return next;
   };
 
-  const pickRandomCaption = () => {
-    setCaption(getRandomCaption());
+  const pickRandomCard = () => {
+    setCardText(getRandomCard());
   };
 
-  // 😂 Another Meme loot box reward handler
+  // 😂 Another Meme playful transition handler (No spinners)
   const handleAnotherMeme = () => {
-    if (isSwapping) return;
+    if (isTransitioning) return;
 
-    setIsSwapping(true);
-    setSwapMessage(getRandomSwapMessage());
+    setIsTransitioning(true);
+    setTransitionMsg(getRandomTransitionMessage());
 
-    // 600ms - 850ms randomized loot box reward delay
-    const delay = Math.floor(Math.random() * 250) + 600;
+    // 550ms - 700ms smooth playful delay
+    const delay = Math.floor(Math.random() * 150) + 550;
 
     setTimeout(() => {
-      pickRandomCaption();
-      setIsSwapping(false);
+      pickRandomCard();
+      setIsTransitioning(false);
     }, delay);
   };
 
@@ -302,64 +166,66 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-        {/* Backdrop blur overlay */}
+        {/* Subtle Backdrop Blur & Dark Overlay */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
+          className="fixed inset-0 bg-slate-950/85 backdrop-blur-md transition-opacity"
         />
 
-        {/* Premium Centered Glassmorphism Modal (Exact Match to Design Screenshot) */}
+        {/* Premium Centered Glassmorphism Modal (Linear + Apple + Discord Easter Egg Aesthetic) */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          initial={{ opacity: 0, scale: 0.94, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          transition={{ type: "spring", stiffness: 320, damping: 26 }}
           className="relative z-10 w-full max-w-lg rounded-3xl border border-orange-500/30 bg-slate-900/90 backdrop-blur-2xl p-6 sm:p-8 shadow-2xl shadow-orange-500/10 overflow-hidden my-auto"
         >
-          {/* Ambient Glow background elements */}
-          <div className="absolute -top-20 -right-20 h-48 w-48 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+          {/* Soft ambient orange & amber background radial glow */}
+          <div className="absolute -top-24 -right-24 h-56 w-56 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
 
-          {/* Close Button */}
+          {/* Close Button with Subtle Border Glow */}
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all z-20"
+            className="absolute right-4 top-4 p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60 transition-all z-20"
             title="Close"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
 
-          {/* ── HEADER ── */}
+          {/* ── HEADER (Line-by-Line Satisfying Reveal) ── */}
           <div className="flex flex-col items-center text-center space-y-2 mb-5">
-            {/* Glowing Badge */}
+            {/* Glowing Badge with Sparkle Animation */}
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 text-[11px] font-extrabold tracking-wider text-orange-400 uppercase shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 text-[11px] font-extrabold tracking-wider text-orange-400 uppercase shadow-sm shadow-orange-500/10"
             >
               <Sparkles className="h-3.5 w-3.5 text-orange-400 animate-pulse" />
               <span>🎁 ONE LAST THING...</span>
             </motion.div>
 
-            {/* Headline 1 */}
+            {/* Line 1 Reveal */}
             {headerStep >= 1 && (
               <motion.h2
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
                 className="text-lg sm:text-xl font-extrabold text-white tracking-tight"
               >
                 Since you survived the workshop...
               </motion.h2>
             )}
 
-            {/* Headline 2 */}
+            {/* Line 2 Reveal */}
             {headerStep >= 2 && (
               <motion.p
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
                 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-orange-400"
               >
                 ...here&apos;s your reward ✊
@@ -367,123 +233,103 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
             )}
           </div>
 
-          {/* ── CONTENT AREA ── */}
-          <div className="relative min-h-[220px] flex flex-col items-center justify-center">
-            {/* 1. Initial Loading Sequence */}
-            {!isRevealed && (
-              <div className="flex flex-col items-center justify-center space-y-3 py-10 text-center">
-                <div className="h-10 w-10 rounded-full border-2 border-orange-500/20 border-t-orange-500 animate-spin" />
-                <motion.p
-                  key={loadingStep}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="text-xs font-semibold text-slate-300"
-                >
-                  {INITIAL_LOADING_MESSAGES[loadingStep]}
-                </motion.p>
-              </div>
-            )}
+          {/* ── SUCCESS INDICATOR ROW ── */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center justify-center gap-1.5 mb-4 text-[11px] font-semibold text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 py-1.5 px-3 rounded-full w-max mx-auto"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Certificate Downloaded Successfully</span>
+          </motion.div>
 
-            {/* 2. Revealed Humorous Box + Caption */}
+          {/* ── CONTENT MEME CARD AREA (Breathing Room + Glass Effect) ── */}
+          <div className="relative min-h-[220px] flex flex-col items-center justify-center">
             {isRevealed && (
               <div className="w-full flex flex-col items-center space-y-4">
                 <AnimatePresence mode="wait">
-                  {isSwapping ? (
-                    /* Loot Box Reward Animation State */
-                    <motion.div
-                      key="swapping"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="w-full min-h-[140px] rounded-2xl border border-dashed border-orange-500/30 bg-slate-950/60 p-6 flex flex-col items-center justify-center text-center space-y-3 shadow-xl"
-                    >
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                        className="h-8 w-8 rounded-full border-2 border-orange-500/20 border-t-orange-500 flex items-center justify-center"
-                      >
-                        <Loader className="h-4 w-4 text-orange-400" />
-                      </motion.div>
-                      <motion.p
-                        key={swapMessage}
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-xs sm:text-sm font-bold text-orange-300 tracking-wide"
-                      >
-                        {swapMessage}
-                      </motion.p>
-                    </motion.div>
-                  ) : (
-                    /* Humorous Dashed Box + Randomized Caption Pill */
-                    <motion.div
-                      key={caption}
-                      initial={{ opacity: 0, scale: 0.96 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.96 }}
-                      transition={{ duration: 0.3 }}
-                      className="w-full flex flex-col items-center space-y-4"
-                    >
-                      {/* Humorous Text Box */}
-                      <div className="w-full rounded-2xl border border-dashed border-orange-500/30 bg-slate-950/60 p-6 text-center space-y-2 shadow-inner">
-                        <span className="text-4xl block leading-none">😂</span>
-                        <p className="text-sm font-bold text-white">
-                          Looks like someone forgot to upload the memes.
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          (Probably the Technical Head.)
-                        </p>
-                      </div>
+                  {/* Humorous Dashed Box + Randomized Card Pill */}
+                  <motion.div
+                    key={cardText}
+                    initial={{ opacity: isTransitioning ? 0.4 : 0, scale: 0.97 }}
+                    animate={{ opacity: isTransitioning ? 0.4 : 1, scale: 1 }}
+                    exit={{ opacity: 0.4, scale: 0.97 }}
+                    transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                    className="w-full flex flex-col items-center space-y-4"
+                  >
+                    {/* Humorous Glass Box */}
+                    <div className="w-full rounded-2xl border border-dashed border-orange-500/30 bg-slate-950/70 backdrop-blur-xl p-6 text-center space-y-2 shadow-inner shadow-orange-500/5 relative overflow-hidden">
+                      <span className="text-4xl block leading-none">😂</span>
+                      <p className="text-sm font-bold text-white tracking-tight">
+                        Looks like someone forgot to upload the memes.
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        (Probably the Technical Head.)
+                      </p>
 
-                      {/* Randomized Wholesome Caption Pill */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="w-full px-5 py-3 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-center shadow-lg shadow-orange-500/5"
-                      >
-                        <p className="text-xs sm:text-sm font-bold text-orange-300">
-                          &ldquo;{caption}&rdquo;
-                        </p>
-                      </motion.div>
+                      {/* Playful text loading overlay when swapping (No spinner) */}
+                      {isTransitioning && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4"
+                        >
+                          <span className="text-xs sm:text-sm font-extrabold text-orange-400 tracking-wide animate-pulse">
+                            {transitionMsg}
+                          </span>
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Randomized Fun Fact / Quote / Motivation Card Pill */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="w-full px-5 py-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/25 text-center shadow-lg shadow-orange-500/5 backdrop-blur-sm"
+                    >
+                      <p className="text-xs sm:text-sm font-bold text-orange-300">
+                        &ldquo;{cardText}&rdquo;
+                      </p>
                     </motion.div>
-                  )}
+                  </motion.div>
                 </AnimatePresence>
               </div>
             )}
           </div>
 
-          {/* ── FOOTER BUTTONS ── */}
+          {/* ── FOOTER BUTTONS WITH MICRO-INTERACTIONS ── */}
           {isRevealed && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
               className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-6 pt-4 border-t border-slate-800/80"
             >
-              {/* Another Meme Button with Loot Box reward animation */}
+              {/* Another Meme Button with Lift + Glow + Icon Rotation */}
               <button
                 onClick={handleAnotherMeme}
-                disabled={isSwapping}
-                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-800 text-xs font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={isTransitioning}
+                className="group flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-slate-800 text-xs font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-orange-500/10 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <RefreshCw className={`h-3.5 w-3.5 text-orange-400 ${isSwapping ? 'animate-spin' : ''}`} />
-                <span>{isSwapping ? "Unlocking..." : "😂 Another Meme"}</span>
+                <RefreshCw className={`h-3.5 w-3.5 text-orange-400 transition-transform duration-300 group-hover:rotate-45 ${isTransitioning ? 'animate-spin' : ''}`} />
+                <span>{isTransitioning ? "Unlocking..." : "😂 Another Meme"}</span>
               </button>
 
-              {/* Share on LinkedIn Button */}
+              {/* Share on LinkedIn Button with Blue Glow + Lift */}
               <button
                 onClick={handleShareLinkedIn}
-                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="group flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-500 hover:to-sky-500 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/30"
               >
-                <Share2 className="h-3.5 w-3.5 text-white" />
+                <Share2 className="h-3.5 w-3.5 text-white transition-transform duration-200 group-hover:scale-110" />
                 <span>💼 Share</span>
               </button>
 
-              {/* Close Button */}
+              {/* Close Button with Subtle Border Glow */}
               <button
                 onClick={onClose}
-                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-slate-700 hover:border-slate-600 text-xs font-bold text-slate-300 hover:text-white transition-all"
+                className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-slate-700 hover:border-slate-500 text-xs font-bold text-slate-300 hover:text-white transition-all duration-200 hover:shadow-sm"
               >
                 <span>✕ Close</span>
               </button>

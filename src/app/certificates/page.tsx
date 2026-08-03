@@ -471,7 +471,7 @@ export default function CertificatesPage() {
           className="mt-6 flex flex-col items-center gap-2 text-center"
         >
           <a
-            href={`https://wa.me/919517960225?text=${encodeURIComponent("Hi, I don't need help finding my AWS certificate.")}`}
+            href={`https://wa.me/919517960225?text=${encodeURIComponent("Hi, I don’t need help finding my AWS certificate.")}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-emerald-500/5 group"
