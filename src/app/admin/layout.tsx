@@ -27,6 +27,7 @@ import {
   Sun,
   Moon,
   Mic,
+  Award,
 } from "lucide-react";
 
 interface NavItem {
@@ -55,6 +56,7 @@ const navSections: NavSection[] = [
       { name: "Speakers", href: "/admin/speakers", icon: Mic },
       { name: "Gallery Images", href: "/admin/gallery", icon: ImageIcon },
       { name: "Achievements", href: "/admin/achievements", icon: Trophy },
+      { name: "Certificates", href: "/admin/certificates", icon: Award },
     ]
   },
   {

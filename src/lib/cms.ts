@@ -46,6 +46,30 @@ export interface CMSGalleryItem extends GalleryItem {
   placeholderColor?: "orange" | "blue" | "purple" | "mint";
 }
 
+export interface CMSCertificateEvent {
+  id: string;
+  title: string;
+  slug: string;
+  templateUrl?: string | null;
+  nameX: number;
+  nameY: number;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  textColor: string;
+  textAlign: "left" | "center" | "right";
+  isPublished: boolean;
+  createdAt?: string;
+}
+
+export interface CMSCertificateParticipant {
+  id: string;
+  eventId: string;
+  rollNumber: string;
+  participantName: string;
+  createdAt?: string;
+}
+
 // LocalStorage key constants
 const STORAGE_KEYS = {
   TEAM: "aws_sbg_team",
