@@ -122,16 +122,18 @@ export default function Header() {
           </div>
 
           {/* Desktop Nav centered horizontally */}
-          <nav className="hidden lg:flex items-center justify-center gap-3 xl:gap-4 2xl:gap-6 flex-shrink-0 lg:ml-12">
+          <nav className="hidden lg:flex items-center justify-center gap-1.5 xl:gap-2.5 2xl:gap-4 flex-shrink-0 lg:ml-4 xl:ml-6">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`px-2 py-1.5 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                  className={`px-2 py-1.5 rounded-md text-xs xl:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                     isActive
                       ? "text-orange-500 bg-slate-900/60 font-semibold"
+                      : item.name === "Certificates"
+                      ? "text-amber-400 hover:text-orange-400 hover:bg-orange-500/10 font-semibold border border-orange-500/20"
                       : "text-slate-300 hover:text-orange-400 hover:bg-slate-900/40"
                   }`}
                 >
