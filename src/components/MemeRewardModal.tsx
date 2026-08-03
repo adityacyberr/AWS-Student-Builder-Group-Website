@@ -12,6 +12,7 @@ interface MemeRewardModalProps {
 
 // 150+ Simple, Relatable, Wholesome College Captions
 const CAPTIONS = [
+  "Time to update LinkedIn before anyone else.",
   "Certificate downloaded. Now go show your parents 😂",
   "One more PDF. Infinite happiness.",
   "This certificate deserves a LinkedIn post.",
@@ -198,8 +199,6 @@ const INITIAL_LOADING_MESSAGES = [
 ];
 
 export function MemeRewardModal({ isOpen, onClose, participantName }: MemeRewardModalProps) {
-  const [memes, setMemes] = useState<string[]>([]);
-  const [currentMemeIndex, setCurrentMemeIndex] = useState<number>(-1);
   const [caption, setCaption] = useState<string>("");
   const [loadingStep, setLoadingStep] = useState<number>(0);
   const [isRevealed, setIsRevealed] = useState<boolean>(false);
@@ -209,25 +208,8 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
   const [swapMessage, setSwapMessage] = useState<string>("");
 
-  const previousMemeIndexRef = useRef<number>(-1);
   const previousCaptionRef = useRef<string>("");
   const previousLoadingMsgRef = useRef<string>("");
-
-  // Fetch memes list from /api/memes
-  useEffect(() => {
-    async function fetchMemes() {
-      try {
-        const res = await fetch("/api/memes");
-        const data = await res.json();
-        if (data.memes && Array.isArray(data.memes) && data.memes.length > 0) {
-          setMemes(data.memes);
-        }
-      } catch (err) {
-        console.error("Failed to load memes:", err);
-      }
-    }
-    fetchMemes();
-  }, []);
 
   // Handle sequence animation on modal initial open
   useEffect(() => {
@@ -255,8 +237,8 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
       }
     }, 450);
 
-    // Select initial meme and caption
-    pickRandomMemeAndCaption();
+    // Select initial caption
+    pickRandomCaption();
 
     return () => {
       clearTimeout(h1Timer);
@@ -287,17 +269,8 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
     return next;
   };
 
-  const pickRandomMemeAndCaption = () => {
+  const pickRandomCaption = () => {
     setCaption(getRandomCaption());
-
-    if (memes.length === 0) return;
-
-    let nextIndex = Math.floor(Math.random() * memes.length);
-    if (memes.length > 1 && nextIndex === previousMemeIndexRef.current) {
-      nextIndex = (nextIndex + 1) % memes.length;
-    }
-    previousMemeIndexRef.current = nextIndex;
-    setCurrentMemeIndex(nextIndex);
   };
 
   // 😂 Another Meme loot box reward handler
@@ -311,7 +284,7 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
     const delay = Math.floor(Math.random() * 250) + 600;
 
     setTimeout(() => {
-      pickRandomMemeAndCaption();
+      pickRandomCaption();
       setIsSwapping(false);
     }, delay);
   };
@@ -326,8 +299,6 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
 
   if (!isOpen) return null;
 
-  const currentMemeSrc = currentMemeIndex >= 0 && memes[currentMemeIndex] ? memes[currentMemeIndex] : null;
-
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -340,7 +311,7 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
           className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
         />
 
-        {/* Premium Centered Glassmorphism Modal (Design & Spacing Untouched) */}
+        {/* Premium Centered Glassmorphism Modal (Exact Match to Design Screenshot) */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -391,13 +362,13 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-orange-400"
               >
-                ...here&apos;s your reward 😂
+                ...here&apos;s your reward ✊
               </motion.p>
             )}
           </div>
 
           {/* ── CONTENT AREA ── */}
-          <div className="relative min-h-[240px] flex flex-col items-center justify-center">
+          <div className="relative min-h-[220px] flex flex-col items-center justify-center">
             {/* 1. Initial Loading Sequence */}
             {!isRevealed && (
               <div className="flex flex-col items-center justify-center space-y-3 py-10 text-center">
@@ -414,7 +385,7 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
               </div>
             )}
 
-            {/* 2. Revealed Meme / Swap Loading State */}
+            {/* 2. Revealed Humorous Box + Caption */}
             {isRevealed && (
               <div className="w-full flex flex-col items-center space-y-4">
                 <AnimatePresence mode="wait">
@@ -425,14 +396,14 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="w-full min-h-[220px] rounded-2xl border border-orange-500/20 bg-slate-950/80 p-8 flex flex-col items-center justify-center text-center space-y-3 shadow-xl"
+                      className="w-full min-h-[140px] rounded-2xl border border-dashed border-orange-500/30 bg-slate-950/60 p-6 flex flex-col items-center justify-center text-center space-y-3 shadow-xl"
                     >
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                        className="h-10 w-10 rounded-full border-2 border-orange-500/20 border-t-orange-500 flex items-center justify-center"
+                        className="h-8 w-8 rounded-full border-2 border-orange-500/20 border-t-orange-500 flex items-center justify-center"
                       >
-                        <Loader className="h-5 w-5 text-orange-400" />
+                        <Loader className="h-4 w-4 text-orange-400" />
                       </motion.div>
                       <motion.p
                         key={swapMessage}
@@ -444,44 +415,32 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
                       </motion.p>
                     </motion.div>
                   ) : (
-                    /* Revealed Meme Image + Caption */
+                    /* Humorous Dashed Box + Randomized Caption Pill */
                     <motion.div
-                      key={currentMemeIndex}
-                      initial={{ opacity: 0, scale: 0.94 }}
+                      key={caption}
+                      initial={{ opacity: 0, scale: 0.96 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.94 }}
-                      transition={{ duration: 0.35, ease: "easeOut" }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.3 }}
                       className="w-full flex flex-col items-center space-y-4"
                     >
-                      {memes.length > 0 && currentMemeSrc ? (
-                        <div className="relative w-full rounded-2xl overflow-hidden border border-orange-500/20 bg-slate-950 shadow-xl shadow-orange-500/5 group">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={currentMemeSrc}
-                            alt="Secret Reward Meme"
-                            className="w-full h-auto max-h-[300px] object-contain mx-auto transition-all duration-300"
-                          />
-                        </div>
-                      ) : (
-                        /* Humorous Empty State */
-                        <div className="w-full rounded-2xl border border-dashed border-orange-500/30 bg-slate-950/60 p-6 text-center space-y-2">
-                          <span className="text-4xl">😂</span>
-                          <p className="text-sm font-bold text-white">
-                            Looks like someone forgot to upload the memes.
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            (Probably the Technical Head.)
-                          </p>
-                        </div>
-                      )}
+                      {/* Humorous Text Box */}
+                      <div className="w-full rounded-2xl border border-dashed border-orange-500/30 bg-slate-950/60 p-6 text-center space-y-2 shadow-inner">
+                        <span className="text-4xl block leading-none">😂</span>
+                        <p className="text-sm font-bold text-white">
+                          Looks like someone forgot to upload the memes.
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          (Probably the Technical Head.)
+                        </p>
+                      </div>
 
-                      {/* Randomized 150+ Wholesome College Caption */}
+                      {/* Randomized Wholesome Caption Pill */}
                       <motion.div
-                        key={caption}
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="px-4 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-center"
+                        className="w-full px-5 py-3 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-center shadow-lg shadow-orange-500/5"
                       >
                         <p className="text-xs sm:text-sm font-bold text-orange-300">
                           &ldquo;{caption}&rdquo;
@@ -494,7 +453,7 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
             )}
           </div>
 
-          {/* ── FOOTER BUTTONS (EXACT DESIGN UNTOUCHED) ── */}
+          {/* ── FOOTER BUTTONS ── */}
           {isRevealed && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
