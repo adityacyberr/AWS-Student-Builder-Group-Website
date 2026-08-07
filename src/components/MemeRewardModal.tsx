@@ -43,8 +43,8 @@ export function MemeRewardModal({ isOpen, onClose, participantName }: MemeReward
   const previousStoryRef = useRef<string>("");
 
   const nameToDisplay = participantName && participantName.trim().length > 0
-    ? participantName.trim()
-    : "Participant";
+    ? participantName.trim().toUpperCase()
+    : "PARTICIPANT";
 
   // Handle sequence animation on modal initial open
   useEffect(() => {
