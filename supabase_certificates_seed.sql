@@ -138,6 +138,7 @@ from kiro_event, (values
   ('25BCE002', 'RITIKA'),
   ('24BCSEAIML055', 'SHIVANI YADAV'),
   ('25BCSEAIML098', 'ROHIT'),
-  ('25BCSEAIML123', 'TARANPREET SINGH')
+  ('25BCSEAIML123', 'TARANPREET SINGH'),
+  ('24BCSEAIML056', 'SIMRANPREET KAUR')
 ) as p(roll_number, participant_name)
 on conflict (event_id, roll_number) do update set participant_name = excluded.participant_name;
