@@ -155,6 +155,7 @@ function formatRollNumberToName(roll: string): string | null {
     "25BCSEAIML098": "ROHIT",
     "25BCSEAIML123": "TARANPREET SINGH",
     "24BCSEAIML056": "SIMARPREET KAUR",
+    "RIMT261160": "SAGAR",
   };
   return knownMap[cleanKey] || null;
 }
