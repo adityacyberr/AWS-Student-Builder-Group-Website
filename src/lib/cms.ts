@@ -50,6 +50,10 @@ export interface CMSCertificateEvent {
   id: string;
   title: string;
   slug: string;
+  eventDate?: string;
+  eventType?: string;
+  description?: string;
+  location?: string;
   templateUrl?: string | null;
   nameX: number;
   nameY: number;
@@ -60,6 +64,8 @@ export interface CMSCertificateEvent {
   textAlign: "left" | "center" | "right";
   isPublished: boolean;
   createdAt?: string;
+  participantCount?: number;
+  downloadCount?: number;
 }
 
 export interface CMSCertificateParticipant {

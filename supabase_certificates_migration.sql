@@ -9,6 +9,10 @@ create table if not exists public.certificate_events (
   id uuid default gen_random_uuid() primary key,
   title text not null,
   slug text not null unique,
+  event_date text not null default '2026-10-02',
+  event_type text not null default 'Workshop',
+  description text not null default '',
+  location text not null default 'RIMT University',
   template_url text,
   name_x real not null default 50,
   name_y real not null default 55,
@@ -20,6 +24,12 @@ create table if not exists public.certificate_events (
   is_published boolean not null default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Ensure idempotent columns if table already existed
+alter table public.certificate_events add column if not exists event_date text not null default '2026-10-02';
+alter table public.certificate_events add column if not exists event_type text not null default 'Workshop';
+alter table public.certificate_events add column if not exists description text not null default '';
+alter table public.certificate_events add column if not exists location text not null default 'RIMT University';
 
 -- 2. Certificate Participants Table
 create table if not exists public.certificate_participants (

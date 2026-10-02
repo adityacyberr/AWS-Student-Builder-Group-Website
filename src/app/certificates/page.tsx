@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -9,14 +9,19 @@ import {
   CheckCircle,
   AlertCircle,
   Loader,
-  ChevronDown,
   ShieldCheck,
-  HelpCircle,
   ArrowLeft,
-  Eye,
+  Calendar,
+  MapPin,
+  Tag,
+  Sparkles,
+  X,
+  Award,
+  ChevronRight,
+  HelpCircle,
   Lock,
+  FileCheck,
 } from "lucide-react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import {
   generateCertificatePDF,
   generateWatermarkedPreviewDataUrl,
@@ -25,17 +30,33 @@ import {
 } from "@/lib/certificateGenerator";
 import { MemeRewardModal } from "@/components/MemeRewardModal";
 
-interface CertEvent {
+export interface EventItemPublic {
   id: string;
   title: string;
+  slug: string;
+  event_date: string;
+  event_type: string;
+  description: string;
+  location: string;
+  template_url: string | null;
+  name_x: number;
+  name_y: number;
+  font_family: string;
+  font_size: number;
+  font_weight: string;
+  text_color: string;
+  text_align: "left" | "center" | "right";
+  is_published: boolean;
+  created_at: string;
+  participant_count: number;
 }
 
-type Step = "idle" | "loading" | "preview" | "downloading" | "success" | "error";
+type VerificationStep = "input" | "loading" | "preview" | "downloading" | "success" | "error";
 
 /* Custom AWS Orange Gradient Certificate SVG Glyph */
 function CertificateGlyph() {
   return (
-    <svg className="h-10 w-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg className="h-8 w-8" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="awsOrangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#ff9900" />
@@ -46,89 +67,116 @@ function CertificateGlyph() {
           <stop offset="100%" stopColor="#ff9900" />
         </linearGradient>
       </defs>
-      {/* Certificate Frame */}
       <rect x="6" y="8" width="36" height="28" rx="4" fill="url(#awsOrangeGrad)" fillOpacity="0.15" stroke="url(#awsOrangeGrad)" strokeWidth="2.5" />
-      {/* Internal Ribbon lines */}
       <path d="M12 16H36M12 22H26" stroke="#ff9900" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.6" />
-      {/* Verified Checkmark Ribbon Badge */}
       <circle cx="33" cy="28" r="9" fill="url(#awsOrangeGrad)" />
       <path d="M29 28L32 31L37 25" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      {/* AWS Smile Curve at bottom */}
       <path d="M14 39C20 42.5 28 42.5 34 39" stroke="url(#badgeGlow)" strokeWidth="2.5" strokeLinecap="round" />
       <path d="M32.5 38L35 39.5L34 37" stroke="url(#badgeGlow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-export default function CertificatesPage() {
-  const [events, setEvents] = useState<CertEvent[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<string>("");
+export default function CertificatesArchivePage() {
+  // Events state
+  const [events, setEvents] = useState<EventItemPublic[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedYear, setSelectedYear] = useState<string>("All");
+
+  // Selected Event & Verification Modal state
+  const [activeModalEvent, setActiveModalEvent] = useState<EventItemPublic | null>(null);
   const [rollNumber, setRollNumber] = useState("");
-  const [honeypot, setHoneypot] = useState(""); // Bot check honeypot
-  const [step, setStep] = useState<Step>("idle");
+  const [honeypot, setHoneypot] = useState("");
+  const [step, setStep] = useState<VerificationStep>("input");
   const [participantName, setParticipantName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const [issuedCount, setIssuedCount] = useState<string>("50+");
-  const [isMemeModalOpen, setIsMemeModalOpen] = useState(false);
-  
-  // Preview Data
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [certConfig, setCertConfig] = useState<CertificateConfig | null>(null);
   const [templateUrl, setTemplateUrl] = useState<string>("");
+  const [isMemeModalOpen, setIsMemeModalOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load live stat counter + events on mount
+  // Load published events on mount
   useEffect(() => {
-    async function loadData() {
-      // 1. Fetch credibility stat
+    async function loadEvents() {
       try {
-        const res = await fetch("/api/certificates/stats");
+        const res = await fetch("/api/certificates/events");
         const data = await res.json();
-        if (data.displayStat) {
-          setIssuedCount(data.displayStat);
+        if (data.events && Array.isArray(data.events)) {
+          setEvents(data.events);
         }
       } catch (err) {
-        console.warn("Failed to load cert stats:", err);
+        console.error("Failed to load certificate archive events:", err);
+      } finally {
+        setLoadingEvents(false);
       }
-
-      // 2. Fetch published events
-      const defaultEventList: CertEvent[] = [
-        { id: "default-kiroverse", title: "KIROverse — AWS Student Builder Group" }
-      ];
-
-      if (isSupabaseConfigured && supabase) {
-        try {
-          const { data, error } = await supabase
-            .from("certificate_events")
-            .select("id, title")
-            .eq("is_published", true)
-            .order("created_at", { ascending: false });
-
-          if (!error && data && data.length > 0) {
-            setEvents(data);
-            setSelectedEvent(data[0].id);
-            setEventsLoading(false);
-            return;
-          }
-        } catch (err) {
-          console.error("Failed to load certificate events:", err);
-        }
-      }
-
-      setEvents(defaultEventList);
-      setSelectedEvent(defaultEventList[0].id);
-      setEventsLoading(false);
     }
-    loadData();
+    loadEvents();
   }, []);
 
-  // Step 1: Submit Roll Number -> Lookup Certificate
+  // Compute available years from events
+  const availableYears = useMemo(() => {
+    const yearsSet = new Set<string>();
+    events.forEach((ev) => {
+      const match = ev.event_date.match(/\b(20\d\d)\b/);
+      if (match) {
+        yearsSet.add(match[1]);
+      }
+    });
+    const sortedYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+    return ["All", ...sortedYears];
+  }, [events]);
+
+  // Filter & sort events (newest first)
+  const filteredEvents = useMemo(() => {
+    return events.filter((ev) => {
+      // 1. Search Query filter
+      const matchesSearch =
+        searchQuery.trim() === "" ||
+        ev.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ev.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ev.event_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ev.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // 2. Year filter
+      let matchesYear = true;
+      if (selectedYear !== "All") {
+        matchesYear = ev.event_date.includes(selectedYear);
+      }
+
+      return matchesSearch && matchesYear;
+    });
+  }, [events, searchQuery, selectedYear]);
+
+  // Open verification modal for a specific event
+  const openVerificationModal = (ev: EventItemPublic) => {
+    setActiveModalEvent(ev);
+    setRollNumber("");
+    setHoneypot("");
+    setStep("input");
+    setParticipantName("");
+    setErrorMessage("");
+    setPreviewUrl(null);
+    setCertConfig(null);
+    setTimeout(() => inputRef.current?.focus(), 150);
+  };
+
+  // Close verification modal
+  const closeVerificationModal = () => {
+    setActiveModalEvent(null);
+    setStep("input");
+    setErrorMessage("");
+  };
+
+  // Submit Roll Number Lookup (Scoped strictly to activeModalEvent)
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = rollNumber.trim();
-    if (!clean || !selectedEvent) return;
+    if (!clean || !activeModalEvent) return;
 
     setStep("loading");
     setErrorMessage("");
@@ -140,9 +188,9 @@ export default function CertificatesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          eventId: selectedEvent,
+          eventId: activeModalEvent.id,
           rollNumber: clean,
-          hp: honeypot, // Honeypot field
+          hp: honeypot,
         }),
       });
 
@@ -169,31 +217,32 @@ export default function CertificatesPage() {
         setPreviewUrl(previewData);
         setStep("preview");
       } else {
-        // Generic non-technical error under input
-        setErrorMessage("No certificate found for this Roll Number. Please verify and try again.");
+        // Specific error message required by prompt
+        setErrorMessage("No eligible certificate found for this event and roll number.");
         setStep("error");
       }
     } catch (err: any) {
       console.error("Lookup error:", err);
-      setErrorMessage("No certificate found for this Roll Number. Please verify and try again.");
+      setErrorMessage("No eligible certificate found for this event and roll number.");
       setStep("error");
     }
   };
 
-  // Step 2: Confirm Download PDF
+  // Confirm PDF Download
   const handleDownloadPDF = async () => {
     if (!participantName || !certConfig || !templateUrl) return;
     setStep("downloading");
 
     try {
       const blob = await generateCertificatePDF(templateUrl, participantName, certConfig);
-      const fileName = `${participantName.replace(/\s+/g, "_")}_AWS_Certificate.pdf`;
-      
-      // 1. Download PDF immediately without any delay
+      const eventSlug = activeModalEvent ? activeModalEvent.slug : "AWS";
+      const fileName = `${participantName.replace(/\s+/g, "_")}_${eventSlug.toUpperCase()}_Certificate.pdf`;
+
+      // 1. Download PDF immediately
       downloadBlob(blob, fileName);
       setStep("success");
 
-      // 2. Wait 600ms, then trigger Secret Meme Reward Modal
+      // 2. Wait 600ms, then trigger Meme Reward Modal
       setTimeout(() => {
         setIsMemeModalOpen(true);
       }, 600);
@@ -204,290 +253,390 @@ export default function CertificatesPage() {
     }
   };
 
-  const handleReset = () => {
-    setStep("idle");
-    setRollNumber("");
-    setParticipantName("");
-    setErrorMessage("");
-    setPreviewUrl(null);
-    setTimeout(() => inputRef.current?.focus(), 100);
-  };
-
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-12 sm:py-16 overflow-hidden">
-      {/* Background dot-grid & ambient glows */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 h-[28rem] w-[28rem] rounded-full bg-orange-500/[0.04] blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/3 right-1/4 h-[24rem] w-[24rem] rounded-full bg-amber-500/[0.03] blur-[100px] pointer-events-none" />
+    <div className="relative min-h-screen bg-[#0B0F19] text-white overflow-hidden pb-24">
+      {/* Dynamic Background Elements */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[32rem] w-[40rem] rounded-full bg-gradient-to-b from-orange-500/10 via-amber-500/5 to-transparent blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-10 h-[24rem] w-[24rem] rounded-full bg-amber-500/5 blur-[100px] pointer-events-none" />
 
-      <div className="relative z-10 w-full max-w-lg mx-auto flex flex-col items-center">
-        {/* Credibility Stat Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/25 mb-6 text-xs font-semibold text-orange-400 shadow-sm"
-        >
-          <ShieldCheck className="h-4 w-4 text-orange-400" />
-          <span>{issuedCount} Official Certificates Issued</span>
-        </motion.div>
+      <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16">
+        
+        {/* Navigation Breadcrumb */}
+        <div className="mb-8">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-orange-400 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
 
-        {/* Heading & SVG Glyph */}
-        <motion.div
-          initial={{ opacity: 0, y: -15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="flex flex-col items-center mb-6 text-center"
-        >
-          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-500/20 via-amber-500/10 to-transparent border border-orange-500/30 flex items-center justify-center mb-3 shadow-lg shadow-orange-500/5">
-            <CertificateGlyph />
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-8 border-b border-slate-800/80">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/25 mb-4 text-xs font-semibold text-orange-400">
+              <CertificateGlyph />
+              <span>Official Event Certificate Archive</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
+              Certificates
+            </h1>
+            <p className="text-slate-400 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
+              Find and download your certificates from AWS Student Builder Group events.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Download Your{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500">
-              Certificate
-            </span>
-          </h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1.5 max-w-sm leading-relaxed">
-            Enter your official Roll Number to preview and download your verified AWS certificate.
-          </p>
-        </motion.div>
 
-        {/* Main Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="w-full rounded-2xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-2xl shadow-2xl shadow-black/30 overflow-hidden"
-        >
-          <AnimatePresence mode="wait">
-            {/* ── STEP 1: IDLE / LOADING / ERROR FORM ── */}
-            {(step === "idle" || step === "loading" || step === "error") && (
-              <motion.div
-                key="form"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="p-6 sm:p-7"
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 shadow-sm">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <span>Tamper-proof & Verified Credentials</span>
+          </div>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8">
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search events..."
+              className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-white transition-colors"
               >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Year Filter Buttons */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
+            {availableYears.map((year) => {
+              const isActive = selectedYear === year;
+              return (
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                    isActive
+                      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20"
+                      : "bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
+                  }`}
+                >
+                  {year === "All" ? "All Events" : year}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Events Cards Grid */}
+        {loadingEvents ? (
+          /* Loading Skeletons */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-64 rounded-2xl bg-slate-900/50 border border-slate-800/80 animate-pulse p-6 flex flex-col justify-between"
+              />
+            ))}
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          /* Empty State */
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-20 px-4 rounded-3xl bg-slate-900/40 border border-slate-800/80 my-8"
+          >
+            <div className="h-16 w-16 rounded-2xl bg-slate-800/60 flex items-center justify-center mx-auto mb-4 border border-slate-700/50 text-slate-400">
+              <Search className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-1">No Events Found</h3>
+            <p className="text-slate-400 text-xs sm:text-sm max-w-sm mx-auto mb-6">
+              We couldn&apos;t find any published certificate events matching your current search or year filter.
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedYear("All");
+              }}
+              className="px-5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-semibold hover:bg-slate-700 transition-colors"
+            >
+              Reset Filters
+            </button>
+          </motion.div>
+        ) : (
+          /* Event Cards Grid (Chronological order, newest first) */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredEvents.map((ev, index) => (
+              <motion.div
+                key={ev.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.08 }}
+                className="group relative rounded-3xl bg-slate-900/80 border border-slate-800 hover:border-orange-500/40 transition-all duration-300 p-6 sm:p-7 flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-orange-500/5"
+              >
+                {/* Subtle Card Glow */}
+                <div className="absolute top-0 right-0 h-32 w-32 bg-orange-500/5 rounded-full blur-2xl group-hover:bg-orange-500/10 transition-all pointer-events-none" />
+
+                <div>
+                  {/* Category & Location Badges */}
+                  <div className="flex flex-wrap items-center gap-2 mb-3.5">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                      <Tag className="h-3 w-3" />
+                      {ev.event_type}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold bg-slate-800/80 border border-slate-700/60 text-slate-300">
+                      <MapPin className="h-3 w-3 text-amber-400" />
+                      {ev.location}
+                    </span>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-xl font-bold text-white group-hover:text-orange-300 transition-colors leading-snug">
+                    {ev.title}
+                  </h3>
+
+                  {/* Date */}
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-amber-400 mt-2">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>{ev.event_date}</span>
+                  </div>
+
+                  {/* Description */}
+                  {ev.description && (
+                    <p className="text-slate-400 text-xs sm:text-sm mt-3 line-clamp-2 leading-relaxed">
+                      {ev.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Footer Section */}
+                <div className="mt-6 pt-5 border-t border-slate-800/80 flex items-center justify-between gap-4">
+                  <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
+                    <FileCheck className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>
+                      <strong className="text-slate-200">{ev.participant_count}</strong> Certificates Issued
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => openVerificationModal(ev)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold transition-all shadow-md shadow-orange-500/20 group-hover:scale-[1.02]"
+                  >
+                    <span>Get Certificate</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        {/* Support Callout */}
+        <div className="mt-16 text-center border-t border-slate-800/60 pt-10">
+          <p className="text-slate-400 text-xs sm:text-sm">
+            Trouble finding your event certificate?{" "}
+            <a
+              href={`https://wa.me/919517960225?text=${encodeURIComponent("Hi, I don’t need help finding my AWS certificate.")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-orange-400 font-semibold hover:underline inline-flex items-center gap-1"
+            >
+              Contact Support <HelpCircle className="h-3.5 w-3.5 inline" />
+            </a>
+          </p>
+        </div>
+      </main>
+
+      {/* ── EVENT-SCOPED CERTIFICATE VERIFICATION MODAL ── */}
+      <AnimatePresence>
+        {activeModalEvent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 overflow-y-auto">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeVerificationModal}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+
+            {/* Modal Dialog */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative z-10 w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 sm:p-8 overflow-hidden"
+            >
+              {/* Close Button */}
+              <button
+                onClick={closeVerificationModal}
+                className="absolute top-5 right-5 p-2 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              {/* Event Context Header */}
+              <div className="mb-6">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/20 mb-2">
+                  <Award className="h-3 w-3" />
+                  {activeModalEvent.event_type}
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+                  {activeModalEvent.title}
+                </h2>
+                <div className="flex items-center gap-3 text-xs text-slate-400 mt-1.5 font-medium">
+                  <span className="text-amber-400">{activeModalEvent.event_date}</span>
+                  <span>•</span>
+                  <span>{activeModalEvent.location}</span>
+                </div>
+              </div>
+
+              {/* Honeypot field (hidden from human users, catches bots) */}
+              <input
+                type="text"
+                name="hp_website_check"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                className="sr-only opacity-0 pointer-events-none absolute left-[-9999px]"
+              />
+
+              {/* ── STEP 1: Enter Roll Number ── */}
+              {(step === "input" || step === "loading" || step === "error") && (
                 <form onSubmit={handleLookup} className="space-y-4">
-                  {/* Honeypot hidden field for bot protection */}
-                  <input
-                    type="text"
-                    name="hp"
-                    value={honeypot}
-                    onChange={(e) => setHoneypot(e.target.value)}
-                    className="hidden"
-                    tabIndex={-1}
-                    autoComplete="off"
-                  />
-
-                  {/* Restyled Event Selector Dropdown */}
-                  {eventsLoading ? (
-                    <div className="h-11 rounded-xl bg-slate-800/50 animate-pulse" />
-                  ) : events.length > 1 ? (
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                        Select Event
-                      </label>
-                      <div className="relative">
-                        <select
-                          value={selectedEvent}
-                          onChange={(e) => setSelectedEvent(e.target.value)}
-                          className="w-full appearance-none rounded-xl border border-slate-800 bg-slate-950/70 px-3.5 py-2.5 pr-10 text-xs sm:text-sm text-white font-medium focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30 hover:border-slate-700 transition-all cursor-pointer"
-                        >
-                          {events.map((ev) => (
-                            <option key={ev.id} value={ev.id}>
-                              {ev.title}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                      </div>
-                    </div>
-                  ) : events.length === 1 ? (
-                    <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                      <ShieldCheck className="h-4 w-4 text-orange-400 flex-shrink-0" />
-                      <span className="text-xs text-orange-300 font-semibold truncate">
-                        {events[0].title}
-                      </span>
-                    </div>
-                  ) : null}
-
-                  {/* Roll Number Input */}
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Roll Number
+                    <label className="block text-xs font-semibold text-slate-300 mb-2">
+                      Enter University Roll Number
                     </label>
                     <div className="relative">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                       <input
                         ref={inputRef}
                         type="text"
                         value={rollNumber}
                         onChange={(e) => {
                           setRollNumber(e.target.value);
-                          if (errorMessage) setErrorMessage("");
+                          if (step === "error") setStep("input");
                         }}
-                        placeholder="e.g. 25BCSECBRS001"
-                        className={`w-full rounded-xl border bg-slate-950/80 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-600 font-mono tracking-wider focus:outline-none transition-all ${
-                          errorMessage
-                            ? "border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500/30"
-                            : "border-slate-800 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/30"
-                        }`}
+                        placeholder="e.g. 25BCSE014"
                         disabled={step === "loading"}
-                        autoComplete="off"
-                        spellCheck={false}
+                        className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border ${
+                          step === "error"
+                            ? "border-red-500/60 focus:ring-red-500/20"
+                            : "border-slate-800 focus:border-orange-500/60 focus:ring-orange-500/20"
+                        } text-sm font-mono tracking-wider text-white placeholder-slate-600 focus:outline-none focus:ring-2 transition-all uppercase`}
                       />
+                      <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                        <Lock className="h-4 w-4" />
+                      </div>
                     </div>
-
-                    {/* Generic Inline Error Message */}
-                    {errorMessage && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center gap-1.5 mt-2 text-xs text-red-400"
-                      >
-                        <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                        <span>{errorMessage}</span>
-                      </motion.div>
-                    )}
                   </div>
 
-                  {/* Search / Submit Button */}
+                  {/* Error Message */}
+                  {step === "error" && errorMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400"
+                    >
+                      <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <span className="leading-relaxed">{errorMessage}</span>
+                    </motion.div>
+                  )}
+
                   <button
                     type="submit"
-                    disabled={step === "loading" || !rollNumber.trim() || !selectedEvent}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-orange-500/15 hover:shadow-orange-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
+                    disabled={!rollNumber.trim() || step === "loading"}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-md shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                   >
                     {step === "loading" ? (
                       <>
-                        <Loader className="h-4 w-4 animate-spin" />
-                        Generating Preview...
+                        <Loader className="h-4 w-4 animate-spin text-white" />
+                        <span>Verifying Eligibility...</span>
                       </>
                     ) : (
                       <>
-                        <Search className="h-4 w-4" />
-                        Find My Certificate
+                        <span>Verify &amp; Generate Certificate</span>
+                        <ChevronRight className="h-4 w-4" />
                       </>
                     )}
                   </button>
                 </form>
-              </motion.div>
-            )}
+              )}
 
-            {/* ── STEP 2: WATERMARKED PREVIEW CARD & CONFIRM DOWNLOAD ── */}
-            {step === "preview" && (
-              <motion.div
-                key="preview"
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="p-6 sm:p-7 flex flex-col items-center space-y-4"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <button
-                    onClick={handleReset}
-                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" />
-                    Back to Search
-                  </button>
-                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20">
-                    <Eye className="h-3 w-3" /> Preview Ready
-                  </span>
-                </div>
-
-                {/* Watermarked Preview Canvas Box */}
-                {previewUrl && (
-                  <div className="relative w-full rounded-xl overflow-hidden border border-slate-800 shadow-xl bg-slate-950">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={previewUrl}
-                      alt="Certificate Preview"
-                      className="w-full h-auto object-contain"
-                    />
+              {/* ── STEP 2: Preview Certificate & Download ── */}
+              {(step === "preview" || step === "downloading" || step === "success") && (
+                <div className="space-y-5">
+                  <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        Eligible Participant Found
+                      </span>
+                      <h4 className="text-base font-black text-white">{participantName}</h4>
+                    </div>
+                    <CheckCircle className="h-6 w-6 text-emerald-400" />
                   </div>
-                )}
 
-                <div className="text-center">
-                  <h3 className="text-base font-bold text-white">
-                    Certificate for <span className="text-orange-400">{participantName}</span>
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Verified Roll Number: <span className="font-mono text-slate-300">{rollNumber.toUpperCase()}</span>
-                  </p>
+                  {/* Live Canvas Preview */}
+                  {previewUrl && (
+                    <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-inner">
+                      {/* Watermark badge overlay */}
+                      <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-700 text-[10px] font-bold text-amber-400 shadow">
+                        Preview Watermarked
+                      </div>
+                      {/* eslint-disable-next-html-next-image */}
+                      <img
+                        src={previewUrl}
+                        alt="Certificate Preview"
+                        className="w-full h-auto object-contain rounded-2xl"
+                      />
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2.5 pt-2">
+                    <button
+                      onClick={handleDownloadPDF}
+                      disabled={step === "downloading"}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
+                    >
+                      {step === "downloading" ? (
+                        <>
+                          <Loader className="h-4 w-4 animate-spin" />
+                          <span>Generating Official PDF...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4" />
+                          <span>Download High-Res PDF</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => setStep("input")}
+                      className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+                    >
+                      Search Another Roll Number
+                    </button>
+                  </div>
                 </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-                {/* Confirm Download Button */}
-                <button
-                  onClick={handleDownloadPDF}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-orange-500/20 hover:shadow-orange-500/35 hover:scale-[1.01] active:scale-[0.99] transition-all"
-                >
-                  <Download className="h-4 w-4" />
-                  Download PDF Certificate
-                </button>
-              </motion.div>
-            )}
-
-            {/* ── STEP 3: DOWNLOADING / SUCCESS STATE ── */}
-            {(step === "downloading" || step === "success") && (
-              <motion.div
-                key="success"
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="p-8 flex flex-col items-center text-center space-y-4"
-              >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 220, damping: 15 }}
-                  className="h-16 w-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center"
-                >
-                  <CheckCircle className="h-8 w-8 text-emerald-400" />
-                </motion.div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Download Complete!</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Certificate for <span className="text-orange-400 font-semibold">{participantName}</span> has been saved.
-                  </p>
-                </div>
-                <button
-                  onClick={handleReset}
-                  className="px-4 py-2 rounded-xl border border-slate-800 text-xs font-medium text-slate-300 hover:text-white hover:border-slate-700 transition-all"
-                >
-                  Download Another Certificate
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Trouble finding certificate support link */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="mt-6 flex flex-col items-center gap-2 text-center"
-        >
-          <a
-            href={`https://wa.me/919517960225?text=${encodeURIComponent("Hi, I don’t need help finding my AWS certificate.")}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md shadow-emerald-500/5 group"
-          >
-            <svg className="h-4 w-4 fill-emerald-400 group-hover:scale-110 transition-transform flex-shrink-0" viewBox="0 0 24 24">
-              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-            </svg>
-            <span>Trouble finding your certificate? Contact Support</span>
-          </a>
-          <span className="flex items-center gap-1 text-[10px] text-slate-600 uppercase tracking-widest font-semibold select-none">
-            <Lock className="h-3 w-3" /> Secure Verification &bull; AWS Student Builder Group
-          </span>
-        </motion.div>
-      </div>
-
-      {/* Secret Meme Reward Modal Surprise */}
+      {/* Secret Meme / Breaking News Reward Modal after download */}
       <MemeRewardModal
         isOpen={isMemeModalOpen}
         onClose={() => setIsMemeModalOpen(false)}

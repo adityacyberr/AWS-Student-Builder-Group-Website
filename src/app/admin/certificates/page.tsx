@@ -41,6 +41,10 @@ interface CertEvent {
   id: string;
   title: string;
   slug: string;
+  event_date?: string;
+  event_type?: string;
+  description?: string;
+  location?: string;
   template_url: string | null;
   name_x: number;
   name_y: number;
@@ -92,6 +96,10 @@ function AdminCertificates() {
   const [editingEvent, setEditingEvent] = useState<CertEvent | null>(null);
   const [formTitle, setFormTitle] = useState("");
   const [formSlug, setFormSlug] = useState("");
+  const [formDate, setFormDate] = useState("02 October 2026");
+  const [formType, setFormType] = useState("Workshop");
+  const [formDescription, setFormDescription] = useState("");
+  const [formLocation, setFormLocation] = useState("RIMT University");
   const [saving, setSaving] = useState(false);
 
   // Template & positioning
@@ -197,6 +205,10 @@ function AdminCertificates() {
       const payload = {
         title: formTitle.trim(),
         slug: formSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+        event_date: formDate.trim() || "02 October 2026",
+        event_type: formType.trim() || "Workshop",
+        description: formDescription.trim(),
+        location: formLocation.trim() || "RIMT University",
         template_url: templateUrl,
         name_x: nameX,
         name_y: nameY,
@@ -519,12 +531,16 @@ function AdminCertificates() {
     setEditingEvent(null);
     setFormTitle("");
     setFormSlug("");
+    setFormDate("02 October 2026");
+    setFormType("Workshop");
+    setFormDescription("");
+    setFormLocation("RIMT University");
     setTemplateFile(null);
-    setNameX(50);
-    setNameY(55);
-    setFontSize(48);
+    setNameX(73.8);
+    setNameY(61.5);
+    setFontSize(26);
     setFontWeight("bold");
-    setTextColor("#1a1a2e");
+    setTextColor("#111827");
     setTextAlign("center");
     setIsModalOpen(true);
   };
@@ -533,6 +549,10 @@ function AdminCertificates() {
     setEditingEvent(ev);
     setFormTitle(ev.title);
     setFormSlug(ev.slug);
+    setFormDate(ev.event_date || "02 October 2026");
+    setFormType(ev.event_type || "Workshop");
+    setFormDescription(ev.description || "");
+    setFormLocation(ev.location || "RIMT University");
     setTemplateFile(null);
     setNameX(ev.name_x);
     setNameY(ev.name_y);
@@ -1068,6 +1088,54 @@ function AdminCertificates() {
                     placeholder="genai-bootcamp"
                     required
                     className="w-full mt-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-orange-500/40"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Event Date</label>
+                    <input
+                      type="text"
+                      value={formDate}
+                      onChange={(e) => setFormDate(e.target.value)}
+                      placeholder="02 October 2026"
+                      required
+                      className="w-full mt-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-orange-500/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Event Type</label>
+                    <input
+                      type="text"
+                      value={formType}
+                      onChange={(e) => setFormType(e.target.value)}
+                      placeholder="Workshop / Online Session"
+                      required
+                      className="w-full mt-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-orange-500/40"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Location</label>
+                  <input
+                    type="text"
+                    value={formLocation}
+                    onChange={(e) => setFormLocation(e.target.value)}
+                    placeholder="Online • 1 Hour Session / RIMT University"
+                    required
+                    className="w-full mt-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-orange-500/40"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Short Description</label>
+                  <textarea
+                    rows={2}
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="Brief description of the event..."
+                    className="w-full mt-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-orange-500/40 resize-none"
                   />
                 </div>
 

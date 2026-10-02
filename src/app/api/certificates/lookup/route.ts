@@ -35,7 +35,7 @@ function createDownloadToken(rollNumber: string, eventId: string): string {
 }
 
 /**
- * PDF Student Roster Map (case-insensitive keys)
+ * Student Roster Map for Fallback / Local Lookup (case-insensitive keys)
  */
 function formatRollNumberToName(roll: string): string | null {
   const cleanKey = roll.trim().toUpperCase();
@@ -205,20 +205,19 @@ export async function POST(request: NextRequest) {
 
     // ── 2. BOT CHECK / HONEYPOT ──
     if (hp && typeof hp === "string" && hp.trim().length > 0) {
-      // Honeypot filled by bot -> return generic not found silently
       return NextResponse.json({ found: false }, { status: 200 });
     }
 
     // ── 3. STRICT INPUT VALIDATION ──
     if (!eventId || typeof eventId !== "string" || !rollNumber || typeof rollNumber !== "string") {
-      return NextResponse.json({ found: false }, { status: 200 }); // Anti-enumeration: identical response
+      return NextResponse.json({ found: false }, { status: 200 });
     }
 
     const cleanRoll = rollNumber.trim().toUpperCase();
 
     // Regex check: letters and numbers only, 3 to 25 chars
     if (!/^[A-Z0-9]{3,25}$/.test(cleanRoll)) {
-      return NextResponse.json({ found: false }, { status: 200 }); // Anti-enumeration
+      return NextResponse.json({ found: false }, { status: 200 });
     }
 
     rateEntry.distinctRolls.add(cleanRoll);
@@ -230,7 +229,7 @@ export async function POST(request: NextRequest) {
 
     // ── 5. DATABASE QUERY (SUPABASE) ──
     if (isSupabaseConfigured && supabase) {
-      if (eventId === "default-kiroverse") {
+      if (eventId === "default-kiroverse" || eventId === "default-aws-basics") {
         const mappedName = formatRollNumberToName(cleanRoll);
         if (!mappedName) {
           return NextResponse.json({ found: false }, { status: 200 });
@@ -255,7 +254,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Parameterized query using Supabase client
+      // Query database for published event matching eventId
       const { data: eventData, error: eventError } = await supabase
         .from("certificate_events")
         .select("id, title, template_url, name_x, name_y, font_family, font_size, font_weight, text_color, text_align, is_published")
@@ -264,6 +263,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!eventError && eventData) {
+        // Query participant for THIS specific event_id ONLY
         const { data: participant, error: participantError } = await supabase
           .from("certificate_participants")
           .select("id, participant_name, roll_number")
@@ -296,11 +296,15 @@ export async function POST(request: NextRequest) {
               textAlign: eventData.text_align,
             },
           });
+        } else {
+          // Return found: false if not registered for THIS event
+          return NextResponse.json({ found: false }, { status: 200 });
         }
       }
     }
 
     // ── 6. LOCAL DATASET FALLBACK ──
+    // Fallback mode for local development without database connection
     const fallbackName = formatRollNumberToName(cleanRoll);
     if (!fallbackName) {
       return NextResponse.json({ found: false }, { status: 200 });
@@ -325,7 +329,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     console.error("Certificate lookup error:", err);
-    // Anti-enumeration: return identical generic response on internal error
     return NextResponse.json({ found: false }, { status: 200 });
   }
 }
