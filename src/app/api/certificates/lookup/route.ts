@@ -27,137 +27,192 @@ const SECRET = process.env.SUPABASE_SERVICE_ROLE_KEY || "aws-sbg-cert-secret-tok
 /**
  * Generate a short-lived signed download token valid for 5 minutes.
  */
-function createDownloadToken(rollNumber: string, eventId: string): string {
+function createDownloadToken(queryKey: string, eventId: string): string {
   const expiresAt = Date.now() + 5 * 60 * 1000;
-  const payload = `${rollNumber}:${eventId}:${expiresAt}`;
+  const payload = `${queryKey}:${eventId}:${expiresAt}`;
   const hmac = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
   return Buffer.from(JSON.stringify({ payload, hmac })).toString("base64url");
 }
 
 /**
- * Student Roster Map for Fallback / Local Lookup (case-insensitive keys)
+ * Mobile Number Roster Map (from PDF table)
  */
-function formatRollNumberToName(roll: string): string | null {
-  const cleanKey = roll.trim().toUpperCase();
-  const knownMap: Record<string, string> = {
-    "25BCSE014": "PRABHDEEP KAUR",
-    "25BCSE019": "SIMRANJIT KAUR",
-    "25BMEAIML001": "ARSHPREET SINGH",
-    "25CEAIML001": "RISHAV RAJ",
-    "25BCSE023": "VAIBHAV BANSAL",
-    "25BCSE004": "AMANDEEP SINGH",
-    "25BCSE013": "NIKHIL BHARDWAJ",
-    "25BCSEAIML130": "AMANPREET KAUR",
-    "25BCSEAIML046": "JASLEEN KHANNA",
-    "25BCSEAIML032": "EKTA RANA",
-    "25BCSEAIML041": "HIMANI",
-    "25BCSEAIML015": "ANSHU",
-    "25BCSEAIML004": "ADITYA",
-    "25BCSEAIML036": "GOURAV PAL",
-    "25BCSEAIML137": "DEEPAK KUMAR",
-    "25BCSEAIML028": "ASHUTOSH KUMAR",
-    "25BCSEAIML001": "AARYAN TRIPATHI",
-    "25BCSEAIML012": "ANKIT KUMAR YADAV",
-    "25BCSEAIML029": "AVINASH KUMAR",
-    "25BCSEAIML018": "ANUSHKA KUMARI",
-    "25BCSEAIML045": "JASHANPREET KAUR",
-    "25BCSEAIML101": "ROSHNI",
-    "25BCSEAIML104": "SANJANA",
-    "25BCSEAIML049": "JIGYASA KUMARI",
-    "25BCSEAIML074": "NEHA",
-    "24BCSEAIML007": "ANJALI",
-    "24BCSEAIML039": "NAGMA",
-    "25BCSEAIML073": "NEERAJ",
-    "25BCSEAIML107": "SHAINA",
-    "25BCSEAIML082": "PAYAL",
-    "25BCSEAIML070": "MUKUL",
-    "25BCSEAIML030": "AYUSH",
-    "25BCSEAIML116": "SUJIT",
-    "25BCSEDS009": "PRATEEK",
-    "25BCSEAIML091": "PRIYANSHU",
-    "25BCSEAIML086": "PRANAV SHARMA",
-    "25BCSEAIML051": "KAMALPREET SINGH",
-    "25BCSEDS008": "SUKHJEET",
-    "25BCSEAIML119": "YUVRAJ",
-    "25BCSEAIML112": "SHUBHAM",
-    "25BCSEAIML135": "HARSAJAN",
-    "25BCSE007": "HARSHIT BANSAL",
-    "25BCSEAIML035": "GOURAV",
-    "25BCSE024": "YUVRAJ SINGH",
-    "25BCSEAIML088": "PREETI",
-    "25BCSEAIML077": "NIKHIL",
-    "25BCSEAIML075": "NIDHI",
-    "24BCSEAIML036": "MEHAKPREET KAUR",
-    "24BCSEAIML057": "SIMRANJIT KAUR",
-    "24BCSEAIML049": "RESHAM KAUR",
-    "25BCSEAIML044": "PARVEENJOT KAUR",
-    "25BCSEAIML038": "GURWINDER",
-    "25BCSEAIML002": "AASTHA PRASHAR",
-    "24BCSEAIML054": "SANYAM",
-    "24BCSE010": "FALAK MASOOM",
-    "24BCSEAIML035": "MEGHNA VERMA",
-    "24BCSEAIML028": "JASPREET KAUR",
-    "24BCSEAIML002": "AASHIA",
-    "24BCSEAIML01": "SHIVANI YADAV",
-    "24BCSEAIML001": "SHIVANI YADAV",
-    "25BEE005": "MUSKAN",
-    "25BECEAIML002": "RIYA GUPTA",
-    "25BCSEAIML076": "NIHAR",
-    "25BCSEAIML059": "KUNAL",
-    "25BCSE001": "ABDUL REHMAN",
-    "25BCSEAIML124": "TASHPREET KAUR",
-    "25BCSEAIML103": "SAKSHI",
-    "25BCSECBRS004": "RAMANDEEP KAUR",
-    "25BCSEAIML139": "SNEHA",
-    "25BCSEAIML083": "POOJA DEVI",
-    "25BCSEDS003": "MANMEET KAUR",
-    "25BCSEAIML140": "KULWINDER SINGH",
-    "25BCSEAIML125": "TARANPREET SINGH",
-    "25BCSEAIML061": "LOVEPREET KAUR",
-    "25BCSEAIML066": "MEHAK",
-    "25BCSEAIML078": "NIKKI",
-    "25BCSE017": "SAPNA KUMARI",
-    "24BCSEAIML014": "DHEERAJ GARG",
-    "24BCSEAIML009": "ANURAG KUMAR",
-    "24BCSEAIM010": "DEEP SHIKHA",
-    "25BCSE009": "MANJOT KAUR",
-    "25BECEAIML001": "PRANAV BANSAL",
-    "25BCSE015": "RINKU BHALOTIYA",
-    "25CEAIML002": "ROHAN VERMA",
-    "25BCSEAIML009": "AMISHA",
-    "25BCSEAIML008": "AMBER PRASHAR",
-    "25BCSECBRS001": "ADITYA KUMAR",
-    "25BCSEAIML010": "AMRINDER SINGH",
-    "25BCSEAIML021": "ARJAN SINGH",
-    "25BCSEAIML019": "ARASHVIR GILL",
-    "25BCSEAIML003": "ADITYA JASWAL",
-    "25BCSEAIML047": "JASNEET SINGH",
-    "RIMT261100": "SAGAR",
-    "25BCSEAIML089": "PRATIKSHA",
-    "25BCSEAIML111": "SHIVANI",
-    "25BCSEAIML136": "APURVA SHARMA",
-    "25BCSEAIML121": "TANIA SHARMA",
-    "25BCSEAIML106": "SEJAL",
-    "25BCSEAIML096": "RAVINDER KAUR",
-    "25BCSEDS006": "SIMRANPREET KAUR",
-    "25BCSECBRS008": "AKSHARA SHARMA",
-    "25BCSECBRS007": "YATI SINGLA",
-    "25BCSEAIML052": "KARAN",
-    "25BCSEAIML134": "SHEM",
-    "25BCSEAIML081": "PARVEEN KAUR",
-    "25BCSEAIML085": "PRABHNOOR KAUR",
-    "25BCSEAIML025": "ARVIND KUMAR",
-    "25BCSEAIML048": "JASPREET SINGH",
-    "25BCSEAIML055": "KHUSHI KUMARI",
-    "25BCSEAIML056": "KHUSHI SHUKLA",
-    "25BCE002": "RITIKA",
-    "24BCSEAIML055": "SHIVANI YADAV",
-    "25BCSEAIML098": "ROHIT",
-    "25BCSEAIML123": "TARANPREET SINGH",
-    "24BCSEAIML056": "SIMARPREET KAUR",
-    "RIMT261160": "SAGAR",
-  };
-  return knownMap[cleanKey] || null;
+const mobileToNameMap: Record<string, string> = {
+  "9463086537": "Rohan Verma",
+  "9878565612": "Abhishek Singh",
+  "9914929615": "Aditi Kumari",
+  "9517960225": "Aditya",
+  "8847450218": "Amber Prasher",
+  "7973586431": "Amisha",
+  "9529512911": "Ankush Vidhate",
+  "9357250557": "Ayush Kumar",
+  "6239258870": "Deep Shikha",
+  "9876038304": "Dheeraj Garg",
+  "6284657009": "Ekamjot Kaur",
+  "7973701509": "Girish Dhawan",
+  "9914308821": "Gurkamal Ghuman",
+  "6283631847": "Himanshi",
+  "8146820038": "Himanshi Goyal",
+  "7719433912": "Jasleen Khanna",
+  "8341977280": "Kusumsuhas V",
+  "7340961491": "Nagma Kumari",
+  "9780150301": "Pooja Rani",
+  "6283882949": "Prabhdeep Kaur",
+  "9416773013": "Pranav Bansal",
+  "7861821093": "Rinku",
+  "9877434746": "Rishav Raj",
+  "797360157": "Ritika",
+  "7973360157": "Ritika",
+  "8837505394": "Riya Singh",
+  "7087575841": "Sakshi",
+  "8082837273": "Saqib Hussain Shah",
+  "7875789732": "Shubham",
+  "6280056452": "Simranjit Kaur",
+  "8699168863": "Sagar",
+  "9815976540": "Sneha Pandey",
+  "8146852279": "Tejinder Kaur",
+  "8437334886": "Ramanadeep Kaur",
+  "6283217445": "Swastik",
+  "6280459292": "Arshpreet Singh",
+  "8865966009": "Vishvadeep Singh Chauhan",
+  "9914797854": "Simranjeet Kaur",
+};
+
+/**
+ * Roll Number Roster Map
+ */
+const knownRollMap: Record<string, string> = {
+  "25BCSE014": "PRABHDEEP KAUR",
+  "25BCSE019": "SIMRANJIT KAUR",
+  "25BMEAIML001": "ARSHPREET SINGH",
+  "25CEAIML001": "RISHAV RAJ",
+  "25BCSE023": "VAIBHAV BANSAL",
+  "25BCSE004": "AMANDEEP SINGH",
+  "25BCSE013": "NIKHIL BHARDWAJ",
+  "25BCSEAIML130": "AMANPREET KAUR",
+  "25BCSEAIML046": "JASLEEN KHANNA",
+  "25BCSEAIML032": "EKTA RANA",
+  "25BCSEAIML041": "HIMANI",
+  "25BCSEAIML015": "ANSHU",
+  "25BCSEAIML004": "ADITYA",
+  "25BCSEAIML036": "GOURAV PAL",
+  "25BCSEAIML137": "DEEPAK KUMAR",
+  "25BCSEAIML028": "ASHUTOSH KUMAR",
+  "25BCSEAIML001": "AARYAN TRIPATHI",
+  "25BCSEAIML012": "ANKIT KUMAR YADAV",
+  "25BCSEAIML029": "AVINASH KUMAR",
+  "25BCSEAIML018": "ANUSHKA KUMARI",
+  "25BCSEAIML045": "JASHANPREET KAUR",
+  "25BCSEAIML101": "ROSHNI",
+  "25BCSEAIML104": "SANJANA",
+  "25BCSEAIML049": "JIGYASA KUMARI",
+  "25BCSEAIML074": "NEHA",
+  "24BCSEAIML007": "ANJALI",
+  "24BCSEAIML039": "NAGMA",
+  "25BCSEAIML073": "NEERAJ",
+  "25BCSEAIML107": "SHAINA",
+  "25BCSEAIML082": "PAYAL",
+  "25BCSEAIML070": "MUKUL",
+  "25BCSEAIML030": "AYUSH",
+  "25BCSEAIML116": "SUJIT",
+  "25BCSEDS009": "PRATEEK",
+  "25BCSEAIML091": "PRIYANSHU",
+  "25BCSEAIML086": "PRANAV SHARMA",
+  "25BCSEAIML051": "KAMALPREET SINGH",
+  "25BCSEDS008": "SUKHJEET",
+  "25BCSEAIML119": "YUVRAJ",
+  "25BCSEAIML112": "SHUBHAM",
+  "25BCSEAIML135": "HARSAJAN",
+  "25BCSE007": "HARSHIT BANSAL",
+  "25BCSEAIML035": "GOURAV",
+  "25BCSE024": "YUVRAJ SINGH",
+  "25BCSEAIML088": "PREETI",
+  "25BCSEAIML077": "NIKHIL",
+  "25BCSEAIML075": "NIDHI",
+  "24BCSEAIML036": "MEHAKPREET KAUR",
+  "24BCSEAIML057": "SIMRANJIT KAUR",
+  "24BCSEAIML049": "RESHAM KAUR",
+  "25BCSEAIML044": "PARVEENJOT KAUR",
+  "25BCSEAIML038": "GURWINDER",
+  "25BCSEAIML002": "AASTHA PRASHAR",
+  "24BCSEAIML054": "SANYAM",
+  "24BCSE010": "FALAK MASOOM",
+  "24BCSEAIML035": "MEGHNA VERMA",
+  "24BCSEAIML028": "JASPREET KAUR",
+  "24BCSEAIML002": "AASHIA",
+  "24BCSEAIML01": "SHIVANI YADAV",
+  "24BCSEAIML001": "SHIVANI YADAV",
+  "25BEE005": "MUSKAN",
+  "25BECEAIML002": "RIYA GUPTA",
+  "25BCSEAIML076": "NIHAR",
+  "25BCSEAIML059": "KUNAL",
+  "25BCSE001": "ABDUL REHMAN",
+  "25BCSEAIML124": "TASHPREET KAUR",
+  "25BCSEAIML103": "SAKSHI",
+  "25BCSECBRS004": "RAMANDEEP KAUR",
+  "25BCSEAIML139": "SNEHA",
+  "25BCSEAIML083": "POOJA DEVI",
+  "25BCSEDS003": "MANMEET KAUR",
+  "25BCSEAIML140": "KULWINDER SINGH",
+  "25BCSEAIML125": "TARANPREET SINGH",
+  "25BCSEAIML061": "LOVEPREET KAUR",
+  "25BCSEAIML066": "MEHAK",
+  "25BCSEAIML078": "NIKKI",
+  "25BCSE017": "SAPNA KUMARI",
+  "24BCSEAIML014": "DHEERAJ GARG",
+  "24BCSEAIML009": "ANURAG KUMAR",
+  "24BCSEAIM010": "DEEP SHIKHA",
+  "25BCSE009": "MANJOT KAUR",
+  "25BECEAIML001": "PRANAV BANSAL",
+  "25BCSE015": "RINKU BHALOTIYA",
+  "25CEAIML002": "ROHAN VERMA",
+  "25BCSEAIML009": "AMISHA",
+  "25BCSEAIML008": "AMBER PRASHAR",
+  "25BCSECBRS001": "ADITYA KUMAR",
+  "25BCSEAIML010": "AMRINDER SINGH",
+  "25BCSEAIML021": "ARJAN SINGH",
+  "25BCSEAIML019": "ARASHVIR GILL",
+  "25BCSEAIML003": "ADITYA JASWAL",
+  "25BCSEAIML047": "JASNEET SINGH",
+  "RIMT261100": "SAGAR",
+  "25BCSEAIML089": "PRATIKSHA",
+  "25BCSEAIML111": "SHIVANI",
+  "25BCSEAIML136": "APURVA SHARMA",
+  "25BCSEAIML121": "TANIA SHARMA",
+  "25BCSEAIML106": "SEJAL",
+  "25BCSEAIML096": "RAVINDER KAUR",
+  "25BCSEDS006": "SIMRANPREET KAUR",
+  "25BCSECBRS008": "AKSHARA SHARMA",
+  "25BCSECBRS007": "YATI SINGLA",
+  "25BCSEAIML052": "KARAN",
+  "25BCSEAIML134": "SHEM",
+  "25BCSEAIML081": "PARVEEN KAUR",
+  "25BCSEAIML085": "PRABHNOOR KAUR",
+  "25BCSEAIML025": "ARVIND KUMAR",
+  "25BCSEAIML048": "JASPREET SINGH",
+  "25BCSEAIML055": "KHUSHI KUMARI",
+  "25BCSEAIML056": "KHUSHI SHUKLA",
+  "25BCE002": "RITIKA",
+  "24BCSEAIML055": "SHIVANI YADAV",
+  "25BCSEAIML098": "ROHIT",
+  "25BCSEAIML123": "TARANPREET SINGH",
+  "24BCSEAIML056": "SIMARPREET KAUR",
+  "RIMT261160": "SAGAR",
+};
+
+function formatInputToName(query: string): string | null {
+  const cleanInput = query.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const digitsOnly = query.trim().replace(/\D/g, "");
+
+  if (digitsOnly && mobileToNameMap[digitsOnly]) {
+    return mobileToNameMap[digitsOnly];
+  }
+
+  if (knownRollMap[cleanInput]) {
+    return knownRollMap[cleanInput];
+  }
+
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -172,7 +227,6 @@ export async function POST(request: NextRequest) {
     rateLimitMap.set(ip, rateEntry);
   }
 
-  // Check lockout
   if (now < rateEntry.lockoutUntil) {
     const remainingSecs = Math.ceil((rateEntry.lockoutUntil - now) / 1000);
     return NextResponse.json(
@@ -181,7 +235,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Reset window if expired
   if (now > rateEntry.resetTime) {
     rateEntry.count = 0;
     rateEntry.resetTime = now + 60 * 1000;
@@ -190,9 +243,8 @@ export async function POST(request: NextRequest) {
 
   rateEntry.count += 1;
 
-  // Rate limit trigger: max 5 requests per minute
-  if (rateEntry.count > 5) {
-    rateEntry.lockoutUntil = now + 60 * 1000; // 1 min lockout
+  if (rateEntry.count > 10) {
+    rateEntry.lockoutUntil = now + 60 * 1000;
     return NextResponse.json(
       { found: false, error: "Too many requests. Please slow down and try again in 60 seconds." },
       { status: 429, headers: { "Retry-After": "60" } }
@@ -202,89 +254,91 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { eventId, rollNumber, hp } = body;
+    const rawInput = rollNumber || body.mobileNumber || "";
 
-    // ── 2. BOT CHECK / HONEYPOT ──
     if (hp && typeof hp === "string" && hp.trim().length > 0) {
       return NextResponse.json({ found: false }, { status: 200 });
     }
 
-    // ── 3. STRICT INPUT VALIDATION ──
-    if (!eventId || typeof eventId !== "string" || !rollNumber || typeof rollNumber !== "string") {
+    if (!eventId || typeof eventId !== "string" || !rawInput || typeof rawInput !== "string") {
       return NextResponse.json({ found: false }, { status: 200 });
     }
 
-    const cleanRoll = rollNumber.trim().toUpperCase();
+    const cleanInput = rawInput.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    const digitsOnly = rawInput.trim().replace(/\D/g, "");
 
-    // Regex check: letters and numbers only, 3 to 25 chars
-    if (!/^[A-Z0-9]{3,25}$/.test(cleanRoll)) {
-      return NextResponse.json({ found: false }, { status: 200 });
+    rateEntry.distinctRolls.add(cleanInput);
+
+    if (rateEntry.distinctRolls.size > 12) {
+      console.warn(`[SECURITY ANOMALY] IP ${ip} queried ${rateEntry.distinctRolls.size} distinct inputs in 1 minute.`);
     }
 
-    rateEntry.distinctRolls.add(cleanRoll);
-
-    // ── 4. ANOMALY LOGGING ──
-    if (rateEntry.distinctRolls.size > 8) {
-      console.warn(`[SECURITY ANOMALY] IP ${ip} queried ${rateEntry.distinctRolls.size} distinct roll numbers in 1 minute.`);
-    }
-
-    // ── 5. DATABASE QUERY (SUPABASE) ──
+    // ── 2. DATABASE QUERY (SUPABASE) ──
     if (isSupabaseConfigured && supabase) {
+      const client = supabase;
+
       if (eventId === "default-kiroverse" || eventId === "default-aws-basics") {
-        const mappedName = formatRollNumberToName(cleanRoll);
+        const mappedName = formatInputToName(rawInput);
         if (!mappedName) {
           return NextResponse.json({ found: false }, { status: 200 });
         }
 
-        const downloadToken = createDownloadToken(cleanRoll, eventId);
+        const downloadToken = createDownloadToken(cleanInput, eventId);
+        const isAWSBasics = eventId === "default-aws-basics";
 
         return NextResponse.json({
           found: true,
           participantName: mappedName,
-          templateUrl: "/certificates/default-template.png",
+          templateUrl: isAWSBasics ? "/certificates/aws-basics-template.png" : "/certificates/default-template.png",
           downloadToken,
           config: {
-            nameX: 73.8,
-            nameY: 61.5,
+            nameX: isAWSBasics ? 73.5 : 73.8,
+            nameY: isAWSBasics ? 62.0 : 61.5,
             fontFamily: "Amazon Ember Display",
             fontSize: 26,
             fontWeight: "bold",
-            textColor: "#111827",
+            textColor: isAWSBasics ? "#ffffff" : "#111827",
             textAlign: "center",
           },
         });
       }
 
-      // Query database for published event matching eventId
-      const { data: eventData, error: eventError } = await supabase
+      // Query DB for published event
+      const { data: eventData, error: eventError } = await client
         .from("certificate_events")
-        .select("id, title, template_url, name_x, name_y, font_family, font_size, font_weight, text_color, text_align, is_published")
+        .select("id, title, slug, template_url, name_x, name_y, font_family, font_size, font_weight, text_color, text_align, is_published")
         .eq("id", eventId)
         .eq("is_published", true)
         .single();
 
       if (!eventError && eventData) {
-        // Query participant for THIS specific event_id ONLY
-        const { data: participant, error: participantError } = await supabase
+        // Query participant by roll number OR mobile number
+        let query = client
           .from("certificate_participants")
           .select("id, participant_name, roll_number")
-          .eq("event_id", eventId)
-          .ilike("roll_number", cleanRoll)
-          .single();
+          .eq("event_id", eventId);
+
+        if (digitsOnly && digitsOnly.length >= 8) {
+          query = query.or(`roll_number.ilike.${cleanInput},roll_number.ilike.${digitsOnly}`);
+        } else {
+          query = query.ilike("roll_number", cleanInput);
+        }
+
+        const { data: participant, error: participantError } = await query.maybeSingle();
 
         if (participant && !participantError) {
-          // Log download audit
-          await supabase.from("certificate_downloads").insert({
+          await client.from("certificate_downloads").insert({
             participant_id: participant.id,
             event_id: eventId,
             ip_address: ip,
           });
 
-          const downloadToken = createDownloadToken(cleanRoll, eventId);
+          const downloadToken = createDownloadToken(cleanInput, eventId);
 
           return NextResponse.json({
             found: true,
             participantName: participant.participant_name,
-            templateUrl: eventData.template_url || "/certificates/default-template.png",
+            templateUrl: eventData.template_url || (eventData.slug === "aws-basics" ? "/certificates/aws-basics-template.png" : "/certificates/default-template.png"),
             downloadToken,
             config: {
               nameX: eventData.name_x,
@@ -297,33 +351,32 @@ export async function POST(request: NextRequest) {
             },
           });
         } else {
-          // Return found: false if not registered for THIS event
           return NextResponse.json({ found: false }, { status: 200 });
         }
       }
     }
 
-    // ── 6. LOCAL DATASET FALLBACK ──
-    // Fallback mode for local development without database connection
-    const fallbackName = formatRollNumberToName(cleanRoll);
+    // ── 3. LOCAL DATASET FALLBACK ──
+    const fallbackName = formatInputToName(rawInput);
     if (!fallbackName) {
       return NextResponse.json({ found: false }, { status: 200 });
     }
 
-    const downloadToken = createDownloadToken(cleanRoll, eventId);
+    const downloadToken = createDownloadToken(cleanInput, eventId);
+    const isAWSBasics = eventId.includes("aws-basics");
 
     return NextResponse.json({
       found: true,
       participantName: fallbackName,
-      templateUrl: "/certificates/default-template.png",
+      templateUrl: isAWSBasics ? "/certificates/aws-basics-template.png" : "/certificates/default-template.png",
       downloadToken,
       config: {
-        nameX: 73.8,
-        nameY: 61.5,
+        nameX: isAWSBasics ? 73.5 : 73.8,
+        nameY: isAWSBasics ? 62.0 : 61.5,
         fontFamily: "Amazon Ember Display",
         fontSize: 26,
         fontWeight: "bold",
-        textColor: "#111827",
+        textColor: isAWSBasics ? "#ffffff" : "#111827",
         textAlign: "center",
       },
     });

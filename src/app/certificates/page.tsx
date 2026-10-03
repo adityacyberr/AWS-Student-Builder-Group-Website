@@ -516,7 +516,7 @@ export default function CertificatesArchivePage() {
                 <form onSubmit={handleLookup} className="space-y-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-2">
-                      Enter University Roll Number
+                      Enter Registered Mobile Number or Roll Number
                     </label>
                     <div className="relative">
                       <input
@@ -527,7 +527,7 @@ export default function CertificatesArchivePage() {
                           setRollNumber(e.target.value);
                           if (step === "error") setStep("input");
                         }}
-                        placeholder="e.g. 25BCSE014"
+                        placeholder="e.g. 9517960225 or 25BCSE014"
                         disabled={step === "loading"}
                         className={`w-full px-4 py-3.5 rounded-xl bg-slate-950 border ${
                           step === "error"

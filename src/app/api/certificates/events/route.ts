@@ -31,17 +31,17 @@ export const DEFAULT_CERT_EVENTS: PublicCertEvent[] = [
     event_type: "Online Session",
     description: "Mastering AWS Cloud fundamentals, IAM security, S3 storage, and EC2 computing instances.",
     location: "Online • 1 Hour Session",
-    template_url: "/certificates/default-template.png",
-    name_x: 73.8,
-    name_y: 61.5,
+    template_url: "/certificates/aws-basics-template.png",
+    name_x: 73.5,
+    name_y: 62.0,
     font_family: "Amazon Ember Display",
     font_size: 26,
     font_weight: "bold",
-    text_color: "#111827",
+    text_color: "#ffffff",
     text_align: "center",
     is_published: true,
     created_at: "2026-10-02T10:00:00Z",
-    participant_count: 105,
+    participant_count: 37,
   },
   {
     id: "default-kiroverse",
@@ -79,7 +79,7 @@ export async function GET() {
         if (!error && data && data.length > 0) {
           const eventsWithCounts = await Promise.all(
             data.map(async (ev: any) => {
-              let count = 105;
+              let count = ev.slug === "aws-basics" ? 37 : 105;
               try {
                 const { count: pCount } = await client
                   .from("certificate_participants")
@@ -99,13 +99,13 @@ export async function GET() {
                 event_type: ev.event_type || "Workshop",
                 description: ev.description || "",
                 location: ev.location || "RIMT University",
-                template_url: ev.template_url || "/certificates/default-template.png",
-                name_x: ev.name_x ?? 73.8,
-                name_y: ev.name_y ?? 61.5,
+                template_url: ev.template_url || (ev.slug === "aws-basics" ? "/certificates/aws-basics-template.png" : "/certificates/default-template.png"),
+                name_x: ev.name_x ?? (ev.slug === "aws-basics" ? 73.5 : 73.8),
+                name_y: ev.name_y ?? (ev.slug === "aws-basics" ? 62.0 : 61.5),
                 font_family: ev.font_family || "Amazon Ember Display",
                 font_size: ev.font_size ?? 26,
                 font_weight: ev.font_weight || "bold",
-                text_color: ev.text_color || "#111827",
+                text_color: ev.text_color || (ev.slug === "aws-basics" ? "#ffffff" : "#111827"),
                 text_align: ev.text_align || "center",
                 is_published: ev.is_published,
                 created_at: ev.created_at || new Date().toISOString(),
