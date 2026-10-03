@@ -214,12 +214,12 @@ export default function CertificatesArchivePage() {
         setPreviewUrl(previewData);
         setStep("preview");
       } else {
-        setErrorMessage("No eligible certificate found for this event and registered number.");
+        setErrorMessage("Certificate not found");
         setStep("error");
       }
     } catch (err: any) {
       console.error("Lookup error:", err);
-      setErrorMessage("No eligible certificate found for this event and registered number.");
+      setErrorMessage("Certificate not found");
       setStep("error");
     }
   };
@@ -231,9 +231,8 @@ export default function CertificatesArchivePage() {
 
     try {
       const blob = await generateCertificatePDF(templateUrl, participantName, certConfig);
-      const cleanRoll = rollNumber.trim().toUpperCase().replace(/[^A-Z0-9]/g, "") || "CERT";
-      const cleanName = participantName.trim().replace(/\s+/g, "_");
-      const fileName = `AWS-Basics-Certificate-${cleanRoll}-${cleanName}.pdf`;
+      const cleanName = participantName.trim().replace(/\s+/g, "-");
+      const fileName = `AWS-Basics-Certificate-${cleanName}.pdf`;
 
       // Download PDF directly
       downloadBlob(blob, fileName);
