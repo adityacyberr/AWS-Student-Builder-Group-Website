@@ -20,10 +20,10 @@ import {
   HelpCircle,
   Lock,
   FileCheck,
+  UserCheck,
 } from "lucide-react";
 import {
   generateCertificatePDF,
-  generateWatermarkedPreviewDataUrl,
   downloadBlob,
   CertificateConfig,
 } from "@/lib/certificateGenerator";
@@ -49,7 +49,7 @@ export interface EventItemPublic {
   participant_count: number;
 }
 
-type VerificationStep = "input" | "loading" | "preview" | "downloading" | "success" | "error";
+type VerificationStep = "input" | "loading" | "verified" | "downloading" | "success" | "error";
 
 /* Custom AWS Orange Gradient Certificate SVG Glyph */
 function CertificateGlyph() {
@@ -91,7 +91,6 @@ export default function CertificatesArchivePage() {
   const [step, setStep] = useState<VerificationStep>("input");
   const [participantName, setParticipantName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [certConfig, setCertConfig] = useState<CertificateConfig | null>(null);
   const [templateUrl, setTemplateUrl] = useState<string>("");
 
@@ -157,7 +156,6 @@ export default function CertificatesArchivePage() {
     setStep("input");
     setParticipantName("");
     setErrorMessage("");
-    setPreviewUrl(null);
     setCertConfig(null);
     setTimeout(() => inputRef.current?.focus(), 150);
   };
@@ -178,7 +176,6 @@ export default function CertificatesArchivePage() {
     setStep("loading");
     setErrorMessage("");
     setParticipantName("");
-    setPreviewUrl(null);
 
     try {
       const res = await fetch("/api/certificates/lookup", {
@@ -204,27 +201,19 @@ export default function CertificatesArchivePage() {
         setParticipantName(data.participantName);
         setTemplateUrl(data.templateUrl);
         setCertConfig(data.config);
-
-        // Generate watermarked preview canvas image
-        const previewData = await generateWatermarkedPreviewDataUrl(
-          data.templateUrl,
-          data.participantName,
-          data.config
-        );
-        setPreviewUrl(previewData);
-        setStep("preview");
+        setStep("verified");
       } else {
-        setErrorMessage("Certificate not found");
+        setErrorMessage("Certificate not found. Please verify your roll or mobile number.");
         setStep("error");
       }
     } catch (err: any) {
       console.error("Lookup error:", err);
-      setErrorMessage("Certificate not found");
+      setErrorMessage("Certificate not found. Please verify your roll or mobile number.");
       setStep("error");
     }
   };
 
-  // Confirm PDF Download (Professional, Clean Flow)
+  // Direct High-Res PDF Download
   const handleDownloadPDF = async () => {
     if (!participantName || !certConfig || !templateUrl || !activeModalEvent) return;
     setStep("downloading");
@@ -234,7 +223,6 @@ export default function CertificatesArchivePage() {
       const cleanName = participantName.trim().replace(/\s+/g, "-");
       const fileName = `AWS-Basics-Certificate-${cleanName}.pdf`;
 
-      // Download PDF directly
       downloadBlob(blob, fileName);
       setStep("success");
     } catch (err) {
@@ -275,7 +263,7 @@ export default function CertificatesArchivePage() {
               Certificates
             </h1>
             <p className="text-slate-400 text-sm sm:text-base mt-2 max-w-xl leading-relaxed">
-              Find and download your certificates from AWS Student Builder Group events.
+              Find and download your official certificates from AWS Student Builder Group events.
             </p>
           </div>
 
@@ -330,7 +318,6 @@ export default function CertificatesArchivePage() {
 
         {/* Events Cards Grid */}
         {loadingEvents ? (
-          /* Loading Skeletons */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[1, 2].map((i) => (
               <div
@@ -340,7 +327,6 @@ export default function CertificatesArchivePage() {
             ))}
           </div>
         ) : filteredEvents.length === 0 ? (
-          /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -364,7 +350,6 @@ export default function CertificatesArchivePage() {
             </button>
           </motion.div>
         ) : (
-          /* Event Cards Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredEvents.map((ev, index) => (
               <motion.div
@@ -377,7 +362,6 @@ export default function CertificatesArchivePage() {
                 <div className="absolute top-0 right-0 h-32 w-32 bg-orange-500/5 rounded-full blur-2xl group-hover:bg-orange-500/10 transition-all pointer-events-none" />
 
                 <div>
-                  {/* Category & Location Badges */}
                   <div className="flex flex-wrap items-center gap-2 mb-3.5">
                     <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold bg-orange-500/10 border border-orange-500/20 text-orange-400">
                       <Tag className="h-3 w-3" />
@@ -389,18 +373,15 @@ export default function CertificatesArchivePage() {
                     </span>
                   </div>
 
-                  {/* Title */}
                   <h3 className="text-xl font-bold text-white group-hover:text-orange-300 transition-colors leading-snug">
                     {ev.title}
                   </h3>
 
-                  {/* Date */}
                   <div className="flex items-center gap-1.5 text-xs font-medium text-amber-400 mt-2">
                     <Calendar className="h-3.5 w-3.5" />
                     <span>{ev.event_date}</span>
                   </div>
 
-                  {/* Description */}
                   {ev.description && (
                     <p className="text-slate-400 text-xs sm:text-sm mt-3 line-clamp-2 leading-relaxed">
                       {ev.description}
@@ -408,7 +389,6 @@ export default function CertificatesArchivePage() {
                   )}
                 </div>
 
-                {/* Footer Section */}
                 <div className="mt-6 pt-5 border-t border-slate-800/80 flex items-center justify-between gap-4">
                   <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
                     <FileCheck className="h-3.5 w-3.5 text-emerald-400" />
@@ -435,7 +415,7 @@ export default function CertificatesArchivePage() {
           <p className="text-slate-400 text-xs sm:text-sm">
             Trouble finding your event certificate?{" "}
             <a
-              href={`https://wa.me/919517960225?text=${encodeURIComponent("Hi, I don’t need help finding my AWS certificate.")}`}
+              href={`https://wa.me/919517960225?text=${encodeURIComponent("Hi, I need help finding my AWS certificate.")}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-orange-400 font-semibold hover:underline inline-flex items-center gap-1"
@@ -464,7 +444,7 @@ export default function CertificatesArchivePage() {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative z-10 w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 sm:p-8 overflow-hidden"
+              className="relative z-10 w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl p-6 sm:p-8 overflow-hidden"
             >
               {/* Close Button */}
               <button
@@ -555,7 +535,7 @@ export default function CertificatesArchivePage() {
                       </>
                     ) : (
                       <>
-                        <span>Verify &amp; Generate Certificate</span>
+                        <span>Verify &amp; Issue Certificate</span>
                         <ChevronRight className="h-4 w-4" />
                       </>
                     )}
@@ -563,20 +543,25 @@ export default function CertificatesArchivePage() {
                 </form>
               )}
 
-              {/* ── STEP 2: Preview Certificate & Download ── */}
-              {(step === "preview" || step === "downloading" || step === "success") && (
+              {/* ── STEP 2: Verified Participant & Direct PDF Download ── */}
+              {(step === "verified" || step === "downloading" || step === "success") && (
                 <div className="space-y-5">
-                  <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                        Eligible Participant Verified
-                      </span>
-                      <h4 className="text-base font-black text-white">{participantName}</h4>
+                  {/* Participant Card */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-emerald-500/10 to-slate-900 border border-emerald-500/30 flex items-center gap-3.5">
+                    <div className="h-11 w-11 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 text-emerald-400">
+                      <UserCheck className="h-6 w-6" />
                     </div>
-                    <CheckCircle className="h-6 w-6 text-emerald-400" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        <span>Eligible Participant Verified</span>
+                      </div>
+                      <h4 className="text-lg font-black text-white truncate mt-0.5">{participantName}</h4>
+                      <p className="text-[11px] text-slate-400 truncate">Roll / Contact: {rollNumber.trim().toUpperCase()}</p>
+                    </div>
                   </div>
 
-                  {/* Clean Professional Download Success Banner */}
+                  {/* Download Success Banner */}
                   {step === "success" && (
                     <motion.div
                       initial={{ opacity: 0, y: -5 }}
@@ -584,20 +569,8 @@ export default function CertificatesArchivePage() {
                       className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2.5 font-medium"
                     >
                       <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                      <span>Certificate downloaded successfully! Official PDF saved to your device.</span>
+                      <span>Official Certificate PDF generated and saved successfully!</span>
                     </motion.div>
-                  )}
-
-                  {/* Live Canvas Preview */}
-                  {previewUrl && (
-                    <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-inner">
-                      {/* eslint-disable-next-html-next-image */}
-                      <img
-                        src={previewUrl}
-                        alt="Certificate Preview"
-                        className="w-full h-auto object-contain rounded-2xl"
-                      />
-                    </div>
                   )}
 
                   {/* Actions */}
@@ -605,7 +578,7 @@ export default function CertificatesArchivePage() {
                     <button
                       onClick={handleDownloadPDF}
                       disabled={step === "downloading"}
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
                     >
                       {step === "downloading" ? (
                         <>
@@ -615,7 +588,7 @@ export default function CertificatesArchivePage() {
                       ) : (
                         <>
                           <Download className="h-4 w-4" />
-                          <span>{step === "success" ? "Download PDF Again" : "Download High-Res PDF"}</span>
+                          <span>{step === "success" ? "Download PDF Again" : "Download Official Certificate (PDF)"}</span>
                         </>
                       )}
                     </button>
