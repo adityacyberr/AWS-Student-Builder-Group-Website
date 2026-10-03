@@ -14,7 +14,6 @@ import {
   Calendar,
   MapPin,
   Tag,
-  Sparkles,
   X,
   Award,
   ChevronRight,
@@ -28,7 +27,6 @@ import {
   downloadBlob,
   CertificateConfig,
 } from "@/lib/certificateGenerator";
-import { MemeRewardModal } from "@/components/MemeRewardModal";
 
 export interface EventItemPublic {
   id: string;
@@ -96,7 +94,6 @@ export default function CertificatesArchivePage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [certConfig, setCertConfig] = useState<CertificateConfig | null>(null);
   const [templateUrl, setTemplateUrl] = useState<string>("");
-  const [isMemeModalOpen, setIsMemeModalOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -172,7 +169,7 @@ export default function CertificatesArchivePage() {
     setErrorMessage("");
   };
 
-  // Submit Roll Number Lookup (Scoped strictly to activeModalEvent)
+  // Submit Mobile / Roll Number Lookup
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = rollNumber.trim();
@@ -217,18 +214,17 @@ export default function CertificatesArchivePage() {
         setPreviewUrl(previewData);
         setStep("preview");
       } else {
-        // Specific error message required by prompt
-        setErrorMessage("No eligible certificate found for this event and roll number.");
+        setErrorMessage("No eligible certificate found for this event and registered number.");
         setStep("error");
       }
     } catch (err: any) {
       console.error("Lookup error:", err);
-      setErrorMessage("No eligible certificate found for this event and roll number.");
+      setErrorMessage("No eligible certificate found for this event and registered number.");
       setStep("error");
     }
   };
 
-  // Confirm PDF Download
+  // Confirm PDF Download (Professional, Clean Flow)
   const handleDownloadPDF = async () => {
     if (!participantName || !certConfig || !templateUrl) return;
     setStep("downloading");
@@ -238,14 +234,9 @@ export default function CertificatesArchivePage() {
       const eventSlug = activeModalEvent ? activeModalEvent.slug : "AWS";
       const fileName = `${participantName.replace(/\s+/g, "_")}_${eventSlug.toUpperCase()}_Certificate.pdf`;
 
-      // 1. Download PDF immediately
+      // Download PDF directly
       downloadBlob(blob, fileName);
       setStep("success");
-
-      // 2. Wait 600ms, then trigger Meme Reward Modal
-      setTimeout(() => {
-        setIsMemeModalOpen(true);
-      }, 600);
     } catch (err) {
       console.error("PDF download error:", err);
       setErrorMessage("Failed to download PDF. Please try again.");
@@ -290,7 +281,7 @@ export default function CertificatesArchivePage() {
 
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 shadow-sm">
             <ShieldCheck className="h-4 w-4 text-emerald-400" />
-            <span>Tamper-proof & Verified Credentials</span>
+            <span>Tamper-proof &amp; Verified Credentials</span>
           </div>
         </div>
 
@@ -373,7 +364,7 @@ export default function CertificatesArchivePage() {
             </button>
           </motion.div>
         ) : (
-          /* Event Cards Grid (Chronological order, newest first) */
+          /* Event Cards Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredEvents.map((ev, index) => (
               <motion.div
@@ -383,7 +374,6 @@ export default function CertificatesArchivePage() {
                 transition={{ duration: 0.3, delay: index * 0.08 }}
                 className="group relative rounded-3xl bg-slate-900/80 border border-slate-800 hover:border-orange-500/40 transition-all duration-300 p-6 sm:p-7 flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-orange-500/5"
               >
-                {/* Subtle Card Glow */}
                 <div className="absolute top-0 right-0 h-32 w-32 bg-orange-500/5 rounded-full blur-2xl group-hover:bg-orange-500/10 transition-all pointer-events-none" />
 
                 <div>
@@ -500,7 +490,7 @@ export default function CertificatesArchivePage() {
                 </div>
               </div>
 
-              {/* Honeypot field (hidden from human users, catches bots) */}
+              {/* Honeypot field */}
               <input
                 type="text"
                 name="hp_website_check"
@@ -511,7 +501,7 @@ export default function CertificatesArchivePage() {
                 className="sr-only opacity-0 pointer-events-none absolute left-[-9999px]"
               />
 
-              {/* ── STEP 1: Enter Roll Number ── */}
+              {/* ── STEP 1: Enter Mobile Number / Roll Number ── */}
               {(step === "input" || step === "loading" || step === "error") && (
                 <form onSubmit={handleLookup} className="space-y-4">
                   <div>
@@ -579,17 +569,28 @@ export default function CertificatesArchivePage() {
                   <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                        Eligible Participant Found
+                        Eligible Participant Verified
                       </span>
                       <h4 className="text-base font-black text-white">{participantName}</h4>
                     </div>
                     <CheckCircle className="h-6 w-6 text-emerald-400" />
                   </div>
 
+                  {/* Clean Professional Download Success Banner */}
+                  {step === "success" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2.5 font-medium"
+                    >
+                      <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                      <span>Certificate downloaded successfully! Official PDF saved to your device.</span>
+                    </motion.div>
+                  )}
+
                   {/* Live Canvas Preview */}
                   {previewUrl && (
                     <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-inner">
-                      {/* Watermark badge overlay */}
                       <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-700 text-[10px] font-bold text-amber-400 shadow">
                         Preview Watermarked
                       </div>
@@ -617,7 +618,7 @@ export default function CertificatesArchivePage() {
                       ) : (
                         <>
                           <Download className="h-4 w-4" />
-                          <span>Download High-Res PDF</span>
+                          <span>{step === "success" ? "Download PDF Again" : "Download High-Res PDF"}</span>
                         </>
                       )}
                     </button>
@@ -626,7 +627,7 @@ export default function CertificatesArchivePage() {
                       onClick={() => setStep("input")}
                       className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
                     >
-                      Search Another Roll Number
+                      Search Another Number
                     </button>
                   </div>
                 </div>
@@ -635,13 +636,6 @@ export default function CertificatesArchivePage() {
           </div>
         )}
       </AnimatePresence>
-
-      {/* Secret Meme / Breaking News Reward Modal after download */}
-      <MemeRewardModal
-        isOpen={isMemeModalOpen}
-        onClose={() => setIsMemeModalOpen(false)}
-        participantName={participantName}
-      />
     </div>
   );
 }
