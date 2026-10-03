@@ -226,13 +226,14 @@ export default function CertificatesArchivePage() {
 
   // Confirm PDF Download (Professional, Clean Flow)
   const handleDownloadPDF = async () => {
-    if (!participantName || !certConfig || !templateUrl) return;
+    if (!participantName || !certConfig || !templateUrl || !activeModalEvent) return;
     setStep("downloading");
 
     try {
       const blob = await generateCertificatePDF(templateUrl, participantName, certConfig);
-      const eventSlug = activeModalEvent ? activeModalEvent.slug : "AWS";
-      const fileName = `${participantName.replace(/\s+/g, "_")}_${eventSlug.toUpperCase()}_Certificate.pdf`;
+      const cleanRoll = rollNumber.trim().toUpperCase().replace(/[^A-Z0-9]/g, "") || "CERT";
+      const cleanName = participantName.trim().replace(/\s+/g, "_");
+      const fileName = `AWS-Basics-Certificate-${cleanRoll}-${cleanName}.pdf`;
 
       // Download PDF directly
       downloadBlob(blob, fileName);
