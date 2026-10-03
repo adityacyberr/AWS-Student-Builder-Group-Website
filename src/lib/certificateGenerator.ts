@@ -33,7 +33,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Generate a high-DPI watermarked image Data URL for live preview.
+ * Generate a high-DPI image Data URL for live preview.
  */
 export async function generateWatermarkedPreviewDataUrl(
   templateUrl: string,
@@ -53,34 +53,24 @@ export async function generateWatermarkedPreviewDataUrl(
   // 1. Draw background template image
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  // 2. Overlay participant name
+  // 2. Overlay participant name in Student Name position
   const nameX = (config.nameX / 100) * canvas.width;
   const nameY = (config.nameY / 100) * canvas.height;
   const fontSizePx = Math.round((config.fontSize / 650) * canvas.height);
 
   ctx.fillStyle = config.textColor || "#ffffff";
-  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "Amazon Ember Display", "Inter", "Roboto", sans-serif`;
+  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "Amazon Ember Display", "Inter", "Roboto", monospace, sans-serif`;
   ctx.textAlign = config.textAlign || "center";
   ctx.textBaseline = "middle";
   ctx.fillText(participantName, nameX, nameY);
 
-  // 3. Draw semi-transparent preview watermark overlay
-  ctx.save();
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.rotate(-Math.PI / 6);
-  ctx.fillStyle = "rgba(255, 153, 0, 0.16)";
-  ctx.font = "bold 44px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("PREVIEW ONLY — AWS SBG", 0, 0);
-  ctx.restore();
-
-  return canvas.toDataURL("image/jpeg", 0.92);
+  return canvas.toDataURL("image/jpeg", 0.95);
 }
 
 /**
  * Generate a 300 DPI high-definition PDF certificate document.
  * Draws the background template and student name on a high-res 300 DPI canvas
- * then inserts into an A4 PDF document.
+ * then inserts into an A4 PDF document with no watermarks or extra overlays.
  */
 export async function generateCertificatePDF(
   templateUrl: string,
@@ -93,7 +83,7 @@ export async function generateCertificatePDF(
   const imgHeight = img.naturalHeight;
   const isLandscape = imgWidth >= imgHeight;
 
-  // Create A4 PDF document
+  // Create A4 PDF document matching orientation
   const orientation = isLandscape ? "landscape" : "portrait";
   const pdf = new jsPDF({
     orientation,
@@ -122,7 +112,7 @@ export async function generateCertificatePDF(
   const fontSizePx = Math.round((config.fontSize / 650) * canvas.height);
 
   ctx.fillStyle = config.textColor || "#ffffff";
-  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "Amazon Ember Display", "Inter", "Roboto", sans-serif`;
+  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "Amazon Ember Display", "Inter", "Roboto", monospace, sans-serif`;
   ctx.textAlign = config.textAlign || "center";
   ctx.textBaseline = "middle";
   ctx.fillText(participantName, nameX, nameY);

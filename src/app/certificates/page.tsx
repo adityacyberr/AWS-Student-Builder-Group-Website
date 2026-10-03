@@ -591,9 +591,6 @@ export default function CertificatesArchivePage() {
                   {/* Live Canvas Preview */}
                   {previewUrl && (
                     <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-inner">
-                      <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-sm border border-slate-700 text-[10px] font-bold text-amber-400 shadow">
-                        Preview Watermarked
-                      </div>
                       {/* eslint-disable-next-html-next-image */}
                       <img
                         src={previewUrl}
