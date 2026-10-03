@@ -32,10 +32,10 @@ export const DEFAULT_CERT_EVENTS: PublicCertEvent[] = [
     description: "Mastering AWS Cloud fundamentals, IAM security, S3 storage, and EC2 computing instances.",
     location: "Online • 1 Hour Session",
     template_url: "/certificates/aws-basics-template.png",
-    name_x: 73.5,
-    name_y: 62.0,
+    name_x: 73.8,
+    name_y: 60.5,
     font_family: "Amazon Ember Display",
-    font_size: 26,
+    font_size: 28,
     font_weight: "bold",
     text_color: "#ffffff",
     text_align: "center",
@@ -91,6 +91,7 @@ export async function GET() {
               } catch (e) {
                 // fallback count
               }
+              const isAWSBasics = ev.slug === "aws-basics";
               return {
                 id: ev.id,
                 title: ev.title,
@@ -99,13 +100,13 @@ export async function GET() {
                 event_type: ev.event_type || "Workshop",
                 description: ev.description || "",
                 location: ev.location || "RIMT University",
-                template_url: ev.template_url || (ev.slug === "aws-basics" ? "/certificates/aws-basics-template.png" : "/certificates/default-template.png"),
-                name_x: ev.name_x ?? (ev.slug === "aws-basics" ? 73.5 : 73.8),
-                name_y: ev.name_y ?? (ev.slug === "aws-basics" ? 62.0 : 61.5),
-                font_family: ev.font_family || "Amazon Ember Display",
-                font_size: ev.font_size ?? 26,
+                template_url: isAWSBasics ? "/certificates/aws-basics-template.png" : (ev.template_url || "/certificates/default-template.png"),
+                name_x: isAWSBasics ? 73.8 : (ev.name_x ?? 73.8),
+                name_y: isAWSBasics ? 60.5 : (ev.name_y ?? 61.5),
+                font_family: isAWSBasics ? "Amazon Ember Display" : (ev.font_family || "Amazon Ember Display"),
+                font_size: isAWSBasics ? 28 : (ev.font_size ?? 26),
                 font_weight: ev.font_weight || "bold",
-                text_color: ev.text_color || (ev.slug === "aws-basics" ? "#ffffff" : "#111827"),
+                text_color: isAWSBasics ? "#ffffff" : (ev.text_color || "#111827"),
                 text_align: ev.text_align || "center",
                 is_published: ev.is_published,
                 created_at: ev.created_at || new Date().toISOString(),

@@ -200,16 +200,26 @@ const knownRollMap: Record<string, string> = {
   "RIMT261160": "SAGAR",
 };
 
+function toTitleCase(str: string): string {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 function formatInputToName(query: string): string | null {
   const cleanInput = query.trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
   const digitsOnly = query.trim().replace(/\D/g, "");
 
   if (digitsOnly && mobileToNameMap[digitsOnly]) {
-    return mobileToNameMap[digitsOnly];
+    return toTitleCase(mobileToNameMap[digitsOnly]);
   }
 
   if (knownRollMap[cleanInput]) {
-    return knownRollMap[cleanInput];
+    return toTitleCase(knownRollMap[cleanInput]);
   }
 
   return null;
@@ -277,14 +287,14 @@ export async function POST(request: NextRequest) {
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
 
-      if (eventId === "default-kiroverse" || eventId === "default-aws-basics") {
+      if (eventId === "default-kiroverse" || eventId === "default-aws-basics" || eventId.includes("aws-basics")) {
         const mappedName = formatInputToName(rawInput);
         if (!mappedName) {
           return NextResponse.json({ found: false }, { status: 200 });
         }
 
         const downloadToken = createDownloadToken(cleanInput, eventId);
-        const isAWSBasics = eventId === "default-aws-basics";
+        const isAWSBasics = eventId.includes("aws-basics") || eventId === "default-aws-basics";
 
         return NextResponse.json({
           found: true,
@@ -292,10 +302,10 @@ export async function POST(request: NextRequest) {
           templateUrl: isAWSBasics ? "/certificates/aws-basics-template.png" : "/certificates/default-template.png",
           downloadToken,
           config: {
-            nameX: isAWSBasics ? 73.5 : 73.8,
-            nameY: isAWSBasics ? 62.0 : 61.5,
-            fontFamily: "Amazon Ember Display",
-            fontSize: 26,
+            nameX: isAWSBasics ? 73.8 : 73.8,
+            nameY: isAWSBasics ? 60.5 : 61.5,
+            fontFamily: isAWSBasics ? "Amazon Ember Display" : "Amazon Ember Display",
+            fontSize: isAWSBasics ? 28 : 26,
             fontWeight: "bold",
             textColor: isAWSBasics ? "#ffffff" : "#111827",
             textAlign: "center",
@@ -334,20 +344,21 @@ export async function POST(request: NextRequest) {
           });
 
           const downloadToken = createDownloadToken(cleanInput, eventId);
+          const isAWSBasics = eventData.slug === "aws-basics" || eventData.title.toLowerCase().includes("aws basics");
 
           return NextResponse.json({
             found: true,
-            participantName: participant.participant_name,
-            templateUrl: eventData.template_url || (eventData.slug === "aws-basics" ? "/certificates/aws-basics-template.png" : "/certificates/default-template.png"),
+            participantName: toTitleCase(participant.participant_name),
+            templateUrl: isAWSBasics ? "/certificates/aws-basics-template.png" : (eventData.template_url || "/certificates/default-template.png"),
             downloadToken,
             config: {
-              nameX: eventData.name_x,
-              nameY: eventData.name_y,
-              fontFamily: eventData.font_family,
-              fontSize: eventData.font_size,
-              fontWeight: eventData.font_weight,
-              textColor: eventData.text_color,
-              textAlign: eventData.text_align,
+              nameX: isAWSBasics ? 73.8 : (eventData.name_x ?? 73.8),
+              nameY: isAWSBasics ? 60.5 : (eventData.name_y ?? 61.5),
+              fontFamily: isAWSBasics ? "Amazon Ember Display" : (eventData.font_family || "Amazon Ember Display"),
+              fontSize: isAWSBasics ? 28 : (eventData.font_size ?? 26),
+              fontWeight: eventData.font_weight || "bold",
+              textColor: isAWSBasics ? "#ffffff" : (eventData.text_color || "#111827"),
+              textAlign: eventData.text_align || "center",
             },
           });
         } else {
@@ -363,7 +374,7 @@ export async function POST(request: NextRequest) {
     }
 
     const downloadToken = createDownloadToken(cleanInput, eventId);
-    const isAWSBasics = eventId.includes("aws-basics");
+    const isAWSBasics = eventId.includes("aws-basics") || eventId === "default-aws-basics";
 
     return NextResponse.json({
       found: true,
@@ -371,10 +382,10 @@ export async function POST(request: NextRequest) {
       templateUrl: isAWSBasics ? "/certificates/aws-basics-template.png" : "/certificates/default-template.png",
       downloadToken,
       config: {
-        nameX: isAWSBasics ? 73.5 : 73.8,
-        nameY: isAWSBasics ? 62.0 : 61.5,
-        fontFamily: "Amazon Ember Display",
-        fontSize: 26,
+        nameX: isAWSBasics ? 73.8 : 73.8,
+        nameY: isAWSBasics ? 60.5 : 61.5,
+        fontFamily: isAWSBasics ? "Amazon Ember Display" : "Amazon Ember Display",
+        fontSize: isAWSBasics ? 28 : 26,
         fontWeight: "bold",
         textColor: isAWSBasics ? "#ffffff" : "#111827",
         textAlign: "center",

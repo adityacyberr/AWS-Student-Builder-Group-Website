@@ -18,7 +18,9 @@ const templateCache = new Map<string, HTMLImageElement>();
  */
 function loadImage(url: string): Promise<HTMLImageElement> {
   const cached = templateCache.get(url);
-  if (cached) return Promise.resolve(cached);
+  if (cached && cached.complete && cached.naturalWidth > 0) {
+    return Promise.resolve(cached);
+  }
 
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -43,9 +45,10 @@ export async function generateWatermarkedPreviewDataUrl(
   const img = await loadImage(templateUrl);
   const canvas = document.createElement("canvas");
 
-  // High-DPI canvas for preview (1200px width)
-  canvas.width = 1200;
-  canvas.height = Math.round((img.naturalHeight / img.naturalWidth) * 1200);
+  // High-DPI canvas for preview matching aspect ratio
+  const previewWidth = 1264;
+  canvas.width = previewWidth;
+  canvas.height = Math.round((img.naturalHeight / img.naturalWidth) * previewWidth);
   const ctx = canvas.getContext("2d")!;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
@@ -53,24 +56,31 @@ export async function generateWatermarkedPreviewDataUrl(
   // 1. Draw background template image
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
+  // Wait for web fonts if available
+  if (typeof document !== "undefined" && document.fonts) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {}
+  }
+
   // 2. Overlay participant name in Student Name position
   const nameX = (config.nameX / 100) * canvas.width;
   const nameY = (config.nameY / 100) * canvas.height;
   const fontSizePx = Math.round((config.fontSize / 650) * canvas.height);
 
   ctx.fillStyle = config.textColor || "#ffffff";
-  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "Amazon Ember Display", "Inter", "Roboto", monospace, sans-serif`;
+  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "${config.fontFamily || "Amazon Ember Display"}", "Amazon Ember", "Inter", -apple-system, sans-serif`;
   ctx.textAlign = config.textAlign || "center";
   ctx.textBaseline = "middle";
   ctx.fillText(participantName, nameX, nameY);
 
-  return canvas.toDataURL("image/jpeg", 0.95);
+  return canvas.toDataURL("image/png");
 }
 
 /**
  * Generate a 300 DPI high-definition PDF certificate document.
- * Draws the background template and student name on a high-res 300 DPI canvas
- * then inserts into an A4 PDF document with no watermarks or extra overlays.
+ * Draws the background template and student name on a high-res canvas
+ * then inserts into an A4 PDF document matching the exact official template.
  */
 export async function generateCertificatePDF(
   templateUrl: string,
@@ -94,17 +104,24 @@ export async function generateCertificatePDF(
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
-  // 300 DPI High-Resolution Canvas (~3508 x 2480px for A4)
+  // High-Resolution Canvas (2.5x natural template size for razor sharp text)
   const canvas = document.createElement("canvas");
-  const scale = 4;
-  canvas.width = Math.round(pageWidth * (96 / 25.4) * scale);
-  canvas.height = Math.round(pageHeight * (96 / 25.4) * scale);
+  const scale = 2.5;
+  canvas.width = Math.round(imgWidth * scale);
+  canvas.height = Math.round(imgHeight * scale);
   const ctx = canvas.getContext("2d")!;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  // 1. Draw background template image at full high-resolution
+  // 1. Draw background template image at full resolution
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // Wait for web fonts if available
+  if (typeof document !== "undefined" && document.fonts) {
+    try {
+      await document.fonts.ready;
+    } catch (e) {}
+  }
 
   // 2. Draw student's name on canvas
   const nameX = (config.nameX / 100) * canvas.width;
@@ -112,14 +129,14 @@ export async function generateCertificatePDF(
   const fontSizePx = Math.round((config.fontSize / 650) * canvas.height);
 
   ctx.fillStyle = config.textColor || "#ffffff";
-  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "Amazon Ember Display", "Inter", "Roboto", monospace, sans-serif`;
+  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "${config.fontFamily || "Amazon Ember Display"}", "Amazon Ember", "Inter", -apple-system, sans-serif`;
   ctx.textAlign = config.textAlign || "center";
   ctx.textBaseline = "middle";
   ctx.fillText(participantName, nameX, nameY);
 
-  // 3. Export high-res canvas as JPEG image into PDF
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.98);
-  pdf.addImage(dataUrl, "JPEG", 0, 0, pageWidth, pageHeight);
+  // 3. Export high-res canvas as PNG image into PDF
+  const dataUrl = canvas.toDataURL("image/png");
+  pdf.addImage(dataUrl, "PNG", 0, 0, pageWidth, pageHeight);
 
   return pdf.output("blob");
 }
