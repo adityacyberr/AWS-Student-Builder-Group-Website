@@ -1,24 +1,24 @@
 import { jsPDF } from "jspdf";
 
 export interface CertificateConfig {
-  nameX: number;       // percentage 0-100 (e.g. 71.0)
-  nameY: number;       // percentage 0-100 (e.g. 53.5)
+  nameX: number;       // percentage 0-100 (e.g. 73.3)
+  nameY: number;       // percentage 0-100 (e.g. 61.8)
   fontFamily: string;
   fontSize: number;    // base font size relative to template height scale
   fontWeight: string;
   textColor: string;   // hex e.g. #ffffff or #111827
   textAlign: "left" | "center" | "right";
-  maxNameWidthPct?: number; // max percentage of template width for name (default 50)
+  maxNameWidthPct?: number; // max percentage of template width for name (default 38 for AWS Basics)
 }
 
 // In-memory cache for template images
 const templateCache = new Map<string, HTMLImageElement>();
 
 /**
- * Pre-load and cache a template image with cache-busting query parameter (?v=2).
+ * Pre-load and cache a template image with cache-busting query parameter (?v=3).
  */
 export function loadImage(url: string): Promise<HTMLImageElement> {
-  const cacheBustUrl = url.includes("?") ? `${url}&v=2` : `${url}?v=2`;
+  const cacheBustUrl = url.includes("?") ? `${url}&v=3` : `${url}?v=3`;
   const cached = templateCache.get(cacheBustUrl);
   if (cached && cached.complete && cached.naturalWidth > 0) {
     return Promise.resolve(cached);
@@ -56,7 +56,7 @@ export async function renderCertificateCanvas(
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  // Step 2b: Draw original untouched background image
+  // Step 2b: Draw original untouched background image at natural width and height
   ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
 
   if (typeof document !== "undefined" && document.fonts) {
@@ -65,11 +65,11 @@ export async function renderCertificateCanvas(
     } catch (e) {}
   }
 
-  // Step 3: Coordinates relative to natural image dimensions
+  // Coordinates relative to natural image dimensions
   const nameX = (config.nameX / 100) * canvas.width;
   const nameY = (config.nameY / 100) * canvas.height;
 
-  // Base font size relative to natural image height
+  // Base font size relative to natural image height (~3.2% of height if fontSize is 21)
   let fontSizePx = Math.round((config.fontSize / 650) * canvas.height);
 
   // Set initial font styling (transparent text background, no fillRect, no shadow, no stroke)
@@ -81,22 +81,22 @@ export async function renderCertificateCanvas(
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
 
-  const fontFamily = config.fontFamily || "Amazon Ember Display";
+  const fontFamily = config.fontFamily || '"JetBrains Mono", "Fira Code", monospace';
   const fontWeight = config.fontWeight || "bold";
-  ctx.font = `${fontWeight} ${fontSizePx}px "${fontFamily}", "Amazon Ember", "Inter", -apple-system, sans-serif`;
+  ctx.font = `${fontWeight} ${fontSizePx}px ${fontFamily}`;
 
-  // Step 4: Auto-shrink font if name exceeds max available width
-  const maxWidthPct = config.maxNameWidthPct ?? 50;
+  // Shrink font only if name is wider than maxNameWidthPct (default 38 for AWS Basics)
+  const maxWidthPct = config.maxNameWidthPct ?? 38;
   const maxAvailableWidth = (maxWidthPct / 100) * canvas.width;
   let textWidth = ctx.measureText(participantName).width;
 
   if (textWidth > maxAvailableWidth && textWidth > 0) {
     const scaleFactor = maxAvailableWidth / textWidth;
     fontSizePx = Math.max(14, Math.floor(fontSizePx * scaleFactor));
-    ctx.font = `${fontWeight} ${fontSizePx}px "${fontFamily}", "Amazon Ember", "Inter", -apple-system, sans-serif`;
+    ctx.font = `${fontWeight} ${fontSizePx}px ${fontFamily}`;
   }
 
-  // Step 2c: Draw ONLY participant name
+  // Draw ONLY participant name
   ctx.fillText(participantName, nameX, nameY);
 
   return canvas;
