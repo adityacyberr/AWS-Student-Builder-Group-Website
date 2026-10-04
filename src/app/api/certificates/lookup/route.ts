@@ -352,8 +352,8 @@ export async function POST(request: NextRequest) {
             templateUrl: isAWSBasics ? "/certificates/aws-basics-template.png" : (eventData.template_url || "/certificates/default-template.png"),
             downloadToken,
             config: {
-              nameX: isAWSBasics ? 73.8 : (eventData.name_x ?? 73.8),
-              nameY: isAWSBasics ? 60.5 : (eventData.name_y ?? 61.5),
+              nameX: isAWSBasics ? 71.0 : (eventData.name_x ?? 73.8),
+              nameY: isAWSBasics ? 53.5 : (eventData.name_y ?? 61.5),
               fontFamily: isAWSBasics ? "Amazon Ember Display" : (eventData.font_family || "Amazon Ember Display"),
               fontSize: isAWSBasics ? 28 : (eventData.font_size ?? 26),
               fontWeight: eventData.font_weight || "bold",
@@ -382,8 +382,8 @@ export async function POST(request: NextRequest) {
       templateUrl: isAWSBasics ? "/certificates/aws-basics-template.png" : "/certificates/default-template.png",
       downloadToken,
       config: {
-        nameX: isAWSBasics ? 73.8 : 73.8,
-        nameY: isAWSBasics ? 60.5 : 61.5,
+        nameX: isAWSBasics ? 71.0 : 73.8,
+        nameY: isAWSBasics ? 53.5 : 61.5,
         fontFamily: isAWSBasics ? "Amazon Ember Display" : "Amazon Ember Display",
         fontSize: isAWSBasics ? 28 : 26,
         fontWeight: "bold",
