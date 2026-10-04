@@ -35,47 +35,6 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Write participant name onto a canvas context at the configured position.
- * Resets all state before drawing to guarantee no rectangle / box artifact.
- */
-function drawNameOnCanvas(
-  ctx: CanvasRenderingContext2D,
-  canvasWidth: number,
-  canvasHeight: number,
-  participantName: string,
-  config: CertificateConfig
-) {
-  // ── Reset any inherited state that could produce rectangle artifacts ──
-  ctx.save();
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = "source-over";
-  ctx.shadowColor = "transparent";
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
-  ctx.strokeStyle = "transparent";
-  ctx.lineWidth = 0;
-
-  const nameX = (config.nameX / 100) * canvasWidth;
-  const nameY = (config.nameY / 100) * canvasHeight;
-
-  // Normalize font size to canvas height:
-  // If config.fontSize <= 10, treat as percentage of height (e.g. 3.4 = 3.4% of height).
-  // If config.fontSize > 10, treat as pt/px relative to 1000px reference height (e.g. 34 = 3.4% of height).
-  const fontPercent = config.fontSize <= 10 ? config.fontSize : config.fontSize / 10;
-  const fontSizePx = Math.round((fontPercent / 100) * canvasHeight);
-
-  ctx.fillStyle = config.textColor || "#ffffff";
-  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "${config.fontFamily || "Courier New"}", "Courier New", monospace`;
-  ctx.textAlign = config.textAlign || "center";
-  ctx.textBaseline = "middle";
-
-  ctx.fillText(participantName, nameX, nameY);
-
-  ctx.restore();
-}
-
-/**
  * Generate a high-DPI image Data URL for live preview.
  */
 export async function generateWatermarkedPreviewDataUrl(
@@ -86,34 +45,40 @@ export async function generateWatermarkedPreviewDataUrl(
   const img = await loadImage(templateUrl);
   const canvas = document.createElement("canvas");
 
-  // High-DPI canvas matching template aspect ratio
-  const previewWidth = 1400;
+  const previewWidth = 1264;
   canvas.width = previewWidth;
   canvas.height = Math.round((img.naturalHeight / img.naturalWidth) * previewWidth);
   const ctx = canvas.getContext("2d")!;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  // 1. Draw background template — fills 100% of canvas, no transparent areas
+  // 1. Draw background template image (ORIGINAL UNTOUCHED)
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  // Wait for web fonts
   if (typeof document !== "undefined" && document.fonts) {
-    try { await document.fonts.ready; } catch (e) { /* ignore */ }
+    try {
+      await document.fonts.ready;
+    } catch (e) {}
   }
 
-  // 2. Overlay participant name — no box, no background, just text
-  drawNameOnCanvas(ctx, canvas.width, canvas.height, participantName, config);
+  // 2. Overlay participant name in Student Name position
+  const nameX = (config.nameX / 100) * canvas.width;
+  const nameY = (config.nameY / 100) * canvas.height;
+  const fontSizePx = Math.round((config.fontSize / 650) * canvas.height);
 
-  return canvas.toDataURL("image/jpeg", 0.97);
+  ctx.fillStyle = config.textColor || "#ffffff";
+  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "${config.fontFamily || "Amazon Ember Display"}", "Amazon Ember", "Inter", -apple-system, sans-serif`;
+  ctx.textAlign = config.textAlign || "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(participantName, nameX, nameY);
+
+  return canvas.toDataURL("image/png");
 }
 
 /**
- * Generate a high-resolution PDF certificate.
- *
- * Uses JPEG (not PNG) for the embedded image so that jsPDF never encounters
- * a transparent layer and therefore never renders a white/black rectangle
- * artifact behind the participant name.
+ * Generate a 300 DPI high-definition PDF certificate document.
+ * Draws the background template and student name on a high-res canvas
+ * then inserts into an A4 PDF document matching the exact official template.
  */
 export async function generateCertificatePDF(
   templateUrl: string,
@@ -126,7 +91,7 @@ export async function generateCertificatePDF(
   const imgHeight = img.naturalHeight;
   const isLandscape = imgWidth >= imgHeight;
 
-  // Create PDF matching template orientation
+  // Create A4 PDF document matching orientation
   const orientation = isLandscape ? "landscape" : "portrait";
   const pdf = new jsPDF({
     orientation,
@@ -137,35 +102,38 @@ export async function generateCertificatePDF(
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
-  // High-resolution canvas (3× native resolution for sharp output)
+  // High-Resolution Canvas (2.5x natural template size for razor sharp text)
   const canvas = document.createElement("canvas");
-  const scale = 3;
+  const scale = 2.5;
   canvas.width = Math.round(imgWidth * scale);
   canvas.height = Math.round(imgHeight * scale);
   const ctx = canvas.getContext("2d")!;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  // 1. Fill white so there are absolutely NO transparent pixels —
-  //    this is what prevents the "rectangle box" artifact in jsPDF.
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // 2. Draw the certificate template at full resolution
+  // 1. Draw original template background image
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  // Wait for web fonts
   if (typeof document !== "undefined" && document.fonts) {
-    try { await document.fonts.ready; } catch (e) { /* ignore */ }
+    try {
+      await document.fonts.ready;
+    } catch (e) {}
   }
 
-  // 3. Overlay the participant name — text only, no background, no border
-  drawNameOnCanvas(ctx, canvas.width, canvas.height, participantName, config);
+  // 2. Draw student's name on canvas
+  const nameX = (config.nameX / 100) * canvas.width;
+  const nameY = (config.nameY / 100) * canvas.height;
+  const fontSizePx = Math.round((config.fontSize / 650) * canvas.height);
 
-  // 4. Export as JPEG (fully opaque) then embed into PDF
-  //    JPEG has no alpha channel → jsPDF cannot produce a transparency rectangle
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.97);
-  pdf.addImage(dataUrl, "JPEG", 0, 0, pageWidth, pageHeight);
+  ctx.fillStyle = config.textColor || "#ffffff";
+  ctx.font = `${config.fontWeight || "bold"} ${fontSizePx}px "${config.fontFamily || "Amazon Ember Display"}", "Amazon Ember", "Inter", -apple-system, sans-serif`;
+  ctx.textAlign = config.textAlign || "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(participantName, nameX, nameY);
+
+  // 3. Export high-res canvas as PNG image into PDF
+  const dataUrl = canvas.toDataURL("image/png");
+  pdf.addImage(dataUrl, "PNG", 0, 0, pageWidth, pageHeight);
 
   return pdf.output("blob");
 }
