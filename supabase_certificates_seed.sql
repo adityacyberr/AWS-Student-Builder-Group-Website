@@ -179,7 +179,8 @@ from aws_basics_event, (values
   ('25BCSEAIML098', 'ROHIT'),
   ('25BCSEAIML123', 'TARANPREET SINGH'),
   ('24BCSEAIML056', 'SIMARPREET KAUR'),
-  ('RIMT261160', 'SAGAR')
+  ('RIMT261160', 'SAGAR'),
+  ('26BCSEAIML004', 'ALOK')
 ) as p(roll_number, participant_name)
 on conflict (event_id, roll_number) do update set participant_name = excluded.participant_name;
 
@@ -305,6 +306,7 @@ from kiro_event, (values
   ('25BCSEAIML098', 'ROHIT'),
   ('25BCSEAIML123', 'TARANPREET SINGH'),
   ('24BCSEAIML056', 'SIMARPREET KAUR'),
-  ('RIMT261160', 'SAGAR')
+  ('RIMT261160', 'SAGAR'),
+  ('26BCSEAIML004', 'ALOK')
 ) as p(roll_number, participant_name)
 on conflict (event_id, roll_number) do update set participant_name = excluded.participant_name;

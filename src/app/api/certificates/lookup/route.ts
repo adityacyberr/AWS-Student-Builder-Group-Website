@@ -76,6 +76,7 @@ const mobileToNameMap: Record<string, string> = {
   "6280459292": "Arshpreet Singh",
   "8865966009": "Vishvadeep Singh Chauhan",
   "9914797854": "Simranjeet Kaur",
+  "9465935141": "Alok",
 };
 
 /**
@@ -198,6 +199,7 @@ const knownRollMap: Record<string, string> = {
   "25BCSEAIML123": "TARANPREET SINGH",
   "24BCSEAIML056": "SIMARPREET KAUR",
   "RIMT261160": "SAGAR",
+  "26BCSEAIML004": "ALOK",
 };
 
 function toTitleCase(str: string): string {
