@@ -78,6 +78,7 @@ const mobileToNameMap: Record<string, string> = {
   "9914797854": "Simranjeet Kaur",
   "9465935141": "Alok",
   "9115749663": "Jaswinder Sharma",
+  "9142762002": "Om Narayan Rajak",
 };
 
 /**
